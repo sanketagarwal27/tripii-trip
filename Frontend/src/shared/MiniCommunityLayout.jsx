@@ -1,17 +1,21 @@
-import LeftSidebar from "@/components/home/LeftSidebar";
+// shared/MiniCommunityLayout.jsx
 import { Outlet } from "react-router-dom";
+import LeftSidebar from "@/components/home/LeftSidebar";
+import useGetMyCommunities from "@/hooks/useGetMyCommunities";
 
 const MiniCommunityLayout = () => {
+  useGetMyCommunities();
   return (
     <div className="flex w-full">
-      {/* LEFT SIDEBAR */}
-      <div>
-        <LeftSidebar />
-      </div>
+      <LeftSidebar
+        // myCommunities={myCommunities}
+        // suggestedCommunities={suggestedCommunities}
+        myRooms={[]} // update when room API is ready
+        suggestedRooms={[]} // update later
+      />
 
-      {/* CENTER CONTENT */}
-
-      <div style={{ position: "relative", left: "20vw", top: "80px" }}>
+      {/* Main center content */}
+      <div style={{ marginLeft: "18vw", marginTop: "80px" }}>
         <Outlet />
       </div>
     </div>

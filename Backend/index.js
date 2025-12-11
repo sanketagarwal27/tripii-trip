@@ -23,14 +23,16 @@ const server = http.createServer(app);
 
 initSocket(server);
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8000;
 app.use(express.json());
 app.use(cookieParser());
 app.use(urlencoded({ extended: true }));
 
 const corsOption = {
-  origin: "http://localhost:5173",
+  origin: true,
   credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 };
 app.use(cors(corsOption));
 app.get("/", (req, res) => {

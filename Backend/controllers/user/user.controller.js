@@ -7,7 +7,7 @@ import cloudinary from "../../utils/cloudinary.js";
 import getDataUri from "../../utils/datauri.js";
 import { sendNotification } from "./notification.controller.js";
 
-const generateAccessAndRefreshToken = async (userId) => {
+export const generateAccessAndRefreshToken = async (userId) => {
   try {
     const user = await User.findById(userId);
 

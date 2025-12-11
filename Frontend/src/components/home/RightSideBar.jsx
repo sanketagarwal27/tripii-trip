@@ -80,7 +80,7 @@ const RightSideBar = () => {
             className="rs-avatar"
             style={{
               backgroundImage: `url(${
-                userProfile.profilePicture?.url || "/profile.avif"
+                userProfile.profilePicture?.url || "/travel.jpg"
               })`,
             }}
           ></div>
@@ -174,7 +174,7 @@ const RightSideBar = () => {
                   className="rs-friend-img"
                   style={{
                     backgroundImage: `url(${
-                      u.profilePicture?.url || "/profile.avif"
+                      u.profilePicture?.url || "/travel.jpg"
                     })`,
                   }}
                 ></div>

@@ -41,7 +41,6 @@ const postSchema = new Schema(
       type: String,
       enum: ["normal", "trip"],
       required: true,
-      index: true,
     },
 
     /* ============================================================

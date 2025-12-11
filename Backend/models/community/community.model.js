@@ -1,20 +1,37 @@
 import mongoose, { Schema } from "mongoose";
 
+const TAGS = [
+  "Adventure",
+  "Backpacking",
+  "Hiking",
+  "Photography",
+  "Food",
+  "City",
+  "Friends",
+  "Nature",
+  "Sports",
+  "Games",
+  "Culture",
+  "Tech",
+  "Education",
+  "Nightlife",
+];
+
 const communitySchema = new Schema(
   {
     name: { type: String, required: true, trim: true },
     description: { type: String, default: "" },
 
+    tags: {
+      type: [String],
+      enum: TAGS,
+      default: [],
+    },
+
     backgroundImage: {
       url: { type: String, default: "" },
       publicId: { type: String, default: "" },
     },
-
-    description: [
-      {
-        type: String,
-      },
-    ],
 
     type: {
       type: String,
@@ -56,6 +73,9 @@ const communitySchema = new Schema(
       },
     ],
 
+    memberCount: { type: Number, default: 1 }, // creator = 1
+    roomsLast7DaysCount: { type: Number, default: 0 },
+
     // join requests etc remain
     joinRequests: [
       {
@@ -82,6 +102,6 @@ const communitySchema = new Schema(
   { timestamps: true }
 );
 
-communitySchema.index({ name: "text", description: "text" });
+communitySchema.index({ name: "text", description: "text", tags: "text" });
 
 export const Community = mongoose.model("Community", communitySchema);

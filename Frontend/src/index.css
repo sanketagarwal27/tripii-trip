@@ -898,3 +898,49 @@ body {
   flex-direction: column;
   align-items: center;
 }
+
+.communityhub {
+  display: flex;
+  flex-direction: column;
+  margin-left: 40px;
+  width: 78vw;
+}
+
+.communitycard {
+  height: 25vh;
+  width: 17vw;
+}
+
+.communityhub-header {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 60px;
+  padding-right: 20px;
+}
+
+.communityhub-searchpart {
+  position: relative;
+  right: 0;
+  display: flex;
+  gap: 10px;
+}
+
+.communityhub-backbutton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgb(196, 196, 196);
+  padding: 3px 10px;
+  border-radius: 5px;
+  margin-right: 10px;
+}
+
+.createcommunity {
+  margin-top: 100px;
+}
+
+.communitycard-tags {
+  color: white;
+}

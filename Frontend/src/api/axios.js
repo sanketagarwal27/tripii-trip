@@ -15,7 +15,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Clear auth state on 401
       store.dispatch(logoutUser());
-      window.location.href = "/login";
+      window.location.href = "/auth";
     }
     return Promise.reject(error);
   }

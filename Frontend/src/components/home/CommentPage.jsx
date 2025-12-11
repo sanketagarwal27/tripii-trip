@@ -248,7 +248,7 @@ const CommentPage = () => {
         <div className="rounded-xl shadow-sm mb-4">
           <div className="flex gap-4 items-center mb-3 pl-1">
             <img
-              src={post?.author?.profilePicture?.url || "/profile.avif"}
+              src={post?.author?.profilePicture?.url || "/travel.jpg"}
               className="size-10 rounded-full object-cover"
             />
             <div>
@@ -274,7 +274,7 @@ const CommentPage = () => {
         {/* MAIN INPUT */}
         <div className="flex items-start p-4 gap-4 bg-white rounded-xl shadow-sm mb-4">
           <img
-            src={userProfile?.profilePicture?.url || "/profile.avif"}
+            src={userProfile?.profilePicture?.url || "/travel.jpg"}
             className="size-10 rounded-full object-cover"
           />
 
@@ -362,7 +362,7 @@ const CommentItem = ({
     >
       <div className="flex w-full gap-3 p-4 rounded-lg">
         <img
-          src={comment.author.profilePicture?.url || "/profile.avif"}
+          src={comment.author.profilePicture?.url || "/travel.jpg"}
           className="size-10 rounded-full object-cover mt-1"
         />
 
@@ -497,7 +497,7 @@ const CommentItem = ({
               )}
 
               <img
-                src={r.author.profilePicture?.url || "/profile.avif"}
+                src={r.author.profilePicture?.url || "/travel.jpg"}
                 className="size-10 rounded-full object-cover mt-1"
               />
 

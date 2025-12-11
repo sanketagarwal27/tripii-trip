@@ -4,10 +4,12 @@ import storage from "redux-persist/lib/storage";
 import { persistReducer, persistStore } from "redux-persist";
 import authSlice from "./authslice.js";
 import postSlice from "./postSlice.js";
+import communitySlice from "./communitySlice.jsx";
 
 const rootReducer = combineReducers({
   auth: authSlice,
   post: postSlice,
+  community: communitySlice,
 });
 
 const persistConfig = {

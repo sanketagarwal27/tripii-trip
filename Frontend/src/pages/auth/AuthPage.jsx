@@ -62,11 +62,13 @@ export default function AuthPage() {
 
       const res = await googleLoginRequest(response.credential);
       console.log("Google Login success:", res);
+      const { user, accessToken, refreshToken } = res.data.data;
+
       dispatch(
         setAuthUser({
-          user: res.data.user,
-          accessToken: res.data.accessToken,
-          refreshToken: res.data.refreshToken,
+          user,
+          accessToken,
+          refreshToken,
         })
       );
 

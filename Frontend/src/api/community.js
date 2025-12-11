@@ -6,6 +6,12 @@ export const searchCommunities = (params = {}) =>
     withCredentials: true,
   });
 
+export const searchMyCommunities = (params = {}) =>
+  api.get("/api/community/searchMyCommunities", {
+    params,
+    withCredentials: true,
+  });
+
 export const getMyCommunities = () =>
   api.get("/api/community/getMyCommunities", { withCredentials: true });
 
@@ -42,4 +48,10 @@ export const getCommunityMembers = (communityId, params = {}) =>
 export const getCommunityProfile = (communityId) =>
   api.get(`/api/community/getCommunityProfile/${communityId}`, {
     withCredentials: true,
+  });
+
+export const createCommunity = (formData) =>
+  api.post("/api/community/createCommunity", formData, {
+    withCredentials: true,
+    headers: { "Content-Type": "multipart/form-data" },
   });

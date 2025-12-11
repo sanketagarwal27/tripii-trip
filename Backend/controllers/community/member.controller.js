@@ -83,18 +83,19 @@ export const joinPublicCommunity = asyncHandler(async (req, res) => {
  */
 export const addMembers = asyncHandler(async (req, res) => {
   const { communityId } = req.params;
-  let { members = [] } = req.body; // array of user IDs
+  let { members = [] } = req.body;
   const adderId = req.user._id;
 
-  if (!Array.isArray(members) || members.length === 0) {
+  if (!Array.isArray(members) || members.length === 0)
     throw new ApiError(400, "Members list is required");
-  }
 
+  // Load community + settings
   const community = await Community.findById(communityId).select(
-    "name settings"
+    "name settings memberCount"
   );
   if (!community) throw new ApiError(404, "Community not found");
 
+  // Verify adder is a member
   const adderMembership = await CommunityMembership.findOne({
     community: communityId,
     user: adderId,
@@ -102,6 +103,7 @@ export const addMembers = asyncHandler(async (req, res) => {
   if (!adderMembership)
     throw new ApiError(403, "You must be a member to add others");
 
+  // Permissions
   if (
     !community.settings?.allowMembersToAdd &&
     adderMembership.role !== "admin"
@@ -109,10 +111,10 @@ export const addMembers = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Only admins can add members");
   }
 
-  // sanitize and dedupe input, limit to 200
-  members = Array.from(new Set(members.map((m) => m.toString()))).slice(0, 200);
+  // Clean & limit input
+  members = [...new Set(members.map(String))].slice(0, 200);
 
-  // remove existing members and the adder
+  // Remove: already members + the adder himself
   const existing = await CommunityMembership.find({
     community: communityId,
     user: { $in: members },
@@ -123,70 +125,65 @@ export const addMembers = asyncHandler(async (req, res) => {
     (id) => !existingSet.has(id) && id !== adderId.toString()
   );
 
-  if (toAdd.length === 0) {
-    throw new ApiError(409, "No new users to add");
-  }
+  if (toAdd.length === 0) throw new ApiError(409, "No new users to add");
 
-  // fetch valid user docs
+  // Validate user accounts
   const users = await User.find({ _id: { $in: toAdd } }).select(
     "username profilePicture"
   );
-  if (!users.length) throw new ApiError(404, "No valid users found to add");
+  if (!users.length) throw new ApiError(404, "No valid users found");
 
-  const memberDocs = users.map((u) => ({
+  // Build membership docs
+  const docs = users.map((u) => ({
     community: communityId,
     user: u._id,
     displayName: u.username,
     role: "member",
   }));
 
-  const createdMemberships = await CommunityMembership.insertMany(memberDocs);
+  // Bulk insert
+  const createdMemberships = await CommunityMembership.insertMany(docs);
 
-  // update community.members
-  await Community.findByIdAndUpdate(communityId, {
-    $push: { members: { $each: createdMemberships.map((m) => m._id) } },
-  });
+  // Update community.members array
+  await Community.updateOne(
+    { _id: communityId },
+    {
+      $push: { members: { $each: createdMemberships.map((m) => m._id) } },
+      $inc: { memberCount: createdMemberships.length }, // 🔥 ATOMIC counter update
+    }
+  );
 
-  // update users.communities
+  // Update user.communities
   const newUserIds = createdMemberships.map((m) => m.user);
   await User.updateMany(
     { _id: { $in: newUserIds } },
     { $addToSet: { communities: communityId } }
   );
 
-  // create activity
+  // Activity log
   await Activity.create({
     community: communityId,
     actor: adderId,
     type: "member_added",
-    payload: { addedUsers: newUserIds, count: newUserIds.length },
+    payload: { count: newUserIds.length },
   });
 
-  // Send notification + realtime emit per user (do not fail whole request on single notification error)
+  // Notifications (parallel, non-blocking)
   await Promise.allSettled(
     createdMemberships.map(async (m) => {
       try {
-        const notification = await sendNotification({
+        const notif = await sendNotification({
           recipient: m.user,
           sender: adderId,
           type: "community_invite",
           message: `${req.user.username} added you to "${community.name}"`,
           community: communityId,
-          metadata: { communityId, communityName: community.name },
+          metadata: { communityId },
         });
 
-        // emit directly to user (emitToUser is safe if user offline)
-        try {
-          emitToUser(m.user.toString(), "notification:new", notification);
-        } catch (emitErr) {
-          // ignore
-        }
+        emitToUser(m.user.toString(), "notification:new", notif);
       } catch (err) {
-        console.error(
-          "Failed to send notification for member add:",
-          m.user.toString(),
-          err
-        );
+        console.error("Notification failed:", m.user.toString(), err);
       }
     })
   );
@@ -217,52 +214,59 @@ export const removeMember = asyncHandler(async (req, res) => {
     user: adminId,
     role: "admin",
   });
+
   if (!adminMembership)
     throw new ApiError(403, "Only admins can remove members");
 
-  if (adminId.toString() === targetUserId.toString()) {
+  if (adminId.toString() === targetUserId.toString())
     throw new ApiError(400, "You cannot remove yourself");
-  }
 
-  const membership = await CommunityMembership.findOneAndDelete({
+  // Delete membership
+  const deleted = await CommunityMembership.findOneAndDelete({
     community: communityId,
     user: targetUserId,
   });
 
-  if (!membership) throw new ApiError(404, "Member not found");
+  if (!deleted) throw new ApiError(404, "Member not found");
 
-  // update community and user
-  await Community.findByIdAndUpdate(communityId, {
-    $pull: { members: membership._id },
-  });
-  await User.findByIdAndUpdate(targetUserId, {
-    $pull: { communities: communityId },
-  });
+  // Update community + user
+  await Community.updateOne(
+    { _id: communityId },
+    {
+      $pull: { members: deleted._id },
+      $inc: { memberCount: -1 }, // 🔥 ATOMIC decrement
+    }
+  );
 
-  // activity
+  await User.updateOne(
+    { _id: targetUserId },
+    { $pull: { communities: communityId } }
+  );
+
+  // Activity log
   await Activity.create({
     community: communityId,
     actor: adminId,
     type: "member_removed",
-    payload: { removedUser: targetUserId, action: "removed" },
+    payload: { removedUser: targetUserId },
   });
 
-  // send notification and emit removed event
+  // Notify
   try {
-    const community = await Community.findById(communityId).select("name");
-    const notification = await sendNotification({
+    const comm = await Community.findById(communityId).select("name");
+
+    const notif = await sendNotification({
       recipient: targetUserId,
       sender: adminId,
       type: "community_removed",
-      message: `You were removed from "${community.name}"`,
+      message: `You were removed from "${comm.name}"`,
       community: communityId,
-      metadata: { communityId },
     });
 
-    emitToUser(targetUserId.toString(), "notification:new", notification);
+    emitToUser(targetUserId.toString(), "notification:new", notif);
     emitToUser(targetUserId.toString(), "community:removed", { communityId });
   } catch (err) {
-    console.error("Failed to notify removed user:", err);
+    console.error("Notification error:", err);
   }
 
   return res

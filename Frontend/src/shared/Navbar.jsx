@@ -1,8 +1,9 @@
 // src/components/layout/Navbar.jsx
 import { useSelector } from "react-redux";
-import profileimage from "../../public/profile.avif";
+import profileimage from "../../public/travel.jpg";
 import { Bell, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { logoutRequest } from "@/api/auth";
 
 const Navbar = () => {
   const { user } = useSelector((store) => store.auth);
@@ -24,6 +25,7 @@ const Navbar = () => {
         <button>Trips</button>
         <button>Places</button>
         <button>Marketplace</button>
+        <button onClick={() => logoutRequest()}>Logout</button>
       </div>
 
       {/* Right Side */}

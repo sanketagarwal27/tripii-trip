@@ -98,7 +98,7 @@ const PostCard = ({ post }) => {
       {/* HEADER */}
       <div className="postcard-header">
         <img
-          src={post.author?.profilePicture?.url || "/profile.avif"}
+          src={post.author?.profilePicture?.url || "/travel.jpg"}
           className="postcard-avatar"
         />
 

@@ -13,6 +13,7 @@ import { Activity } from "../../models/community/activity.model.js";
 
 import { sendNotification } from "../user/notification.controller.js";
 import { emitToUser, emitToCommunity } from "../../socket/server.js";
+import { Room } from "../../models/community/room.model.js";
 
 /**
  * Upload cover image to the proper community folder.
@@ -34,35 +35,54 @@ const uploadCoverImageForCommunity = async (file, communityId) => {
  * CREATE COMMUNITY
  */
 export const createCommunity = asyncHandler(async (req, res) => {
-  const {
+  let {
     name,
     description = "",
     type = "private_group",
     initialMembers = [],
     settings = {},
+    tags = "[]",
   } = req.body;
 
   const createdBy = req.user._id;
 
+  tags = JSON.parse(tags);
+
+  const ALLOWED_TAGS = [
+    "Hiking",
+    "Food",
+    "Adventure",
+    "Photography",
+    "Tech",
+    "Backpacking",
+    "Nightlife",
+    "Culture",
+  ];
+
+  if (!Array.isArray(tags)) tags = [];
+
+  // Validate tags
+  tags = tags.filter((t) => ALLOWED_TAGS.includes(t));
+
   if (!name?.trim()) throw new ApiError(400, "Community name is required");
 
-  // Validate type
   const validTypes = [
     "private_group",
     "public_group",
     "regional_hub",
     "global_hub",
   ];
+
   if (!validTypes.includes(type))
     throw new ApiError(400, "Invalid community type");
 
-  // Create community without backgroundImage first (we'll upload after we have the ID)
   const community = await Community.create({
     name: name.trim(),
     description: description.trim(),
     type,
     createdBy,
     backgroundImage: null,
+    tags,
     settings: {
       allowMembersToAdd: settings.allowMembersToAdd !== false,
       allowMemberRooms: settings.allowMemberRooms !== false,
@@ -304,17 +324,23 @@ export const updateCommunitySettings = asyncHandler(async (req, res) => {
  * GET COMMUNITY PROFILE
  */
 export const getCommunityProfile = asyncHandler(async (req, res) => {
-  const { communityId } = req.params;
+  const communityId = req.params.communityId;
   const userId = req.user._id;
 
+  // 1) Verify user is a member
   const membership = await CommunityMembership.findOne({
     community: communityId,
     user: userId,
-  });
+  }).lean();
+
   if (!membership)
     throw new ApiError(403, "Only members can view community profile");
 
+  // 2) Fetch community & related docs
   const community = await Community.findById(communityId)
+    .select(
+      "name description backgroundImage.url type createdBy updatedAt memberCount roomsLast7DaysCount rooms featuredTrips"
+    )
     .populate("createdBy", "username profilePicture bio")
     .populate({
       path: "members",
@@ -330,99 +356,274 @@ export const getCommunityProfile = asyncHandler(async (req, res) => {
 
   if (!community) throw new ApiError(404, "Community not found");
 
-  const memberCount = await CommunityMembership.countDocuments({
-    community: communityId,
-  });
-
-  community.currentUserRole = membership.role;
-  community.totalMembers = memberCount;
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, community, "Community profile fetched"));
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        ...community,
+        currentUserRole: membership.role,
+        totalMembers: community.memberCount,
+        roomsLast7Days: community.roomsLast7DaysCount,
+      },
+      "Community profile fetched"
+    )
+  );
 });
 
 /**
  * GET USER'S COMMUNITIES
  */
+
 export const getUserCommunities = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
+  // 1) Fetch all memberships for this user
   const memberships = await CommunityMembership.find({ user: userId })
-    .populate({
-      path: "community",
-      select: "name description backgroundImage type createdBy members",
-      populate: { path: "createdBy", select: "username profilePicture" },
-    })
+    .select("community role createdAt")
     .lean();
 
-  const communities = memberships
-    .filter((m) => m.community)
-    .map((m) => ({
-      ...m.community,
+  if (!memberships.length) {
+    return res
+      .status(200)
+      .json(new ApiResponse(200, [], "User communities fetched"));
+  }
+
+  const communityIds = memberships.map((m) => m.community);
+
+  // 2) Fetch communities
+  const communities = await Community.find({ _id: { $in: communityIds } })
+    .select(
+      "name description backgroundImage.url type createdBy updatedAt memberCount roomsLast7DaysCount tags"
+    )
+    .populate("createdBy", "username profilePicture")
+    .lean();
+
+  const memMap = new Map(memberships.map((m) => [String(m.community), m]));
+
+  // 3) Merge
+  const final = communities.map((c) => {
+    const m = memMap.get(String(c._id));
+    return {
+      ...c,
       userRole: m.role,
       joinedAt: m.createdAt,
-      memberCount: m.community.members?.length || 0,
-    }));
+    };
+  });
+
+  // Sort newest→oldest
+  final.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 
   return res
     .status(200)
-    .json(new ApiResponse(200, communities, "User communities fetched"));
+    .json(new ApiResponse(200, final, "User communities fetched"));
 });
 
 /**
  * SEARCH COMMUNITIES
  */
 export const searchCommunities = asyncHandler(async (req, res) => {
-  const { q, type, page = 1, limit = 20 } = req.query;
+  const { q, type, tag, page = 1, limit = 20 } = req.query;
   const userId = req.user._id;
 
+  const skip = (page - 1) * limit;
+  const lim = parseInt(limit);
+
   const query = {};
-  if (q?.trim()) query.$text = { $search: q.trim() };
-  if (type) query.type = type;
-  else query.type = { $in: ["public_group", "regional_hub", "global_hub"] };
 
-  const skip = (parseInt(page) - 1) * parseInt(limit);
+  // TYPE FILTER (default: only public-visible communities)
+  query.type = type
+    ? type
+    : { $in: ["public_group", "regional_hub", "global_hub"] };
 
+  // TAG FILTER (exact match or via search by query)
+  if (tag) {
+    query.tags = tag;
+  }
+
+  // 🔥 FLEXIBLE SEARCH (prefix + substring on name, tags, description)
+  if (q?.trim()) {
+    const cleaned = q.trim();
+    const prefix = new RegExp("^" + cleaned, "i");
+    const contains = new RegExp(cleaned, "i");
+
+    query.$or = [
+      { name: prefix }, // Starts with word
+      { name: contains }, // Contains word
+      { description: contains },
+      { tags: contains },
+    ];
+  }
+
+  // 1️⃣ QUERY COMMUNITIES
   const communities = await Community.find(query)
-    .select("name description backgroundImage type createdBy members")
+    .select(
+      "name description tags backgroundImage.url type createdBy updatedAt memberCount roomsLast7DaysCount"
+    )
     .populate("createdBy", "username profilePicture")
     .skip(skip)
-    .limit(parseInt(limit))
+    .limit(lim)
     .lean();
 
+  // If no communities, return early
+  if (!communities.length) {
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { communities: [], pagination: { total: 0, page, limit: lim } },
+          "Communities fetched"
+        )
+      );
+  }
+
+  // 2️⃣ CHECK USER MEMBERSHIP FOR EACH RESULT
   const communityIds = communities.map((c) => c._id);
-  const userMemberships = await CommunityMembership.find({
+
+  const memberships = await CommunityMembership.find({
     community: { $in: communityIds },
     user: userId,
   }).select("community role");
 
-  const membershipMap = new Map(
-    userMemberships.map((m) => [m.community.toString(), m.role])
-  );
+  const memMap = new Map(memberships.map((m) => [String(m.community), m.role]));
 
-  const enrichedCommunities = communities.map((c) => ({
+  const enriched = communities.map((c) => ({
     ...c,
-    isMember: membershipMap.has(c._id.toString()),
-    userRole: membershipMap.get(c._id.toString()),
-    memberCount: c.members?.length || 0,
+    isMember: memMap.has(String(c._id)),
+    userRole: memMap.get(String(c._id)) || null,
   }));
 
+  // 3️⃣ COUNT FOR PAGINATION
   const total = await Community.countDocuments(query);
 
   return res.status(200).json(
     new ApiResponse(
       200,
       {
-        communities: enrichedCommunities,
+        communities: enriched,
         pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
           total,
-          totalPages: Math.ceil(total / limit),
+          page,
+          limit: lim,
+          totalPages: Math.ceil(total / lim),
         },
       },
       "Communities fetched"
+    )
+  );
+});
+
+//for searching my community
+
+export const searchMyCommunities = asyncHandler(async (req, res) => {
+  const { q = "", searchBy = "name", page = 1, limit = 20 } = req.query;
+  const userId = req.user._id;
+
+  const skip = (page - 1) * limit;
+  const lim = parseInt(limit);
+
+  const cleaned = q.trim();
+
+  // Base match: communities user belongs to
+  const matchStage = {
+    "memberships.user": new mongoose.Types.ObjectId(userId),
+  };
+
+  // 🔥 Add search filters
+  if (cleaned) {
+    const regex = new RegExp(cleaned, "i");
+
+    if (searchBy === "tag") {
+      matchStage.tags = { $in: [regex] };
+    } else {
+      matchStage.$or = [
+        { name: regex },
+        { description: regex },
+        { tags: regex },
+      ];
+    }
+  }
+
+  const pipeline = [
+    // Join membership
+    {
+      $lookup: {
+        from: "communitymemberships",
+        localField: "_id",
+        foreignField: "community",
+        as: "memberships",
+      },
+    },
+
+    // Filter by user membership + search
+    { $match: matchStage },
+
+    // Sort
+    { $sort: { updatedAt: -1 } },
+
+    // Pagination
+    { $skip: skip },
+    { $limit: lim },
+
+    // Join createdBy info
+    {
+      $lookup: {
+        from: "users",
+        localField: "createdBy",
+        foreignField: "_id",
+        as: "creator",
+      },
+    },
+    { $unwind: "$creator" },
+
+    // Final project
+    {
+      $project: {
+        name: 1,
+        description: 1,
+        tags: 1,
+        type: 1,
+        backgroundImage: 1,
+        createdBy: "$creator.username",
+        creatorProfile: "$creator.profilePicture",
+        memberCount: 1,
+        roomsLast7DaysCount: 1,
+      },
+    },
+  ];
+
+  const communities = await Community.aggregate(pipeline);
+
+  // Count pipeline
+  const countPipeline = [
+    {
+      $lookup: {
+        from: "communitymemberships",
+        localField: "_id",
+        foreignField: "community",
+        as: "memberships",
+      },
+    },
+    { $match: matchStage },
+    { $count: "total" },
+  ];
+
+  const countResult = await Community.aggregate(countPipeline);
+  const total = countResult[0]?.total || 0;
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        communities,
+        pagination: {
+          total,
+          limit: lim,
+          page,
+          totalPages: Math.ceil(total / lim),
+        },
+      },
+      "My communities fetched"
     )
   );
 });
@@ -436,24 +637,25 @@ export const suggestedCommunities = asyncHandler(async (req, res) => {
   const myMemberships = await CommunityMembership.find({ user: userId }).select(
     "community"
   );
-  const joinedIds = myMemberships.map((m) => m.community);
+
+  const joinedIds = myMemberships.map((m) => m.community.toString());
 
   const suggestions = await Community.find({
     _id: { $nin: joinedIds },
     type: { $in: ["public_group", "regional_hub", "global_hub"] },
   })
-    .select("name description backgroundImage type members")
-    .limit(20)
+    .select(
+      "name description backgroundImage.url type tags members memberCount roomsLast7DaysCount"
+    )
     .lean();
 
-  const enrichedSuggestions = suggestions.map((c) => ({
-    ...c,
-    memberCount: c.members?.length || 0,
-  }));
+  suggestions.forEach((c) => {
+    c.memberCount = c.memberCount ?? (c.members?.length || 0);
+  });
 
   return res
     .status(200)
-    .json(new ApiResponse(200, enrichedSuggestions, "Suggested communities"));
+    .json(new ApiResponse(200, suggestions, "Suggested communities"));
 });
 
 /**

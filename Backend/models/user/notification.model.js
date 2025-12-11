@@ -9,7 +9,6 @@ const notificationSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true,
     },
 
     /* ------------------------------------------------------
@@ -66,7 +65,6 @@ const notificationSchema = new Schema(
         "system_message",
       ],
       required: true,
-      index: true,
     },
 
     /* ------------------------------------------------------
@@ -82,12 +80,12 @@ const notificationSchema = new Schema(
        OPTIONAL TARGET MODELS 
        (One notification can relate to only ONE of these)
     ------------------------------------------------------ */
-    post: { type: Schema.Types.ObjectId, ref: "Post", index: true },
-    reel: { type: Schema.Types.ObjectId, ref: "Reels", index: true },
-    comment: { type: Schema.Types.ObjectId, ref: "Comment", index: true },
-    community: { type: Schema.Types.ObjectId, ref: "Community", index: true },
-    room: { type: Schema.Types.ObjectId, ref: "Room", index: true },
-    trip: { type: Schema.Types.ObjectId, ref: "Trip", index: true },
+    post: { type: Schema.Types.ObjectId, ref: "Post" },
+    reel: { type: Schema.Types.ObjectId, ref: "Reels" },
+    comment: { type: Schema.Types.ObjectId, ref: "Comment" },
+    community: { type: Schema.Types.ObjectId, ref: "Community" },
+    room: { type: Schema.Types.ObjectId, ref: "Room" },
+    trip: { type: Schema.Types.ObjectId, ref: "Trip" },
     wallet: { type: Schema.Types.ObjectId, ref: "TripWallet" },
     settlement: { type: Schema.Types.ObjectId, ref: "Settlement" },
 
