@@ -5,7 +5,7 @@ import { Provider, useSelector } from "react-redux";
 import { store, persistor } from "./redux/store";
 import { PersistGate } from "redux-persist/integration/react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-
+import Chatbot from "./pages/chatbot/Chatbot.jsx";
 import AuthPage from "@/pages/auth/AuthPage";
 
 import "./index.css";
@@ -36,7 +36,8 @@ function AppRouter() {
             </NoAuth>
           }
         />
-
+        <Route path="/chatbot" element={<Chatbot />} />
+        
         {/* Protected Layout */}
         <Route
           element={

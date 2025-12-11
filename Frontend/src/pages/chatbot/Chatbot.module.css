@@ -1,0 +1,22 @@
+.mainContainer {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #F2F3F3;
+    overflow: hidden;
+}
+
+.scrollArea {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;     
+    flex-direction: column;
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.inputContainer {
+    flex-shrink: 0;
+    background-color: #F2F3F3;
+    padding-bottom: 10px;
+}
