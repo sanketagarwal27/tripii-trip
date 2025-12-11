@@ -378,7 +378,7 @@ const CommentItem = ({
             {canDelete && (
               <Trash2
                 size={16}
-                className="text-red-500 cursor-pointer hover:text-red-600"
+                className="text-gray-500 cursor-pointer hover:text-gray-600"
                 onClick={() => handleDelete(comment._id, false, null)}
               />
             )}
@@ -513,7 +513,7 @@ const CommentItem = ({
                   {(userId === r.author._id || userId === postAuthorId) && (
                     <Trash2
                       size={16}
-                      className="text-red-500 cursor-pointer hover:text-red-600"
+                      className="text-gray-500 cursor-pointer hover:text-gray-600"
                       onClick={() => handleDelete(r._id, true, comment._id)}
                     />
                   )}

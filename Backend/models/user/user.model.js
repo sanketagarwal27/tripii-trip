@@ -87,9 +87,6 @@ const userSchema = new Schema(
       },
     ],
 
-    /* ============================================================
-       PROFILE
-    ============================================================ */
     profilePicture: {
       url: { type: String, default: "" },
       publicId: { type: String, default: "" },

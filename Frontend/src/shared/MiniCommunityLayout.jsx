@@ -1,8 +1,7 @@
 import LeftSidebar from "@/components/home/LeftSidebar";
-import RightSidebar from "@/components/home/RightSideBar";
 import { Outlet } from "react-router-dom";
 
-const MiniAppLayout = () => {
+const MiniCommunityLayout = () => {
   return (
     <div className="flex w-full">
       {/* LEFT SIDEBAR */}
@@ -11,16 +10,12 @@ const MiniAppLayout = () => {
       </div>
 
       {/* CENTER CONTENT */}
-      <div style={{ position: "relative", left: "18.5vw" }}>
-        <Outlet />
-      </div>
 
-      {/* RIGHT SIDEBAR */}
-      <div>
-        <RightSidebar />
+      <div style={{ position: "relative", left: "20vw", top: "80px" }}>
+        <Outlet />
       </div>
     </div>
   );
 };
 
-export default MiniAppLayout;
+export default MiniCommunityLayout;

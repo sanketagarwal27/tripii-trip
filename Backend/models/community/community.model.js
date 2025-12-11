@@ -10,6 +10,12 @@ const communitySchema = new Schema(
       publicId: { type: String, default: "" },
     },
 
+    description: [
+      {
+        type: String,
+      },
+    ],
+
     type: {
       type: String,
       enum: ["private_group", "public_group", "regional_hub", "global_hub"],

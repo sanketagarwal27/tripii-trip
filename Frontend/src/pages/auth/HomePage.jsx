@@ -1,5 +1,4 @@
 import Feed from "@/components/home/Feed";
-import useGetAllPost from "@/hooks/useGetAllPost";
 import { useSelector } from "react-redux";
 
 export default function HomePage() {

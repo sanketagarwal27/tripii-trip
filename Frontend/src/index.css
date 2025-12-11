@@ -235,7 +235,6 @@ body {
 }
 
 .feed {
-  margin-left: 18vw;
   margin-top: 80px;
   width: 60vw;
   display: flex;
@@ -894,7 +893,6 @@ body {
 /* commentpage */
 
 .commentpage {
-  margin-left: 20vw;
   width: 60vw;
   display: flex;
   flex-direction: column;

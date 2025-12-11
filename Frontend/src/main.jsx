@@ -13,6 +13,8 @@ import AppLayout from "./shared/AppLayout";
 import HomePage from "./pages/auth/HomePage";
 import CommentPage from "./components/home/CommentPage";
 import MiniAppLayout from "./shared/MiniAppLayout";
+import MiniCommunityLayout from "./shared/MiniCommunityLayout";
+import Community from "./components/community/Community";
 
 function RequireAuth({ children }) {
   const user = useSelector((s) => s.auth.user);
@@ -51,9 +53,12 @@ function AppRouter() {
             <Route path="/" element={<HomePage />} />
             <Route path="/post/:id" element={<CommentPage />} />
           </Route>
+          <Route element={<MiniCommunityLayout />}>
+            <Route path="/community" element={<Community />} />
+          </Route>
         </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* <Route path="*" element={<Navigate to="/" replace />} /> */}
       </Routes>
     </BrowserRouter>
   );
