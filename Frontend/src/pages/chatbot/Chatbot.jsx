@@ -1,52 +1,28 @@
+import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux"; 
+import { chatbotLoadHistory, chatbotHandleUserMessage } from "../../redux/chatbotSlice.js";
 import InputArea from "./components/InputArea.jsx";
 import InitialPage from "./components/InitialPage.jsx";
-import styles from "./Chatbot.module.css"; // Make sure this file exists
-import { useState } from "react";
 import ChatInterface from "./components/ChatInterface.jsx";
-
-async function getApiResponse(prompt) {
-  const apiUrl = "http://localhost:8000/api/chatbot/";
-  const response = await fetch(apiUrl, {
-    method: "POST",
-    headers: { accept: "application/json", "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt: prompt }),
-  });
-  const data = await response.json();
-  return data;
-}
+import styles from "./Chatbot.module.css";
 
 function Chatbot() {
-  const user = ""; //Get user from the backend for avatar display
-  const [messages, setMessages] = useState([]);
+  const dispatch = useDispatch();
+  const { messages, isLoading } = useSelector((state) => state.chatbot);
+  
   const [inputValue, setInputValue] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    dispatch(chatbotLoadHistory());
+  }, [dispatch]);
 
   const onClickHandler = async (inputValue, setInputValue) => {
-    const prompt = inputValue;
-    const userMessage = { id: Date.now(), text: prompt, sender: "user" };
-    setMessages((prev) => [...prev, userMessage]);
+    if (!inputValue.trim()) return;
+
+    // Dispatch the renamed thunk
+    dispatch(chatbotHandleUserMessage(inputValue));
+    
     setInputValue("");
-    setIsLoading(true);
-    try {
-      const response = await getApiResponse(prompt);
-      // Added safety check for response structure
-      const text =
-        response?.data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-        "Error: No response";
-      const aiMessage = { id: Date.now() + 1, text: text, sender: "ai" };
-      setMessages((prev) => [...prev, aiMessage]);
-    } catch (error) {
-      console.error("API Error:", error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + 1,
-          text: "Sorry, something went wrong.",
-          sender: "ai",
-        },
-      ]);
-    }
-    setIsLoading(false);
   };
 
   const handleKeyPress = (e) => {
@@ -70,10 +46,10 @@ function Chatbot() {
         <InputArea
           inputValue={inputValue}
           setInputValue={setInputValue}
-          onClickHandler={onClickHandler}
+          onClickHandler={() => onClickHandler(inputValue, setInputValue)}
           isLoading={isLoading}
           onKeyPress={handleKeyPress}
-        ></InputArea>
+        />
       </div>
     </div>
   );
