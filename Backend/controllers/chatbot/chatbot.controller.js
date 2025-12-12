@@ -2,6 +2,7 @@ import asyncHandler from "../../utils/asyncHandler.js";
 import { GoogleGenAI } from '@google/genai';
 import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
+import { User } from "../../models/user/user.model.js";
 
 export const getChatbotResponse = asyncHandler(async (req, res) => {
     const { prompt } = req.body;
@@ -33,5 +34,49 @@ export const getChatbotResponse = asyncHandler(async (req, res) => {
             console.error('Error calling the Gemini API:', error);
             throw new ApiError(500, "Failed to get response from the chatbot");
         }
+    }
+})
+
+export const saveChatHistory = asyncHandler(async (req, res) => {  //post
+    const { id, text, sender } = req.body;
+    const userId = req.user._id;
+    if(!id || !text || !sender) {
+        throw new ApiError(500, "All fields are required");
+    }
+    else {
+        try {
+            await User.findByIdAndUpdate(
+                userId,
+                { $push: { aiChatHistory: { id, text, sender } } },
+                { new: true }
+            );
+            const apiResponse = new ApiResponse(200, null, "Chat history saved successfully");
+            return res.status(200).json(apiResponse);
+        }
+        catch(error) {
+            console.error('Error in saving:', error);
+            throw new ApiError(500, "Failed to save chat history");
+        }
+    }
+
+})
+
+export const getChatHistory = asyncHandler(async (req, res) => {  //get
+    
+    const userId = req.user?._id;
+
+    if(!userId) {
+        console.error('Unauthorized access attempt to get chat history');
+        throw new ApiError(401, "Unauthorized access");
+    }
+    try {
+        const user = await User.findById(userId);
+        const chatHistory = user.aiChatHistory || [];
+        const apiResponse = new ApiResponse(200, chatHistory, "Chat history retrieved successfully");
+        return res.status(200).json(apiResponse);
+    }
+    catch(error) {
+        console.error('Error in retrieving the chats:', error);
+        throw new ApiError(500, "Failed to retrieve chat history");
     }
 })

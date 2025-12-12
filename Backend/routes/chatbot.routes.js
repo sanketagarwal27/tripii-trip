@@ -1,9 +1,11 @@
 import { Router } from "express";
-import { getChatbotResponse } from "../controllers/chatbot/chatbot.controller.js";
-// Optional : To require only logged in user to access the chatbot
-// import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { getChatbotResponse, saveChatHistory, getChatHistory} from "../controllers/chatbot/chatbot.controller.js";
+import { verifyJWT } from "../middlewares/auth.middleware.js";
+
 const router = Router();
-// router.route("/").post(verifyJWT, );
-router.route("/").post(getChatbotResponse); //Remove it if authentication is needed
+
+router.route("/").post(verifyJWT, getChatbotResponse);
+router.route("/save").post(verifyJWT, saveChatHistory);
+router.route("/history").get(verifyJWT, getChatHistory);
 
 export default router;
