@@ -2,23 +2,27 @@
 import { Outlet } from "react-router-dom";
 import LeftSidebar from "@/components/home/LeftSidebar";
 import useGetMyCommunities from "@/hooks/useGetMyCommunities";
-import CreateCommunityOverlay from "@/components/community/CreateCommunityOverlay";
 
 const MiniCommunityLayout = () => {
   useGetMyCommunities();
-  return (
-    <div className="flex w-full">
-      <LeftSidebar
-        // myCommunities={myCommunities}
-        // suggestedCommunities={suggestedCommunities}
-        myRooms={[]} // update when room API is ready
-        suggestedRooms={[]} // update later
-      />
 
-      {/* Main center content */}
-      <div style={{ marginLeft: "19vw", marginTop: "80px" }}>
+  return (
+    <div className="flex w-full h-screen overflow-hidden">
+      {/* LEFT SIDEBAR */}
+      <LeftSidebar />
+
+      {/* MAIN CONTENT AREA */}
+      <main
+        className="flex-1"
+        style={{
+          marginLeft: "18.5vw", // sidebar width
+          marginTop: "80px", // navbar height
+          height: "calc(100vh - 80px)",
+          overflowY: "auto",
+        }}
+      >
         <Outlet />
-      </div>
+      </main>
     </div>
   );
 };

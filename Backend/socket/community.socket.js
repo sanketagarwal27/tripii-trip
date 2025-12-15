@@ -1,46 +1,58 @@
 import { EVENTS } from "./events.js";
 
 export default function communitySocket(io, socket, communityRooms, typingMap) {
-  const userId = socket.handshake.query.userId;
+  // 🔥 FIX: read userId consistently
+  const userId =
+    socket.handshake.auth?.userId || socket.handshake.query?.userId;
 
-  // JOIN
+  // ---------------- JOIN COMMUNITY ----------------
   socket.on(EVENTS.COMMUNITY_JOIN, (communityId) => {
-    socket.join(communityId);
+    if (!communityId) return;
 
-    if (!communityRooms[communityId]) communityRooms[communityId] = new Set();
-    communityRooms[communityId].add(userId);
+    const cid = String(communityId);
+    socket.join(cid);
 
-    io.to(communityId).emit(EVENTS.COMMUNITY_COUNT, {
-      communityId,
-      online: communityRooms[communityId].size,
+    console.log(`✅ User ${userId} joined community room ${cid}`);
+
+    if (!communityRooms[cid]) communityRooms[cid] = new Set();
+    if (userId) communityRooms[cid].add(userId);
+
+    io.to(cid).emit(EVENTS.COMMUNITY_COUNT, {
+      communityId: cid,
+      online: communityRooms[cid].size,
     });
   });
 
-  // LEAVE
+  // ---------------- LEAVE COMMUNITY ----------------
   socket.on(EVENTS.COMMUNITY_LEAVE, (communityId) => {
-    socket.leave(communityId);
-    if (communityRooms[communityId]) {
-      communityRooms[communityId].delete(userId);
+    if (!communityId) return;
 
-      io.to(communityId).emit(EVENTS.COMMUNITY_COUNT, {
-        communityId,
-        online: communityRooms[communityId].size,
+    const cid = String(communityId);
+    socket.leave(cid);
+
+    if (communityRooms[cid] && userId) {
+      communityRooms[cid].delete(userId);
+
+      io.to(cid).emit(EVENTS.COMMUNITY_COUNT, {
+        communityId: cid,
+        online: communityRooms[cid].size,
       });
     }
   });
 
-  // TYPING
+  // ---------------- TYPING ----------------
   socket.on(EVENTS.COMMUNITY_TYPING, ({ communityId, isTyping }) => {
-    socket.to(communityId).emit(EVENTS.COMMUNITY_TYPING, {
+    if (!communityId) return;
+    socket.to(String(communityId)).emit(EVENTS.COMMUNITY_TYPING, {
       userId,
       isTyping,
     });
   });
 
-  // Auto cleanup on disconnect
+  // ---------------- DISCONNECT CLEANUP ----------------
   socket.on(EVENTS.DISCONNECT, () => {
-    Object.keys(communityRooms).forEach((id) => {
-      communityRooms[id]?.delete(userId);
+    Object.keys(communityRooms).forEach((cid) => {
+      communityRooms[cid]?.delete(userId);
     });
   });
 }

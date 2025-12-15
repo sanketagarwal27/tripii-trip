@@ -37,7 +37,7 @@ export const getCommunityActivities = asyncHandler(async (req, res) => {
   const skip = (parseInt(page) - 1) * parseInt(limit);
 
   const activities = await Activity.find(query)
-    .populate("actor", "username profilePicture")
+    .populate("actor", "username profilePicture.url")
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(parseInt(limit))

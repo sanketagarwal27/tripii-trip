@@ -54,7 +54,7 @@ export default function AuthPage() {
   }, []);
 
   /* -------------------------------------------------------
-      GOOGLE LOGIN HANDLER (UPDATED WITH REDIRECT)
+      GOOGLE LOGIN HANDLER - 🔥 UPDATED WITH LOCALSTORAGE
   ---------------------------------------------------------*/
   async function handleGoogleResponse(response) {
     try {
@@ -63,6 +63,10 @@ export default function AuthPage() {
       const res = await googleLoginRequest(response.credential);
       console.log("Google Login success:", res);
       const { user, accessToken, refreshToken } = res.data.data;
+
+      // 🔥 Store userId in localStorage for socket connection
+      localStorage.setItem("userId", user._id);
+      console.log("✅ Stored userId in localStorage:", user._id);
 
       dispatch(
         setAuthUser({
@@ -84,7 +88,7 @@ export default function AuthPage() {
   const onChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
-  /* ------------------------ SIGN IN ------------------------ */
+  /* ------------------------ SIGN IN - 🔥 UPDATED ------------------------ */
   const handleSignIn = async (e) => {
     e.preventDefault();
     try {
@@ -97,7 +101,14 @@ export default function AuthPage() {
 
       const res = await loginRequest(payload);
       console.log("Login success:", res.data);
+
+      // 🔥 Store userId in localStorage for socket connection
+      const { user, accessToken, refreshToken } = res.data.data;
+      localStorage.setItem("userId", user._id);
+      console.log("✅ Stored userId in localStorage:", user._id);
+
       dispatch(setAuthUser(res.data.data));
+
       // redirect
       navigate("/");
     } catch (err) {

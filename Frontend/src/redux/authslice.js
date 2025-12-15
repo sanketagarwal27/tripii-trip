@@ -49,6 +49,7 @@ const authSlice = createSlice({
       state.suggestedUser = [];
       state.userProfile = null;
       state.selectedUser = null;
+      localStorage.removeItem("userId");
     },
   },
 });

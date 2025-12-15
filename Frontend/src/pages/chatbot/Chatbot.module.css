@@ -1,6 +1,6 @@
 .mainContainer {
   height: calc(100vh - 60px);
-  width: 82vw;
+  width: 81vw;
   display: flex;
   flex-direction: column;
   position: relative;

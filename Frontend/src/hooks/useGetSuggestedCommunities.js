@@ -24,5 +24,5 @@ export default function useGetSuggestedCommunities() {
     fetchSuggestions();
   }, []);
 
-  return { loading, error, refetch: fetchSuggestions };
+  return { loading, error, reload: fetchSuggestions };
 }

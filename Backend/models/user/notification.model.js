@@ -43,6 +43,11 @@ const notificationSchema = new Schema(
         "community_comment",
         "community_join",
         "room_added",
+        "community_message_upvote",
+        "community_message_comment",
+        "community_comment_upvote",
+        "reply",
+        "mention",
 
         // TRIPS
         "trip_invite",

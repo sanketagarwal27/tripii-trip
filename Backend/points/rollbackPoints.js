@@ -47,8 +47,13 @@ export async function rollbackPointsForModel(
     const user = await User.findById(uid);
     if (!user) continue;
 
-    user.xpPoints = Math.max(0, user.xpPoints - grouped[uid].xp);
-    user.trustScore = Math.max(-20, user.trustScore - grouped[uid].trust);
+    user.xpPoints = Number(
+      Math.max(0, user.xpPoints - grouped[uid].xp).toFixed(2)
+    );
+
+    user.trustScore = user.xpPoints = Number(
+      Math.max(-20, user.trustScore - grouped[uid].trust).toFixed(2)
+    );
 
     // recalc level
     const lvl = recalcLevel(user.xpPoints);

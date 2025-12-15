@@ -16,6 +16,7 @@ const activitySchema = new Schema(
         "room_created",
         "trip_created",
         "member_added",
+        "member_joined",
         "member_removed",
         "community_created",
         "settings_updated",

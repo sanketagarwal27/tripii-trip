@@ -336,7 +336,10 @@ export const getCommunityRooms = asyncHandler(async (req, res) => {
     community: communityId,
     user: userId,
   });
-  if (!membership)
+
+  const community = await Community.findById(communityId);
+
+  if (!membership && community.type == "private_group")
     throw new ApiError(403, "Only members can view rooms of this community");
 
   const user = await User.findById(userId).select("following followers").lean();

@@ -22,6 +22,7 @@ import Chatbot from "./pages/chatbot/Chatbot.jsx";
 import CommunityHub from "./components/community/CommunityHub";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import Community from "./components/community/Community";
+import SocketProvider from "./providers/SocketProvider";
 
 // Auth Logic
 function RequireAuth({ children }) {
@@ -83,7 +84,9 @@ createRoot(document.getElementById("root")).render(
   <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
-        <AppRouter />
+        <SocketProvider>
+          <AppRouter />
+        </SocketProvider>
       </PersistGate>
     </Provider>
   </GoogleOAuthProvider>

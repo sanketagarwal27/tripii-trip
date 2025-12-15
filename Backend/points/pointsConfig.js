@@ -6,7 +6,8 @@ export const POINTS = {
 
   // likes → awarded to post owner
   post_like_received: { xp: 3, trust: 1 },
-
+  message_helpful_received: { xp: 0.5, trust: 1 },
+  comment_helpful_received: { xp: 0.5, trust: 1 },
   // comments → THIS VALUE IS NOT USED DIRECTLY
   // diminishing reward overrides XP using forceXP
   post_comment_received: { xp: 0, trust: 0 },

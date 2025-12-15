@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 
-const CommunityCard = ({ community, onClick }) => {
+const CommunityCard = ({ community, onClick, isMember = false }) => {
   const bg = community?.backgroundImage?.url || "";
   const tags = community?.tags || [];
   const [showTags, setShowTags] = useState(false);
   const dispatch = useDispatch();
+
   return (
     <div className="community-card" style={{ position: "relative" }}>
       {/* TAG GLASS BOX */}
@@ -36,13 +37,20 @@ const CommunityCard = ({ community, onClick }) => {
         className="group relative bg-cover bg-center rounded-xl overflow-hidden aspect-[4/3] cursor-pointer"
         style={{
           backgroundImage: `linear-gradient(
-              180deg,
-              rgba(0,0,0,0.10),
-              rgba(0,0,0,0.75)
-            ), url('${bg}')`,
+            180deg,
+            rgba(0,0,0,0.10),
+            rgba(0,0,0,0.75)
+          ), url('${bg}')`,
         }}
       >
-        {/* TAG BADGE */}
+        {/* ✅ MEMBER BADGE (TOP RIGHT) */}
+        {isMember && (
+          <div className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-black/50 backdrop-blur-md px-2 py-1 rounded-md text-white text-[10px] font-medium">
+            <span className="material-symbols-outlined text-xs">person</span>
+          </div>
+        )}
+
+        {/* TAG BADGE (TOP LEFT) */}
         {tags.length > 0 && (
           <button
             onClick={(e) => {

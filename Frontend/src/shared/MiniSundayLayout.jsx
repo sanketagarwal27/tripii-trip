@@ -11,7 +11,7 @@ const MiniSundayLayout = () => {
 
       {/* CENTER CONTENT */}
 
-      <div style={{ position: "relative", left: "18vw", top: "60px" }}>
+      <div style={{ position: "relative", left: "19vw", top: "60px" }}>
         <Outlet />
       </div>
     </div>

@@ -12,6 +12,10 @@ import { MessageInComm } from "../../models/community/messageInComm.model.js";
 
 import { sendNotification } from "../user/notification.controller.js";
 import { emitToCommunity, emitToUser } from "../../socket/server.js";
+import { rollbackPointsForModel } from "../../points/rollbackPoints.js";
+import { awardPoints } from "../../points/awardPoints.js";
+import { CommComment } from "../../models/community/CommCommunity.model.js";
+import { Notification } from "../../models/user/notification.model.js";
 
 /**
  * Upload media helper
@@ -19,17 +23,34 @@ import { emitToCommunity, emitToUser } from "../../socket/server.js";
 const uploadMedia = async (file, communityId) => {
   const uri = getDataUri(file);
 
+  const isImage = file.mimetype.startsWith("image/");
+
   const result = await cloudinary.uploader.upload(uri.content, {
     folder: `communities/${communityId}/media`,
     resource_type: "auto",
-    transformation: [{ quality: "auto", fetch_format: "auto" }],
+
+    // 🔥 CRITICAL: resize + compress at upload time
+    transformation: isImage
+      ? [
+          {
+            width: 1280, // limit resolution
+            crop: "limit",
+            quality: "auto:eco", // stronger compression
+            fetch_format: "auto", // webp/avif when possible
+          },
+        ]
+      : undefined,
   });
 
   return {
     url: result.secure_url,
     publicId: result.public_id,
-    mimeType: file.mimetype,
+    mimeType:
+      result.resource_type === "image"
+        ? `image/${result.format}`
+        : file.mimetype,
     originalName: file.originalname,
+    size: result.bytes, // 🔥 compressed size
   };
 };
 
@@ -39,8 +60,21 @@ const uploadMedia = async (file, communityId) => {
 export const sendMessage = asyncHandler(async (req, res) => {
   const { communityId } = req.params;
   const userId = req.user._id;
-  const { content = "", gifUrl, poll, replyTo, mentions = [] } = req.body;
+  const { content = "", gifUrl, replyTo, mentions = [] } = req.body;
   const file = req.files?.media?.[0];
+
+  // 🔥 FIX: Parse poll from FormData
+  let poll = null;
+  if (req.body.poll) {
+    try {
+      poll =
+        typeof req.body.poll === "string"
+          ? JSON.parse(req.body.poll)
+          : req.body.poll;
+    } catch (err) {
+      throw new ApiError(400, "Invalid poll format");
+    }
+  }
 
   const membership = await CommunityMembership.findOne({
     community: communityId,
@@ -61,7 +95,7 @@ export const sendMessage = asyncHandler(async (req, res) => {
     mentions: Array.isArray(mentions) ? mentions : [],
   };
 
-  // Handle reply
+  // ---------- REPLY ----------
   if (replyTo && mongoose.Types.ObjectId.isValid(replyTo)) {
     const parent = await MessageInComm.findById(replyTo)
       .populate("sender", "username")
@@ -82,7 +116,7 @@ export const sendMessage = asyncHandler(async (req, res) => {
     }
   }
 
-  // Poll Message
+  // ---------- POLL ----------
   if (poll) {
     const {
       question,
@@ -105,29 +139,34 @@ export const sendMessage = asyncHandler(async (req, res) => {
       })),
       allowMultipleVotes,
       createdBy: userId,
-      expiresAt: new Date(Date.now() + (expiresInHours || 24) * 3600 * 1000),
+      expiresAt: new Date(Date.now() + expiresInHours * 3600 * 1000),
       totalVotes: 0,
     };
   }
-  // Image
-  else if (file) {
-    const uploaded = await uploadMedia(file, communityId);
 
-    messageData.type = uploaded.mimeType.startsWith("image/")
+  // ---------- MEDIA (OPTIMISTIC) ----------
+  else if (file) {
+    messageData.type = file.mimetype.startsWith("image/")
       ? "image"
       : "document";
-    messageData.media = uploaded;
+
+    messageData.media = {
+      uploadState: "uploading",
+    };
   }
-  // GIF
+
+  // ---------- GIF ----------
   else if (gifUrl) {
     messageData.type = "gif";
     messageData.media = { url: gifUrl };
   }
-  // Text
+
+  // ---------- TEXT ----------
   else {
     messageData.type = "text";
   }
 
+  // ---------- CREATE MESSAGE IMMEDIATELY ----------
   const message = await MessageInComm.create(messageData);
   await message.populate("sender", "username profilePicture");
 
@@ -141,8 +180,74 @@ export const sendMessage = asyncHandler(async (req, res) => {
     },
   };
 
-  // Real-time emit
+  // 🔥 Emit immediately
   emitToCommunity(communityId.toString(), "community:message:new", emitPayload);
+
+  // ---------- MENTION NOTIFICATIONS (SAFE ADD-ON) ----------
+  try {
+    if (Array.isArray(mentions) && mentions.length > 0) {
+      const uniqueMentionIds = new Set();
+
+      for (const m of mentions) {
+        const mentionedUserId = typeof m === "string" ? m : m?.user || m?._id;
+
+        if (
+          mentionedUserId &&
+          mentionedUserId.toString() !== userId.toString()
+        ) {
+          uniqueMentionIds.add(mentionedUserId.toString());
+        }
+      }
+
+      for (const mentionedUserId of uniqueMentionIds) {
+        await sendNotification({
+          recipient: mentionedUserId,
+          sender: userId,
+          type: "mention",
+          message: `${req.user.username} mentioned you in a community`,
+          community: communityId,
+          metadata: {
+            messageId: message._id,
+          },
+        });
+      }
+    }
+  } catch (err) {
+    console.error("Mention notification error:", err);
+  }
+
+  // ---------- BACKGROUND MEDIA UPLOAD ----------
+  if (file) {
+    uploadMedia(file, communityId)
+      .then(async (uploaded) => {
+        await MessageInComm.findByIdAndUpdate(message._id, {
+          media: {
+            ...uploaded,
+            uploadState: "uploaded",
+          },
+        });
+
+        emitToCommunity(communityId.toString(), "community:message:updated", {
+          _id: message._id,
+          media: {
+            ...uploaded,
+            uploadState: "uploaded",
+          },
+        });
+      })
+      .catch(async (err) => {
+        console.error("Media upload failed:", err);
+
+        await MessageInComm.findByIdAndUpdate(message._id, {
+          media: { uploadState: "failed" },
+        });
+
+        emitToCommunity(communityId.toString(), "community:message:updated", {
+          _id: message._id,
+          media: { uploadState: "failed" },
+        });
+      });
+  }
 
   return res
     .status(201)
@@ -155,13 +260,17 @@ export const sendMessage = asyncHandler(async (req, res) => {
 export const getMessages = asyncHandler(async (req, res) => {
   const { communityId } = req.params;
   const userId = req.user._id;
-  const { limit = 50, before } = req.query;
+  const { limit = 500, before } = req.query;
 
   const member = await CommunityMembership.findOne({
     community: communityId,
     user: userId,
   });
-  if (!member) throw new ApiError(403, "Only members can view messages");
+
+  const community = await Community.findById(communityId);
+
+  if (!member && community.type == "private_group")
+    throw new ApiError(403, "Only members can view messages");
 
   const query = { community: communityId };
   if (before) query.createdAt = { $lt: new Date(before) };
@@ -171,8 +280,6 @@ export const getMessages = asyncHandler(async (req, res) => {
     .limit(parseInt(limit))
     .populate("sender", "username profilePicture")
     .lean();
-
-  messages.reverse();
 
   return res.status(200).json(
     new ApiResponse(
@@ -241,6 +348,288 @@ export const reactToMessage = asyncHandler(async (req, res) => {
     );
 });
 
+export const toggleMessageHelpful = asyncHandler(async (req, res) => {
+  const { messageId } = req.params;
+  const userId = req.user._id;
+
+  const message = await MessageInComm.findById(messageId).populate("sender");
+  if (!message) throw new ApiError(404, "Message not found");
+
+  const exists = message.helpful.some(
+    (h) => h.user.toString() === userId.toString()
+  );
+
+  if (exists) {
+    message.helpful = message.helpful.filter(
+      (h) => h.user.toString() !== userId.toString()
+    );
+    message.helpfulCount--;
+
+    if (message.sender._id.toString() !== userId.toString()) {
+      await rollbackPointsForModel(
+        "MessageInComm",
+        messageId,
+        userId,
+        "message_helpful_received"
+      );
+    }
+  } else {
+    message.helpful.push({ user: userId });
+    message.helpfulCount++;
+
+    if (message.sender._id.toString() !== userId.toString()) {
+      await awardPoints(message.sender._id, "message_helpful_received", {
+        model: "MessageInComm",
+        modelId: messageId,
+        actorId: userId,
+      });
+
+      const notif = await sendNotification({
+        recipient: message.sender._id,
+        sender: userId,
+        type: "community_message_upvote",
+        message: `${req.user.username} marked your message as helpful`,
+        community: message.community,
+        metadata: {
+          messageId,
+        },
+      });
+
+      emitToUser(message.sender._id, "notification", notif);
+    }
+  }
+
+  await message.save();
+
+  emitToCommunity(message.community.toString(), "community:message:helpful", {
+    messageId,
+    helpfulCount: message.helpfulCount,
+  });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { helpful: !exists }, "Helpful updated"));
+});
+
+export const createComment = asyncHandler(async (req, res) => {
+  const { messageId } = req.params;
+  const { content, parentCommentId } = req.body;
+  const userId = req.user._id;
+
+  const message = await MessageInComm.findById(messageId);
+  if (!message) throw new ApiError(404, "Message not found");
+
+  let depth = 1;
+  let parent = null;
+
+  if (parentCommentId) {
+    parent = await CommComment.findById(parentCommentId);
+    if (!parent) throw new ApiError(404, "Parent comment not found");
+    if (parent.depth >= 3) throw new ApiError(400, "Max depth reached");
+    depth = parent.depth + 1;
+  }
+
+  const comment = await CommComment.create({
+    community: message.community,
+    message: messageId,
+    parentComment: parentCommentId || null,
+    depth,
+    author: userId,
+    content,
+  });
+
+  await comment.populate("author", "username profilePicture");
+
+  /* ---------- 🔥 INCREMENT COMMENT COUNT ---------- */
+  const updatedMessage = await MessageInComm.findByIdAndUpdate(
+    messageId,
+    { $inc: { commentCount: 1 } },
+    { new: true }
+  ).select("_id commentCount community");
+
+  /* ---------- SOCKET: UPDATE MESSAGE COMMENT COUNT ---------- */
+  emitToCommunity(
+    message.community.toString(),
+    "community:message:commentCount",
+    {
+      messageId,
+      commentCount: updatedMessage.commentCount,
+    }
+  );
+
+  /* ---------- NOTIFICATIONS (unchanged) ---------- */
+  if (message.sender.toString() !== userId.toString()) {
+    const notif = await sendNotification({
+      recipient: message.sender,
+      sender: userId,
+      type: "community_message_comment",
+      message: `${req.user.username} commented on your message`,
+      community: message.community,
+      metadata: {
+        messageId,
+        commentId: comment._id,
+      },
+    });
+    emitToUser(message.sender, "notification", notif);
+  }
+
+  if (parent && parent.author.toString() !== userId.toString()) {
+    const notif = await sendNotification({
+      recipient: parent.author,
+      sender: userId,
+      type: "reply",
+      message: `${req.user.username} replied to your comment`,
+      community: message.community,
+      metadata: {
+        messageId,
+        commentId: comment._id,
+        parentCommentId,
+      },
+    });
+    emitToUser(parent.author, "notification", notif);
+  }
+
+  /* ---------- SOCKET: NEW COMMENT ---------- */
+  emitToCommunity(message.community.toString(), "community:comment:new", {
+    comment,
+  });
+
+  return res.status(201).json(new ApiResponse(201, comment, "Comment added"));
+});
+
+export const reactToComment = asyncHandler(async (req, res) => {
+  const { commentId } = req.params;
+  const { emoji } = req.body;
+  const userId = req.user._id;
+
+  const comment = await CommComment.findById(commentId);
+  if (!comment) throw new ApiError(404, "Comment not found");
+
+  const exists = comment.reactions.some(
+    (r) => r.emoji === emoji && r.by.toString() === userId.toString()
+  );
+
+  if (exists) {
+    comment.reactions = comment.reactions.filter(
+      (r) => !(r.emoji === emoji && r.by.toString() === userId.toString())
+    );
+  } else {
+    comment.reactions.push({ emoji, by: userId });
+  }
+
+  await comment.save();
+
+  emitToCommunity(comment.community.toString(), "community:comment:reaction", {
+    commentId,
+    reactions: comment.reactions,
+  });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, comment.reactions, "Reaction updated"));
+});
+
+export const toggleCommentHelpful = asyncHandler(async (req, res) => {
+  const { commentId } = req.params;
+  const userId = req.user._id;
+
+  const comment = await CommComment.findById(commentId).populate("author");
+  if (!comment) throw new ApiError(404, "Comment not found");
+
+  const exists = comment.helpful.some(
+    (h) => h.user.toString() === userId.toString()
+  );
+
+  if (exists) {
+    comment.helpful = comment.helpful.filter(
+      (h) => h.user.toString() !== userId.toString()
+    );
+    comment.helpfulCount--;
+
+    if (comment.author._id.toString() !== userId.toString()) {
+      await rollbackPointsForModel(
+        "CommComment",
+        commentId,
+        userId,
+        "comment_helpful_received"
+      );
+    }
+  } else {
+    comment.helpful.push({ user: userId });
+    comment.helpfulCount++;
+
+    if (comment.author._id.toString() !== userId.toString()) {
+      await awardPoints(comment.author._id, "comment_helpful_received", {
+        model: "CommComment",
+        modelId: commentId,
+        actorId: userId,
+      });
+
+      const notif = await sendNotification({
+        recipient: comment.author._id,
+        sender: userId,
+        type: "community_comment_upvote",
+        message: `${req.user.username} marked your comment as helpful`,
+        community: comment.community,
+        metadata: {
+          commentId,
+          messageId: comment.message,
+        },
+      });
+
+      emitToUser(comment.author._id, "notification", notif);
+    }
+  }
+
+  await comment.save();
+
+  emitToCommunity(comment.community.toString(), "community:comment:helpful", {
+    commentId,
+    helpfulCount: comment.helpfulCount,
+  });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { helpful: !exists }, "Helpful updated"));
+});
+
+// controllers/community/message.controller.js
+
+export const getMessageComments = asyncHandler(async (req, res) => {
+  const { messageId } = req.params;
+  const { limit = 100, before } = req.query;
+
+  if (!mongoose.Types.ObjectId.isValid(messageId)) {
+    throw new ApiError(400, "Invalid message id");
+  }
+
+  const query = { message: messageId };
+
+  if (before) {
+    query.createdAt = { $lt: new Date(before) };
+  }
+
+  const comments = await CommComment.find(query)
+    .sort({ createdAt: -1 }) // newest first
+    .limit(parseInt(limit))
+    .populate("author", "username profilePicture")
+    .lean();
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        comments,
+        hasMore: comments.length === parseInt(limit),
+        nextCursor: comments.length
+          ? comments[comments.length - 1].createdAt
+          : null,
+      },
+      "Comments fetched"
+    )
+  );
+});
+
 /**
  * DELETE MESSAGE
  */
@@ -281,6 +670,64 @@ export const deleteMessage = asyncHandler(async (req, res) => {
   });
 
   return res.status(200).json(new ApiResponse(200, {}, "Message deleted"));
+});
+
+export const deleteComment = asyncHandler(async (req, res) => {
+  const { commentId } = req.params;
+  const userId = req.user._id;
+
+  if (!mongoose.Types.ObjectId.isValid(commentId)) {
+    throw new ApiError(400, "Invalid comment id");
+  }
+
+  const comment = await CommComment.findById(commentId);
+  if (!comment) throw new ApiError(404, "Comment not found");
+
+  const membership = await CommunityMembership.findOne({
+    community: comment.community,
+    user: userId,
+  });
+
+  if (!membership) {
+    throw new ApiError(403, "Not a community member");
+  }
+
+  const isAuthor = comment.author.toString() === userId.toString();
+  const isAdmin = membership.role === "admin";
+
+  if (!isAuthor && !isAdmin) {
+    throw new ApiError(403, "Not allowed to delete this comment");
+  }
+
+  // delete comment
+  await CommComment.findByIdAndDelete(commentId);
+
+  // decrement commentCount safely
+  const updatedMessage = await MessageInComm.findByIdAndUpdate(
+    comment.message,
+    { $inc: { commentCount: -1 } },
+    { new: true }
+  ).select("_id commentCount community");
+
+  // 🔥 socket: comment deleted
+  emitToCommunity(comment.community.toString(), "community:comment:deleted", {
+    commentId,
+    messageId: comment.message,
+  });
+
+  // 🔥 socket: comment count updated
+  if (updatedMessage) {
+    emitToCommunity(
+      comment.community.toString(),
+      "community:message:commentCount",
+      {
+        messageId: updatedMessage._id,
+        commentCount: Math.max(0, updatedMessage.commentCount),
+      }
+    );
+  }
+
+  return res.status(200).json(new ApiResponse(200, {}, "Comment deleted"));
 });
 
 /**
@@ -343,6 +790,15 @@ export const voteOnPoll = asyncHandler(async (req, res) => {
   const { optionIds } = req.body;
   const userId = req.user._id;
 
+  //debug
+  console.log("=== VOTE ON POLL DEBUG ===");
+  console.log("Message ID:", messageId);
+  console.log("Request body:", req.body);
+  console.log("optionIds:", optionIds);
+  console.log("optionIds type:", typeof optionIds);
+  console.log("Is Array?", Array.isArray(optionIds));
+  console.log("========================");
+
   if (!Array.isArray(optionIds) || !optionIds.length)
     throw new ApiError(400, "Select at least one option");
 
@@ -369,15 +825,23 @@ export const voteOnPoll = asyncHandler(async (req, res) => {
     });
   }
 
+  // Add new votes
   numeric.forEach((id) => {
     const option = message.poll.options.find((o) => o.id === id);
-    if (option) option.votes.push(userId);
+    if (
+      option &&
+      !option.votes.some((v) => v.toString() === userId.toString())
+    ) {
+      option.votes.push(userId);
+    }
   });
 
-  message.poll.totalVotes = message.poll.options.reduce(
-    (x, o) => x + o.votes.length,
-    0
-  );
+  // 🔥 FIX: Calculate unique voters (not just vote count)
+  const uniqueVoters = new Set();
+  message.poll.options.forEach((o) => {
+    (o.votes || []).forEach((v) => uniqueVoters.add(v.toString()));
+  });
+  message.poll.totalVotes = uniqueVoters.size;
 
   message.markModified("poll");
   await message.save();
@@ -457,4 +921,101 @@ export const reportMessage = asyncHandler(async (req, res) => {
   }
 
   return res.status(200).json(new ApiResponse(200, {}, "Message reported"));
+});
+
+export const markAllAsSeen = asyncHandler(async (req, res) => {
+  const { communityId } = req.params;
+  const userId = req.user._id;
+
+  if (!mongoose.Types.ObjectId.isValid(communityId)) {
+    throw new ApiError(400, "Invalid community id");
+  }
+
+  // optional: verify membership
+  const member = await CommunityMembership.findOne({
+    community: communityId,
+    user: userId,
+  });
+
+  if (!member) {
+    throw new ApiError(403, "Not a community member");
+  }
+
+  // Mark unseen notifications related to this community as seen
+  await Notification.updateMany(
+    {
+      recipient: userId,
+      community: communityId,
+      isSeen: false,
+    },
+    { $set: { isSeen: true } }
+  );
+
+  // 🔔 socket → only to user
+  emitToUser(userId.toString(), "community:seen", {
+    communityId,
+  });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "All messages marked as seen"));
+});
+
+export const getPinnedMessage = asyncHandler(async (req, res) => {
+  const { communityId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(communityId)) {
+    throw new ApiError(400, "Invalid community id");
+  }
+
+  const community = await Community.findById(communityId)
+    .select("pinnedMessage")
+    .populate({
+      path: "pinnedMessage.message",
+      populate: { path: "sender", select: "username profilePicture" },
+    })
+    .populate("pinnedMessage.pinnedBy", "username profilePicture")
+    .lean();
+
+  if (!community || !community.pinnedMessage?.message) {
+    return res
+      .status(200)
+      .json(new ApiResponse(200, { pinnedMessage: null }, "No pinned message"));
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { pinnedMessage: community.pinnedMessage },
+        "Pinned message fetched"
+      )
+    );
+});
+
+export const getMyHelpfulMessages = asyncHandler(async (req, res) => {
+  const { communityId } = req.params;
+  const userId = req.user._id;
+
+  const member = await CommunityMembership.findOne({
+    community: communityId,
+    user: userId,
+  });
+
+  if (!member) {
+    throw new ApiError(403, "Not a community member");
+  }
+
+  const messages = await MessageInComm.find({
+    community: communityId,
+    "helpful.user": userId,
+  })
+    .sort({ createdAt: -1 }) // newest helpful first
+    .populate("sender", "username profilePicture")
+    .lean();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { messages }, "Helpful messages fetched"));
 });

@@ -4,6 +4,7 @@ import profileimage from "../../public/travel.jpg";
 import { Bell, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { logoutRequest } from "@/api/auth";
+import { disconnectSocket } from "../../Socket.js";
 
 const Navbar = () => {
   const { user } = useSelector((store) => store.auth);
@@ -25,7 +26,13 @@ const Navbar = () => {
         <button>Trips</button>
         <button>Places</button>
         <button>Marketplace</button>
-        <button onClick={() => logoutRequest()}>Logout</button>
+        <button
+          onClick={() => {
+            logoutRequest(), disconnectSocket();
+          }}
+        >
+          Logout
+        </button>
       </div>
 
       {/* Right Side */}

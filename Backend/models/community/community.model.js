@@ -7,6 +7,7 @@ const TAGS = [
   "Photography",
   "Food",
   "City",
+  "State",
   "Friends",
   "Nature",
   "Sports",
@@ -22,6 +23,14 @@ const communitySchema = new Schema(
     name: { type: String, required: true, trim: true },
     description: { type: String, default: "" },
 
+    rules: [
+      {
+        title: { type: String, required: true, trim: true },
+        description: { type: String, trim: true },
+        order: { type: Number, default: 0 },
+      },
+    ],
+
     tags: {
       type: [String],
       enum: TAGS,
@@ -36,7 +45,13 @@ const communitySchema = new Schema(
     type: {
       type: String,
       enum: ["private_group", "public_group", "regional_hub", "global_hub"],
-      default: "private_group",
+      default: "public_group",
+    },
+
+    lastActivityAt: {
+      type: Date,
+      default: Date.now,
+      index: true,
     },
 
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },

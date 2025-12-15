@@ -13,6 +13,7 @@ const TAGS = [
   "Photography",
   "Food",
   "City",
+  "State",
   "Friends",
   "Nature",
   "Sports",
@@ -26,7 +27,7 @@ const TAGS = [
 const CommunityHub = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { my, suggested, selectedCommunity } = useSelector((s) => s.community);
+  const { my, suggested } = useSelector((s) => s.community);
 
   const [showOverlay, setShowOverlay] = useState(false);
 
@@ -37,8 +38,6 @@ const CommunityHub = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [debounceTimer, setDebounceTimer] = useState(null);
-
-  console.log();
 
   // FLEX GRID
   const GRID = "flex flex-wrap gap-5";
@@ -95,16 +94,11 @@ const CommunityHub = () => {
 
       {/* HEADER SECTION */}
       <div className="communityhub-header">
-        {/* TOP BAR */}
         <div className="flex items-center justify-between w-full">
-          {/* LEFT: TITLE */}
           <h1 className="text-3xl font-black tracking-tight">Community Hub</h1>
 
-          {/* RIGHT CONTROLS */}
           <div className="communityhub-searchpart">
-            {/* Name/Tag Buttons */}
             <div className="flex items-center bg-card-light dark:bg-card-dark rounded-lg p-1">
-              {/* BACK BUTTON INLINE (FIXES SHIFTING) */}
               {isSearching && (
                 <button
                   onClick={handleBackFromSearch}
@@ -113,6 +107,7 @@ const CommunityHub = () => {
                   Back
                 </button>
               )}
+
               <button
                 onClick={() => setSearchMode("name")}
                 className={`px-3 py-2 text-xs rounded-md ${
@@ -132,34 +127,28 @@ const CommunityHub = () => {
               </button>
             </div>
 
-            {/* TAG DROPDOWN (only in tag mode) */}
             {searchMode === "tag" && (
-              <div>
-                {" "}
-                <select
-                  className="h-10 rounded-lg bg-card-light dark:bg-card-dark text-sm"
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (!val) return;
-
-                    setSearch(val);
-                    setIsSearching(true);
-                    performSearch(val);
-                  }}
-                >
-                  <option value="" style={{ backgroundColor: "grey" }}>
-                    Select Tag
+              <select
+                className="h-10 rounded-lg bg-card-light dark:bg-card-dark text-sm"
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (!val) return;
+                  setSearch(val);
+                  setIsSearching(true);
+                  performSearch(val);
+                }}
+              >
+                <option value="" style={{ backgroundColor: "grey" }}>
+                  Select Tag
+                </option>
+                {TAGS.map((tag) => (
+                  <option key={tag} value={tag}>
+                    {tag}
                   </option>
-                  {TAGS.map((tag) => (
-                    <option key={tag} value={tag}>
-                      {tag}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                ))}
+              </select>
             )}
 
-            {/* Search Box */}
             <label className="flex min-w-40 h-12 w-full sm:w-auto max-w-64">
               <div
                 className="flex items-center px-3 w-full h-full rounded-lg bg-card-light dark:bg-card-dark 
@@ -178,7 +167,6 @@ const CommunityHub = () => {
               </div>
             </label>
 
-            {/* CREATE BUTTON */}
             <button
               onClick={() => setShowOverlay(true)}
               className="flex items-center gap-2 h-12 px-4 bg-primary rounded-lg text-white text-sm font-semibold"
@@ -203,17 +191,22 @@ const CommunityHub = () => {
             <p className="opacity-70">No communities found.</p>
           ) : (
             <div className={GRID}>
-              {searchResults.map((c) => (
-                <div key={c._id} className="communitycard">
-                  <CommunityCard
-                    community={c}
-                    onClick={() => {
-                      dispatch(setSelectedCommunity(c)),
+              {searchResults.map((c) => {
+                const isMember = my.some((m) => m._id === c._id);
+
+                return (
+                  <div key={c._id} className="communitycard">
+                    <CommunityCard
+                      community={c}
+                      isMember={isMember}
+                      onClick={() => {
+                        dispatch(setSelectedCommunity(c));
                         navigate(`/community/${c._id}`);
-                    }}
-                  />
-                </div>
-              ))}
+                      }}
+                    />
+                  </div>
+                );
+              })}
             </div>
           )}
         </section>
@@ -239,8 +232,8 @@ const CommunityHub = () => {
                     <CommunityCard
                       community={c}
                       onClick={() => {
-                        dispatch(setSelectedCommunity(c)),
-                          navigate(`/community/${c._id}`);
+                        dispatch(setSelectedCommunity(c));
+                        navigate(`/community/${c._id}`);
                       }}
                     />
                   </div>
@@ -267,8 +260,8 @@ const CommunityHub = () => {
                     <CommunityCard
                       community={c}
                       onClick={() => {
-                        dispatch(setSelectedCommunity(c)),
-                          navigate(`/community/${c._id}`);
+                        dispatch(setSelectedCommunity(c));
+                        navigate(`/community/${c._id}`);
                       }}
                     />
                   </div>

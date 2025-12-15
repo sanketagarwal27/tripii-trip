@@ -39,7 +39,8 @@ export const emitToUser = (userId, event, data) => {
 };
 
 export const emitToCommunity = (communityId, event, data) => {
-  io.to(communityId).emit(event, data);
+  if (!io || !communityId) return;
+  io.to(String(communityId)).emit(event, data);
 };
 
 export const emitToRoom = (roomId, event, data) => {

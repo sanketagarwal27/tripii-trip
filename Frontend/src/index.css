@@ -1058,3 +1058,27 @@ body {
 .communitycard-tags {
   color: white;
 }
+
+/* 🔥 Thin themed horizontal scrollbar */
+.reaction-scrollbar {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(0, 255, 229, 0.2) transparent;
+}
+
+/* WebKit (Chrome, Edge, Safari) */
+.reaction-scrollbar::-webkit-scrollbar {
+  height: 4px; /* 👈 controls thickness */
+}
+
+.reaction-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.reaction-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 255, 229, 0.2); /* primary but transparent */
+  border-radius: 999px;
+}
+
+.reaction-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 255, 229, 0.4);
+}

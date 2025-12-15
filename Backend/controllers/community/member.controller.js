@@ -16,187 +16,265 @@ import { emitToUser, emitToCommunity } from "../../socket/server.js";
  * JOIN PUBLIC COMMUNITY
  */
 export const joinPublicCommunity = asyncHandler(async (req, res) => {
-  const { communityId } = req.params;
-  const userId = req.user._id;
-  const { displayName } = req.body;
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  if (!displayName?.trim()) throw new ApiError(400, "Display name is required");
-
-  const community = await Community.findById(communityId).select("type name");
-  if (!community) throw new ApiError(404, "Community not found");
-
-  if (community.type !== "public_group") {
-    throw new ApiError(403, "This is not a public community");
-  }
-
-  const existing = await CommunityMembership.findOne({
-    community: communityId,
-    user: userId,
-  });
-  if (existing) throw new ApiError(409, "You are already a member");
-
-  const membership = await CommunityMembership.create({
-    community: communityId,
-    user: userId,
-    displayName: displayName.trim(),
-    role: "member",
-  });
-
-  // Attach membership to community.members
-  await Community.findByIdAndUpdate(communityId, {
-    $push: { members: membership._id },
-  });
-
-  // Add community to user
-  await User.findByIdAndUpdate(userId, {
-    $addToSet: { communities: communityId },
-  });
-
-  // Activity
-  await Activity.create({
-    community: communityId,
-    actor: userId,
-    type: "member_added",
-    payload: { userId, action: "joined" },
-  });
-
-  // Emit to community (members listening in)
   try {
-    const populated = await membership.populate(
-      "user",
-      "username profilePicture"
-    );
-    emitToCommunity(communityId.toString(), "member:joined", {
-      membership: populated,
-    });
-  } catch (e) {
-    // non-fatal
-  }
+    const { communityId } = req.params;
+    const userId = req.user._id;
+    const { displayName } = req.body;
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, membership, "Joined community successfully"));
+    const community = await Community.findById(communityId)
+      .select("type name")
+      .session(session);
+
+    if (!community) throw new ApiError(404, "Community not found");
+
+    if (community.type === "private_group") {
+      throw new ApiError(403, "This is not a public community");
+    }
+
+    const existing = await CommunityMembership.findOne({
+      community: communityId,
+      user: userId,
+    }).session(session);
+
+    if (existing) throw new ApiError(409, "You are already a member");
+
+    const user = await User.findById(userId).session(session);
+
+    const membership = await CommunityMembership.create(
+      [
+        {
+          community: communityId,
+          user: userId,
+          displayName: displayName?.trim() || user.username,
+          role: "member",
+        },
+      ],
+      { session }
+    );
+
+    await Community.updateOne(
+      { _id: communityId },
+      {
+        $addToSet: { members: membership[0]._id },
+        $inc: { memberCount: 1 },
+      },
+      { session }
+    );
+
+    await User.updateOne(
+      { _id: userId },
+      { $addToSet: { communities: communityId } },
+      { session }
+    );
+
+    const username = user.username;
+
+    await Activity.create(
+      [
+        {
+          community: communityId,
+          actor: userId,
+          type: "member_joined",
+          payload: { username, action: "joined" },
+        },
+      ],
+      { session }
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    const updatedCommunity = await Community.findById(communityId)
+      .populate("createdBy", "username profilePicture")
+      .populate({
+        path: "members",
+        populate: { path: "user", select: "username profilePicture" },
+      })
+      .populate("rooms", "name tags")
+      .lean();
+
+    updatedCommunity.isMember = true;
+    updatedCommunity.currentUserRole = membership[0].role;
+
+    // 🔔 realtime
+    try {
+      const populatedMembership = await CommunityMembership.findById(
+        membership[0]._id
+      ).populate("user", "username profilePicture");
+
+      emitToCommunity(communityId.toString(), "member:joined", {
+        membership: populatedMembership,
+        memberCount: updatedCommunity.memberCount,
+      });
+    } catch {}
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, updatedCommunity, "Joined community successfully")
+      );
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    throw err;
+  }
 });
 
 /**
  * ADD MEMBERS (by existing members if allowed, or admin)
  */
 export const addMembers = asyncHandler(async (req, res) => {
-  const { communityId } = req.params;
-  let { members = [] } = req.body;
-  const adderId = req.user._id;
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  if (!Array.isArray(members) || members.length === 0)
-    throw new ApiError(400, "Members list is required");
+  try {
+    const { communityId } = req.params;
+    let { members = [] } = req.body;
+    const adderId = req.user._id;
 
-  // Load community + settings
-  const community = await Community.findById(communityId).select(
-    "name settings memberCount"
-  );
-  if (!community) throw new ApiError(404, "Community not found");
-
-  // Verify adder is a member
-  const adderMembership = await CommunityMembership.findOne({
-    community: communityId,
-    user: adderId,
-  });
-  if (!adderMembership)
-    throw new ApiError(403, "You must be a member to add others");
-
-  // Permissions
-  if (
-    !community.settings?.allowMembersToAdd &&
-    adderMembership.role !== "admin"
-  ) {
-    throw new ApiError(403, "Only admins can add members");
-  }
-
-  // Clean & limit input
-  members = [...new Set(members.map(String))].slice(0, 200);
-
-  // Remove: already members + the adder himself
-  const existing = await CommunityMembership.find({
-    community: communityId,
-    user: { $in: members },
-  }).select("user");
-
-  const existingSet = new Set(existing.map((e) => e.user.toString()));
-  const toAdd = members.filter(
-    (id) => !existingSet.has(id) && id !== adderId.toString()
-  );
-
-  if (toAdd.length === 0) throw new ApiError(409, "No new users to add");
-
-  // Validate user accounts
-  const users = await User.find({ _id: { $in: toAdd } }).select(
-    "username profilePicture"
-  );
-  if (!users.length) throw new ApiError(404, "No valid users found");
-
-  // Build membership docs
-  const docs = users.map((u) => ({
-    community: communityId,
-    user: u._id,
-    displayName: u.username,
-    role: "member",
-  }));
-
-  // Bulk insert
-  const createdMemberships = await CommunityMembership.insertMany(docs);
-
-  // Update community.members array
-  await Community.updateOne(
-    { _id: communityId },
-    {
-      $push: { members: { $each: createdMemberships.map((m) => m._id) } },
-      $inc: { memberCount: createdMemberships.length }, // 🔥 ATOMIC counter update
+    if (!Array.isArray(members) || members.length === 0) {
+      throw new ApiError(400, "Members list is required");
     }
-  );
 
-  // Update user.communities
-  const newUserIds = createdMemberships.map((m) => m.user);
-  await User.updateMany(
-    { _id: { $in: newUserIds } },
-    { $addToSet: { communities: communityId } }
-  );
+    const community = await Community.findById(communityId)
+      .select("name settings memberCount")
+      .session(session);
 
-  // Activity log
-  await Activity.create({
-    community: communityId,
-    actor: adderId,
-    type: "member_added",
-    payload: { count: newUserIds.length },
-  });
+    if (!community) throw new ApiError(404, "Community not found");
 
-  // Notifications (parallel, non-blocking)
-  await Promise.allSettled(
-    createdMemberships.map(async (m) => {
-      try {
-        const notif = await sendNotification({
+    const adderMembership = await CommunityMembership.findOne({
+      community: communityId,
+      user: adderId,
+    }).session(session);
+
+    if (!adderMembership)
+      throw new ApiError(403, "You must be a member to add others");
+
+    const allowAdd =
+      community.settings?.allowMembersToAdd === true ||
+      adderMembership.role === "admin";
+
+    if (!allowAdd) throw new ApiError(403, "Only admins can add members");
+
+    members = [...new Set(members.map(String))].slice(0, 200);
+
+    const existing = await CommunityMembership.find({
+      community: communityId,
+      user: { $in: members },
+    })
+      .select("user")
+      .session(session);
+
+    const existingSet = new Set(existing.map((e) => e.user.toString()));
+
+    const toAdd = members.filter(
+      (id) => !existingSet.has(id) && id !== adderId.toString()
+    );
+
+    if (!toAdd.length) throw new ApiError(409, "No new users to add");
+
+    const users = await User.find({ _id: { $in: toAdd } })
+      .select("username profilePicture")
+      .session(session);
+
+    if (!users.length) throw new ApiError(404, "No valid users found");
+
+    const membershipDocs = users.map((u) => ({
+      community: communityId,
+      user: u._id,
+      displayName: u.username,
+      role: "member",
+    }));
+
+    const createdMemberships = await CommunityMembership.insertMany(
+      membershipDocs,
+      { session }
+    );
+
+    await Community.updateOne(
+      { _id: communityId },
+      {
+        $addToSet: {
+          members: { $each: createdMemberships.map((m) => m._id) },
+        },
+        $inc: { memberCount: createdMemberships.length },
+      },
+      { session }
+    );
+
+    await User.updateMany(
+      { _id: { $in: createdMemberships.map((m) => m.user) } },
+      { $addToSet: { communities: communityId } },
+      { session }
+    );
+
+    await Activity.create(
+      [
+        {
+          community: communityId,
+          actor: adderId,
+          type: "member_added",
+          payload: { count: createdMemberships.length },
+        },
+      ],
+      { session }
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    // 🔔 notifications (async)
+    Promise.allSettled(
+      createdMemberships.map((m) =>
+        sendNotification({
           recipient: m.user,
           sender: adderId,
           type: "community_invite",
           message: `${req.user.username} added you to "${community.name}"`,
           community: communityId,
           metadata: { communityId },
-        });
-
-        emitToUser(m.user.toString(), "notification:new", notif);
-      } catch (err) {
-        console.error("Notification failed:", m.user.toString(), err);
-      }
-    })
-  );
-
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        { added: createdMemberships.length },
-        "Members added successfully"
+        }).then((notif) => {
+          emitToUser(m.user.toString(), "notification:new", notif);
+        })
       )
     );
+
+    const updatedCommunity = await Community.findById(communityId)
+      .populate("createdBy", "username profilePicture")
+      .populate({
+        path: "members",
+        populate: { path: "user", select: "username profilePicture" },
+      })
+      .populate("rooms", "name tags")
+      .lean();
+
+    updatedCommunity.isMember = true;
+    updatedCommunity.currentUserRole = adderMembership.role;
+
+    // 🔔 realtime community update
+    emitToCommunity(communityId.toString(), "member:bulk_added", {
+      count: createdMemberships.length,
+      members: users,
+      memberCount: updatedCommunity.memberCount,
+    });
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { added: createdMemberships.length, updatedCommunity },
+          "Members added successfully"
+        )
+      );
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    throw err;
+  }
 });
 
 /**

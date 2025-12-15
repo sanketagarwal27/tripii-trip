@@ -38,6 +38,7 @@ export const createCommunity = asyncHandler(async (req, res) => {
   let {
     name,
     description = "",
+    rules = [],
     type = "private_group",
     initialMembers = [],
     settings = {},
@@ -76,9 +77,29 @@ export const createCommunity = asyncHandler(async (req, res) => {
   if (!validTypes.includes(type))
     throw new ApiError(400, "Invalid community type");
 
+  let parsedRules = [];
+
+  try {
+    const rawRules = typeof rules === "string" ? JSON.parse(rules) : rules;
+
+    if (Array.isArray(rawRules)) {
+      parsedRules = rawRules
+        .filter((r) => r?.title?.trim())
+        .slice(0, 20) // hard limit
+        .map((r, i) => ({
+          title: r.title.trim(),
+          description: r.description?.trim() || "",
+          order: i,
+        }));
+    }
+  } catch (err) {
+    parsedRules = [];
+  }
+
   const community = await Community.create({
     name: name.trim(),
     description: description.trim(),
+    rules: parsedRules,
     type,
     createdBy,
     backgroundImage: null,
@@ -327,19 +348,10 @@ export const getCommunityProfile = asyncHandler(async (req, res) => {
   const communityId = req.params.communityId;
   const userId = req.user._id;
 
-  // 1) Verify user is a member
-  const membership = await CommunityMembership.findOne({
-    community: communityId,
-    user: userId,
-  }).lean();
-
-  if (!membership)
-    throw new ApiError(403, "Only members can view community profile");
-
-  // 2) Fetch community & related docs
+  // Fetch community
   const community = await Community.findById(communityId)
     .select(
-      "name description backgroundImage.url type createdBy updatedAt memberCount roomsLast7DaysCount rooms featuredTrips"
+      "name description backgroundImage.url rules type visibility createdBy updatedAt memberCount roomsLast7DaysCount rooms featuredTrips"
     )
     .populate("createdBy", "username profilePicture bio")
     .populate({
@@ -347,7 +359,7 @@ export const getCommunityProfile = asyncHandler(async (req, res) => {
       populate: { path: "user", select: "username profilePicture bio" },
       options: { limit: 50 },
     })
-    .populate("rooms", "name status createdBy tags")
+    .populate("rooms", "name status createdBy tags isPrivate")
     .populate(
       "featuredTrips",
       "title startDate endDate createdBy type coverPhoto.url"
@@ -356,12 +368,40 @@ export const getCommunityProfile = asyncHandler(async (req, res) => {
 
   if (!community) throw new ApiError(404, "Community not found");
 
+  const isPublic =
+    community.type === "public_group" ||
+    community.type === "regional_hub" ||
+    community.type === "global_hub";
+
+  // Check membership
+  const membership = await CommunityMembership.findOne({
+    community: communityId,
+    user: userId,
+  }).lean();
+
+  const isMember = !!membership;
+
+  // PRIVATE COMMUNITY → block for non-members
+  if (!isPublic && !isMember)
+    throw new ApiError(
+      403,
+      "You must join this private community to view content"
+    );
+
   return res.status(200).json(
     new ApiResponse(
       200,
       {
         ...community,
-        currentUserRole: membership.role,
+        rules: community.rules || [],
+        isPublic,
+        isMember,
+        currentUserRole: membership?.role || null,
+        canPost: isMember, // <— FRONTEND USES THIS
+        canCreateRoom: isMember,
+        canReact: isMember,
+        canVote: isMember,
+
         totalMembers: community.memberCount,
         roomsLast7Days: community.roomsLast7DaysCount,
       },
@@ -377,7 +417,7 @@ export const getCommunityProfile = asyncHandler(async (req, res) => {
 export const getUserCommunities = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
-  // 1) Fetch all memberships for this user
+  // 1) Fetch memberships
   const memberships = await CommunityMembership.find({ user: userId })
     .select("community role createdAt")
     .lean();
@@ -390,17 +430,28 @@ export const getUserCommunities = asyncHandler(async (req, res) => {
 
   const communityIds = memberships.map((m) => m.community);
 
-  // 2) Fetch communities
+  // 2) Fetch communities with lastActivityAt
   const communities = await Community.find({ _id: { $in: communityIds } })
     .select(
-      "name description backgroundImage.url type createdBy updatedAt memberCount roomsLast7DaysCount tags"
+      `
+      name
+      description
+      backgroundImage.url
+      type
+      createdBy
+      memberCount
+      roomsLast7DaysCount
+      tags
+      members
+      lastActivityAt
+      `
     )
-    .populate("createdBy", "username profilePicture")
+    .populate("createdBy", "username profilePicture.url")
     .lean();
 
   const memMap = new Map(memberships.map((m) => [String(m.community), m]));
 
-  // 3) Merge
+  // 3) Merge membership data
   const final = communities.map((c) => {
     const m = memMap.get(String(c._id));
     return {
@@ -410,8 +461,12 @@ export const getUserCommunities = asyncHandler(async (req, res) => {
     };
   });
 
-  // Sort newest→oldest
-  final.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+  // 🔥 SORT BY LAST ACTIVITY (NOT updatedAt)
+  final.sort(
+    (a, b) =>
+      new Date(b.lastActivityAt || b.joinedAt) -
+      new Date(a.lastActivityAt || a.joinedAt)
+  );
 
   return res
     .status(200)

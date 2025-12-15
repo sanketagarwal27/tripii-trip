@@ -22,6 +22,12 @@ const commMessageSchema = new Schema(
       publicId: String,
       mimeType: String,
       originalName: String,
+
+      uploadState: {
+        type: String,
+        enum: ["uploading", "uploaded", "failed"],
+        default: "uploaded",
+      },
     },
 
     // Poll embedded
@@ -71,6 +77,24 @@ const commMessageSchema = new Schema(
       },
     ],
 
+    helpful: [
+      {
+        user: { type: Schema.Types.ObjectId, ref: "User" },
+        _id: false,
+      },
+    ],
+
+    helpfulCount: {
+      type: Number,
+      default: 0,
+      index: true,
+    },
+    commentCount: {
+      type: Number,
+      default: 0,
+      index: true,
+    },
+
     reports: [
       {
         reason: {
@@ -101,6 +125,10 @@ const commMessageSchema = new Schema(
   { timestamps: true }
 );
 
+// MessageInComm schema
 commMessageSchema.index({ community: 1, createdAt: -1 });
+commMessageSchema.index({ community: 1, commentCount: -1 });
+commMessageSchema.index({ community: 1, helpfulCount: -1 });
+commMessageSchema.index({ community: 1, "helpful.user": 1, createdAt: -1 });
 
 export const MessageInComm = mongoose.model("MessageInComm", commMessageSchema);

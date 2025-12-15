@@ -29,11 +29,19 @@ import {
 } from "../controllers/community/activity.controller.js";
 
 import {
+  createComment,
+  deleteComment,
   deleteMessage,
+  getMessageComments,
   getMessages,
+  getMyHelpfulMessages,
+  getPinnedMessage,
+  reactToComment,
   reactToMessage,
   reportMessage,
   sendMessage,
+  toggleCommentHelpful,
+  toggleMessageHelpful,
   togglePinMessage,
   voteOnPoll,
 } from "../controllers/community/message.controller.js";
@@ -76,7 +84,7 @@ router.get("/getMyCommunities", getUserCommunities);
 router.get("/searchCommunities", searchCommunities);
 router.get("/searchMyCommunities", searchMyCommunities);
 router.get("/SuggestedCommunities", suggestedCommunities);
-router.delete("/deletecommunity", deleteCommunity);
+router.delete("/deletecommunity/:communityId", deleteCommunity);
 
 /* ---------------------------------------------------------
    MEMBERS
@@ -87,7 +95,7 @@ router.post("/removeMember/:communityid", removeMember);
 router.post("/leaveCommunity/:communityId", leaveCommunity);
 router.post("/changeMemberRole/:communityId", changeMemberRole);
 router.get("/getCommunityMembers/:communityId", getCommunityMembers);
-router.post("/updateMyDisplaName/:communityId", updateDisplayName);
+router.post("/updateMyDisplayName/:communityId", updateDisplayName);
 
 /* ---------------------------------------------------------
    ACTIVITY
@@ -98,14 +106,37 @@ router.get("/ActivityTimeline/:communityId", getActivityTimeline);
 /* ---------------------------------------------------------
    COMMUNITY MESSAGES
 --------------------------------------------------------- */
-router.post("/sendCommMess/:communityId", sendMessage);
+
+router.post(
+  "/sendCommMess/:communityId",
+  upload.fields([{ name: "media", maxCount: 1 }]),
+  sendMessage
+);
+
 router.get("/getMessageIncomm/:communityId", getMessages);
-router.post("/reactOnMessage/:messageId", reactToMessage);
+
+router.get("/comments/:messageId", getMessageComments);
+router.delete("/deleteComment/:commentId", deleteComment);
+
+router.patch("/reactOnMessage/:messageId", reactToMessage);
+router.patch("/messageHelpful/:messageId", toggleMessageHelpful);
+
+router.post("/commentOnMsg/:messageId", createComment);
+router.patch("/reactOnComment/:commentId", reactToComment);
+router.patch("/commentHelpful/:commentId", toggleCommentHelpful);
+
 router.delete("/deleteMessage/:messageId", deleteMessage);
+
 router.post("/pinMessage/:messageId", togglePinMessage);
+router.get("/pinnedMessage/:communityId", getPinnedMessage);
+
 router.post("/vote/:messageId", voteOnPoll);
-router.post("/markAsSeen/:messageId", markAllAsSeen);
+
+router.post("/markAsSeen/:communityId", markAllAsSeen);
+
 router.post("/reportMessage/:messageId", reportMessage);
+
+router.get("/helpfulMessages/:communityId", getMyHelpfulMessages);
 
 /* ---------------------------------------------------------
    ROOMS
