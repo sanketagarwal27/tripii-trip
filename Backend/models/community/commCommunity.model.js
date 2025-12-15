@@ -60,18 +60,18 @@ const commCommentSchema = new Schema(
       },
     ],
 
-    helpful: [
-      {
-        user: { type: Schema.Types.ObjectId, ref: "User" },
-        _id: false,
-      },
-    ],
+    // helpful: [
+    //   {
+    //     user: { type: Schema.Types.ObjectId, ref: "User" },
+    //     _id: false,
+    //   },
+    // ],
 
-    helpfulCount: {
-      type: Number,
-      default: 0,
-      index: true,
-    },
+    // helpfulCount: {
+    //   type: Number,
+    //   default: 0,
+    //   index: true,
+    // },
   },
   { timestamps: true }
 );

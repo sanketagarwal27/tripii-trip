@@ -1,32 +1,26 @@
-// src/components/community/ActivityItem.jsx
-import React from "react";
+import { ACTIVITY_CONFIG } from "../common/activityConfig";
 
 const ActivityItem = ({ a }) => {
-  const actor = a.actor || {};
-  const map = {
-    community_created: "Community created",
-    room_created: "Room created",
-    trip_created: "Trip created",
-    poll: "Poll created",
-    member_added: "Member added",
-    settings_updated: "Settings updated",
+  const cfg = ACTIVITY_CONFIG[a.type] || {
+    label: a.type,
+    emoji: "❓",
+    color: "bg-gray-400",
   };
 
   return (
-    <div className="flex gap-3">
-      <div className="z-10">
-        <div className="bg-primary/10 p-1.5 rounded-full text-primary flex items-center justify-center">
-          <span className="material-symbols-outlined !text-[14px]">
-            history
-          </span>
-        </div>
+    <div className="flex gap-3 relative">
+      {/* Emoji */}
+      <div
+        className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-sm ${cfg.color}`}
+      >
+        {cfg.emoji}
       </div>
+
+      {/* Content */}
       <div className="flex flex-col">
-        <p className="text-sm text-text-light font-medium">
-          {map[a.type] || a.type}
-        </p>
+        <p className="text-sm font-medium">{cfg.label}</p>
         <p className="text-xs text-text-muted-light">
-          {actor.username || "Someone"} •{" "}
+          {a.actor?.username || "Someone"} •{" "}
           {new Date(a.createdAt).toLocaleTimeString()}
         </p>
       </div>

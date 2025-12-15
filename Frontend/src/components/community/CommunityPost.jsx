@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
   reactOnMessage,
   messageHelpful,
@@ -10,9 +10,13 @@ import {
 } from "@/api/community";
 import EmojiPickerPopover from "@/components/common/EmojiPickerPopover";
 import { aggregateReactions } from "@/utils/aggregateReactions";
+import { useNavigate } from "react-router-dom";
+import { setSelectedMessage } from "@/redux/communitySlice";
 
 const CommunityPost = ({ post }) => {
   const user = useSelector((s) => s.auth.user);
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   /* ---------------------------
      🔥 GET LATEST POST DATA FROM REDUX
@@ -477,7 +481,13 @@ const CommunityPost = ({ post }) => {
 
             {/* COMMENT ICON */}
             <div className="flex items-center gap-1 text-xs text-text-muted-light cursor-pointer hover:text-primary">
-              <span className="material-symbols-outlined !text-[18px]">
+              <span
+                className="material-symbols-outlined !text-[18px]"
+                onClick={() => {
+                  navigate(`/comment/${latestPost._id}`),
+                    dispatch(setSelectedMessage(latestPost));
+                }}
+              >
                 mode_comment
               </span>
               <span className="font-bold">{latestPost.commentCount || 0}</span>

@@ -4,6 +4,7 @@ import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { Activity } from "../../models/community/activity.model.js";
 import { CommunityMembership } from "../../models/community/communityMembership.model.js";
+import { Community } from "../../models/community/community.model.js";
 
 /**
  * GET COMMUNITY ACTIVITIES
@@ -19,8 +20,9 @@ export const getCommunityActivities = asyncHandler(async (req, res) => {
     community: communityId,
     user: userId,
   });
+  const community = await Community.findById(communityId);
 
-  if (!membership) {
+  if (!membership && community.type === "private_group") {
     throw new ApiError(403, "Only members can view activities");
   }
 

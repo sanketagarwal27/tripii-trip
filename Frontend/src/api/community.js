@@ -166,10 +166,15 @@ export const getMessageComments = (messageId, params = {}) =>
     withCredentials: true,
   });
 
-export const createComment = (messageId, data) =>
-  api.post(`/api/community/commentOnMsg/${messageId}`, data, {
+export const createComment = (messageId, data) => {
+  // Check if data is FormData (for media uploads) or plain object
+  const isFormData = data instanceof FormData;
+
+  return api.post(`/api/community/commentOnMsg/${messageId}`, data, {
     withCredentials: true,
+    headers: isFormData ? { "Content-Type": "multipart/form-data" } : {},
   });
+};
 
 export const deleteComment = (commentId) =>
   api.delete(`/api/community/deleteComment/${commentId}`, {
@@ -183,12 +188,12 @@ export const reactOnComment = (commentId, emoji) =>
     { withCredentials: true }
   );
 
-export const commentHelpful = (commentId) =>
-  api.patch(
-    `/api/community/commentHelpful/${commentId}`,
-    {},
-    { withCredentials: true }
-  );
+// export const commentHelpful = (commentId) =>
+//   api.patch(
+//     `/api/community/commentHelpful/${commentId}`,
+//     {},
+//     { withCredentials: true }
+//   );
 
 /* --------------------------------------------------
    USER-SPECIFIC

@@ -81,7 +81,8 @@ const CommentPage = () => {
   const navigate = useNavigate();
 
   const userProfile = useSelector((s) => s.auth.userProfile);
-  const feedPost = useSelector((s) => s.post.posts.find((p) => p._id === id));
+  // const feedPost = useSelector((s) => s.post.posts.find((p) => p._id === id));
+  const feedPost = useSelector((s) => s.post.selectedPost); //Yaad rkhna uper wale like ko hata ke ye line lagae hai (post ke comment load krne me koi dikkat ho to yaha se kr lena tk , uper wale me sb tk hai)
 
   const [post, setPost] = useState(feedPost || null);
   const [loadingPost, setLoadingPost] = useState(!post);

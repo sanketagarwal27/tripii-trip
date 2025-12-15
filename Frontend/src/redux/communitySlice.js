@@ -11,6 +11,7 @@ const initialState = {
   activities: [],
   loading: false,
   error: null,
+  selectedMessage: null,
 };
 
 const communitySlice = createSlice({
@@ -56,6 +57,9 @@ const communitySlice = createSlice({
     },
 
     // ---------------- MESSAGES ----------------
+    setSelectedMessage: (state, action) => {
+      state.selectedMessage = action.payload;
+    },
     addCommunityMessage: (state, action) => {
       const msg = action.payload;
 
@@ -83,6 +87,15 @@ const communitySlice = createSlice({
           poll: updated.poll ? { ...updated.poll } : state.messages[idx].poll,
         };
       }
+
+      // 🔥 ALSO update selectedMessage if it matches
+      if (state.selectedMessage?._id === updated._id) {
+        state.selectedMessage = {
+          ...state.selectedMessage,
+          ...updated,
+          poll: updated.poll ? { ...updated.poll } : state.selectedMessage.poll,
+        };
+      }
     },
 
     removeCommunityMessage: (state, action) => {
@@ -93,18 +106,48 @@ const communitySlice = createSlice({
     // ---------------- COMMENTS ----------------
     addCommentToMessage: (state, action) => {
       const { messageId, comment } = action.payload;
-      const msg = state.messages.find((m) => m._id === messageId);
-      if (!msg) return;
 
-      if (!Array.isArray(msg.comments)) msg.comments = [];
-      if (!msg.comments.some((c) => c._id === comment._id)) {
-        msg.comments.unshift(comment);
+      console.log("📦 Redux: Adding comment", {
+        messageId,
+        commentId: comment._id,
+        hasMessages: state.messages.length,
+        hasSelectedMessage: !!state.selectedMessage,
+      });
+
+      // 🔥 Add to messages array
+      const msg = state.messages.find((m) => m._id === messageId);
+      if (msg) {
+        if (!Array.isArray(msg.comments)) msg.comments = [];
+        if (!msg.comments.some((c) => c._id === comment._id)) {
+          msg.comments.unshift(comment);
+          console.log(
+            "✅ Added to messages array, count:",
+            msg.comments.length
+          );
+        }
+      }
+
+      // 🔥 CRITICAL: ALSO add to selectedMessage if it's the same message
+      if (state.selectedMessage?._id === messageId) {
+        if (!Array.isArray(state.selectedMessage.comments)) {
+          state.selectedMessage.comments = [];
+        }
+        if (
+          !state.selectedMessage.comments.some((c) => c._id === comment._id)
+        ) {
+          state.selectedMessage.comments.unshift(comment);
+          console.log(
+            "✅ Added to selectedMessage, count:",
+            state.selectedMessage.comments.length
+          );
+        }
       }
     },
 
     updateComment: (state, action) => {
       const { commentId, data } = action.payload;
 
+      // Update in messages array
       for (const msg of state.messages) {
         if (!Array.isArray(msg.comments)) continue;
 
@@ -117,14 +160,39 @@ const communitySlice = createSlice({
           break;
         }
       }
+
+      // 🔥 ALSO update in selectedMessage
+      if (state.selectedMessage?.comments) {
+        const idx = state.selectedMessage.comments.findIndex(
+          (c) => c._id === commentId
+        );
+        if (idx !== -1) {
+          state.selectedMessage.comments[idx] = {
+            ...state.selectedMessage.comments[idx],
+            ...data,
+          };
+        }
+      }
     },
 
     removeComment: (state, action) => {
       const { messageId, commentId } = action.payload;
-      const msg = state.messages.find((m) => m._id === messageId);
-      if (!msg || !Array.isArray(msg.comments)) return;
 
-      msg.comments = msg.comments.filter((c) => c._id !== commentId);
+      // Remove from messages array
+      const msg = state.messages.find((m) => m._id === messageId);
+      if (msg && Array.isArray(msg.comments)) {
+        msg.comments = msg.comments.filter((c) => c._id !== commentId);
+      }
+
+      // 🔥 ALSO remove from selectedMessage
+      if (
+        state.selectedMessage?._id === messageId &&
+        state.selectedMessage.comments
+      ) {
+        state.selectedMessage.comments = state.selectedMessage.comments.filter(
+          (c) => c._id !== commentId
+        );
+      }
     },
 
     // ---------------- ACTIVITIES ----------------
@@ -177,6 +245,7 @@ export const {
   setCommunityError,
   clearCommunityState,
 
+  setSelectedMessage,
   addCommunityMessage,
   updateCommunityMessage,
   removeCommunityMessage,

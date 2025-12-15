@@ -40,7 +40,7 @@ import {
   reactToMessage,
   reportMessage,
   sendMessage,
-  toggleCommentHelpful,
+  // toggleCommentHelpful,
   toggleMessageHelpful,
   togglePinMessage,
   voteOnPoll,
@@ -121,9 +121,13 @@ router.delete("/deleteComment/:commentId", deleteComment);
 router.patch("/reactOnMessage/:messageId", reactToMessage);
 router.patch("/messageHelpful/:messageId", toggleMessageHelpful);
 
-router.post("/commentOnMsg/:messageId", createComment);
+router.post(
+  "/commentOnMsg/:messageId",
+  upload.fields([{ name: "media", maxCount: 1 }]),
+  createComment
+);
 router.patch("/reactOnComment/:commentId", reactToComment);
-router.patch("/commentHelpful/:commentId", toggleCommentHelpful);
+// router.patch("/commentHelpful/:commentId", toggleCommentHelpful);
 
 router.delete("/deleteMessage/:messageId", deleteMessage);
 

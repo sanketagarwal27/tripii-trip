@@ -1,0 +1,33 @@
+// src/config/activityConfig.js
+export const ACTIVITY_CONFIG = {
+  community_created: {
+    label: "Community created",
+    emoji: "🌱",
+    color: "bg-green-500",
+  },
+  room_created: {
+    label: "Room created",
+    emoji: "💬",
+    color: "bg-blue-500",
+  },
+  trip_created: {
+    label: "Trip created",
+    emoji: "🧭",
+    color: "bg-purple-500",
+  },
+  poll: {
+    label: "Poll created",
+    emoji: "📊",
+    color: "bg-yellow-500",
+  },
+  member_added: {
+    label: "Member added",
+    emoji: "➕",
+    color: "bg-emerald-500",
+  },
+  settings_updated: {
+    label: "Settings updated",
+    emoji: "⚙️",
+    color: "bg-gray-500",
+  },
+};
