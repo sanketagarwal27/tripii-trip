@@ -26,6 +26,7 @@
     "mongodb": "^7.0.0",
     "mongoose": "^8.19.3",
     "multer": "^2.0.2",
+    "newsapi": "^2.4.1",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "path-to-regexp": "^8.3.0",
