@@ -24,6 +24,7 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import Community from "./components/community/Community";
 import SocketProvider from "./providers/SocketProvider";
 import CommComment from "./components/community/CommComment";
+import Places from "./pages/places/Places";
 
 // Auth Logic
 function RequireAuth({ children }) {
@@ -75,6 +76,8 @@ function AppRouter() {
           <Route element={<MiniSundayLayout />}>
             <Route path="/chatbot" element={<Chatbot />} />
           </Route>
+
+          <Route path="/places" element={<Places />} />
         </Route>
       </Routes>
     </BrowserRouter>

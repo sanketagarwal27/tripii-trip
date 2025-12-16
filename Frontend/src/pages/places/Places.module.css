@@ -1,0 +1,29 @@
+/* Specific styles for the Places page layout */
+.placesPage {
+  padding-bottom: 50px;
+  animation: fadeIn 0.5s ease-in;
+}
+
+.contentArea {
+  min-height: 400px; /* Prevents footer jumping when switching tabs */
+}
+
+.placeholderBox {
+  padding: 60px;
+  text-align: center;
+  background-color: #f9fafb;
+  border: 2px dashed #e5e7eb;
+  border-radius: 12px;
+  color: #9ca3af;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
