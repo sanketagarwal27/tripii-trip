@@ -1,11 +1,8 @@
 // shared/MiniCommunityLayout.jsx
 import { Outlet } from "react-router-dom";
 import LeftSidebar from "@/components/home/LeftSidebar";
-import useGetMyCommunities from "@/hooks/useGetMyCommunities";
 
 const MiniCommunityLayout = () => {
-  useGetMyCommunities();
-
   return (
     <div className="flex w-full h-screen overflow-hidden">
       {/* LEFT SIDEBAR */}

@@ -48,4 +48,10 @@ export const emitToRoom = (roomId, event, data) => {
   io.to(roomId).emit(event, data);
 };
 
+// 👇 ADD THIS FUNCTION
+export const emitToMessage = (messageId, event, data) => {
+  if (!io || !messageId) return;
+  io.to(`message:${String(messageId)}`).emit(event, data);
+};
+
 export const isUserOnline = (id) => !!userSocketMap[id];

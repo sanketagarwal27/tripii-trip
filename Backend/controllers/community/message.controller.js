@@ -11,7 +11,11 @@ import { CommunityMembership } from "../../models/community/communityMembership.
 import { MessageInComm } from "../../models/community/messageInComm.model.js";
 
 import { sendNotification } from "../user/notification.controller.js";
-import { emitToCommunity, emitToUser } from "../../socket/server.js";
+import {
+  emitToCommunity,
+  emitToMessage,
+  emitToUser,
+} from "../../socket/server.js";
 import { rollbackPointsForModel } from "../../points/rollbackPoints.js";
 import { awardPoints } from "../../points/awardPoints.js";
 import { CommComment } from "../../models/community/CommCommunity.model.js";
@@ -528,9 +532,7 @@ export const createComment = asyncHandler(async (req, res) => {
     emitToUser(parent.author, "notification", notif);
   }
 
-  emitToCommunity(message.community.toString(), "community:comment:new", {
-    comment,
-  });
+  emitToMessage(messageId.toString(), "community:comment:new", { comment });
 
   return res.status(201).json(new ApiResponse(201, comment, "Comment added"));
 });
@@ -558,6 +560,12 @@ export const reactToComment = asyncHandler(async (req, res) => {
   await comment.save();
 
   emitToCommunity(comment.community.toString(), "community:comment:reaction", {
+    commentId,
+    reactions: comment.reactions,
+  });
+
+  // In reactToComment function, add this line after emitToCommunity:
+  emitToMessage(comment.message.toString(), "community:comment:reaction", {
     commentId,
     reactions: comment.reactions,
   });
@@ -685,7 +693,11 @@ export const deleteComment = asyncHandler(async (req, res) => {
     commentId,
     messageId: comment.message,
   });
-
+  // In deleteComment function, add this line after CommComment.findByIdAndDelete:
+  emitToMessage(comment.message.toString(), "community:comment:deleted", {
+    commentId,
+    messageId: comment.message,
+  });
   if (updatedMessage) {
     emitToCommunity(
       comment.community.toString(),

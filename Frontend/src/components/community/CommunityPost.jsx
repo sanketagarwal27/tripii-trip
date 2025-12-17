@@ -484,8 +484,9 @@ const CommunityPost = ({ post }) => {
               <span
                 className="material-symbols-outlined !text-[18px]"
                 onClick={() => {
-                  navigate(`/comment/${latestPost._id}`),
-                    dispatch(setSelectedMessage(latestPost));
+                  dispatch(setSelectedMessage(latestPost));
+                  navigate(`/community/${latestPost.community}/message/${latestPost._id}/comments
+`);
                 }}
               >
                 mode_comment

@@ -14,9 +14,6 @@ import {
   addCommunityActivity,
   setCommunityProfile,
   moveCommunityToTop,
-  addCommentToMessage,
-  updateComment,
-  removeComment,
 } from "@/redux/communitySlice";
 
 // Also import room-related reducers if you keep a separate rooms/messages slice.
@@ -141,40 +138,6 @@ const SocketProvider = ({ children }) => {
     // COMMUNITY COMMENTS
     // -----------------------
 
-    // ---------------- COMMENTS ----------------
-    socket.on("community:comment:new", ({ comment }) => {
-      console.log("🔥 SOCKET: New comment received", comment);
-      dispatch(
-        addCommentToMessage({
-          messageId: comment.message,
-          comment,
-        })
-      );
-    });
-
-    socket.on("community:comment:reaction", ({ commentId, reactions }) => {
-      console.log("🔥 SOCKET: New reaction received", reactions);
-      dispatch(
-        updateComment({
-          commentId,
-          data: { reactions },
-        })
-      );
-    });
-
-    // socket.on("community:comment:helpful", ({ commentId, helpfulCount }) => {
-    //   dispatch(
-    //     updateComment({
-    //       commentId,
-    //       data: { helpfulCount },
-    //     })
-    //   );
-    // });
-
-    socket.on("community:comment:deleted", ({ commentId, messageId }) => {
-      dispatch(removeComment({ commentId, messageId }));
-    });
-
     // ---------------- COMMENT COUNT ----------------
     socket.on(
       "community:message:commentCount",
@@ -263,16 +226,14 @@ const SocketProvider = ({ children }) => {
       socket.off("disconnect");
       socket.off("connect_error");
 
-      // socket.off("community:message:new");
+      socket.off("community:message:new");
       socket.off("community:message:updated");
       socket.off("community:message:deleted");
       socket.off("community:message:reaction");
       socket.off("community:poll:updated");
       socket.off("community:message:pinned");
       socket.off("community:message:unpinned");
-      socket.off("community:comment:new");
-      socket.off("community:comment:reaction");
-      socket.off("community:comment:deleted");
+
       socket.off("community:message:commentCount");
       socket.off("community:message:helpful");
       socket.off("community:updated");

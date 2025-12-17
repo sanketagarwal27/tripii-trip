@@ -10,6 +10,9 @@ export const EVENTS = {
   COMMUNITY_LEAVE: "leaveCommunity",
   COMMUNITY_COUNT: "communityOnlineCount",
   COMMUNITY_TYPING: "communityTyping",
+  // 🔥 ADD THESE TWO LINES
+  MESSAGE_JOIN: "message:join",
+  MESSAGE_LEAVE: "message:leave",
 
   MESSAGE_SEND: "messageSend",
   MESSAGE_RECEIVE: "messageReceive",

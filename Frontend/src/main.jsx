@@ -23,7 +23,7 @@ import CommunityHub from "./components/community/CommunityHub";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import Community from "./components/community/Community";
 import SocketProvider from "./providers/SocketProvider";
-import CommComment from "./components/community/CommComment";
+import CommComment from "./components/community/comments/CommComment";
 import Places from "./pages/places/Places";
 
 // Auth Logic
@@ -69,7 +69,10 @@ function AppRouter() {
           <Route element={<MiniCommunityLayout />}>
             <Route path="/communities" element={<CommunityHub />} />
             <Route path="/community/:id" element={<Community />} />
-            <Route path="/comment/:id" element={<CommComment />} />
+            <Route
+              path="/community/:communityId/message/:messageId/comments"
+              element={<CommComment />}
+            />
           </Route>
 
           {/* Sunday AI layout */}

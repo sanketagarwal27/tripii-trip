@@ -40,6 +40,20 @@ export default function communitySocket(io, socket, communityRooms, typingMap) {
     }
   });
 
+  // ---------------- JOIN MESSAGE ROOM ----------------
+  socket.on(EVENTS.MESSAGE_JOIN, (messageId) => {
+    if (!messageId) return;
+    const mid = String(messageId);
+    socket.join(`message:${mid}`);
+    console.log(`✅ User ${userId} joined message room ${mid}`);
+  });
+
+  // ---------------- LEAVE MESSAGE ROOM ----------------
+  socket.on(EVENTS.MESSAGE_LEAVE, (messageId) => {
+    if (!messageId) return;
+    socket.leave(`message:${String(messageId)}`);
+  });
+
   // ---------------- TYPING ----------------
   socket.on(EVENTS.COMMUNITY_TYPING, ({ communityId, isTyping }) => {
     if (!communityId) return;
