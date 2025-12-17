@@ -26,6 +26,26 @@ const SocketProvider = ({ children }) => {
   const selectedCommunity = useSelector((s) => s.community.selectedCommunity);
 
   useEffect(() => {
+    const onFocus = () => {
+      if (socket.connected) {
+        socket.emit("sync:request");
+      }
+    };
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        onFocus();
+      }
+    });
+
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      window.removeEventListener("focus", onFocus);
+    };
+  }, []);
+
+  useEffect(() => {
     // connect only when user is available
     if (!user) {
       // ensure disconnected
@@ -220,6 +240,17 @@ const SocketProvider = ({ children }) => {
       dispatch(setPresence(p));
     });
 
+    // -----------------------
+    // SYNC RESPONSE
+    // -----------------------
+    socket.on("sync:community:messages", ({ messages }) => {
+      if (messages && messages.length > 0) {
+        messages.forEach((msg) => {
+          dispatch(addCommunityMessage(msg));
+        });
+      }
+    });
+
     // cleanup on unmount or user change
     return () => {
       socket.off("connect");
@@ -248,6 +279,9 @@ const SocketProvider = ({ children }) => {
 
       socket.off("notification:new");
       socket.off("presence:update");
+
+      // Add this line in the cleanup return function
+      socket.off("sync:community:messages");
 
       // Don't disconnect the socket here if you want global persistence across route changes.
       // If you do want to disconnect when user logs out, handle that in auth logic.

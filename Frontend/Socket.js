@@ -9,6 +9,10 @@ export const socket = io(BACKEND, {
   transports: ["websocket", "polling"],
 });
 
+if (typeof window !== "undefined") {
+  window.socket = socket;
+}
+
 export const connectSocket = () => {
   if (!socket.connected) {
     // 🔥 Update userId on connect

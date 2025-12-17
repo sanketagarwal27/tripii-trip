@@ -1,4 +1,6 @@
 import { EVENTS } from "./events.js";
+import { CommunityMembership } from "../models/community/communityMembership.model.js";
+import { MessageInComm } from "../models/community/messageInComm.model.js";
 
 export default function communitySocket(io, socket, communityRooms, typingMap) {
   // 🔥 FIX: read userId consistently
@@ -68,5 +70,55 @@ export default function communitySocket(io, socket, communityRooms, typingMap) {
     Object.keys(communityRooms).forEach((cid) => {
       communityRooms[cid]?.delete(userId);
     });
+  });
+
+  // Add this in your communitySocket function in the backend
+
+  socket.on("sync:request", async () => {
+    try {
+      if (!userId) {
+        socket.emit("sync:error", { message: "User not authenticated" });
+        return;
+      }
+
+      // Get user's communities
+      const userMemberships = await CommunityMembership.find({
+        user: userId,
+      })
+        .select("community")
+        .lean();
+
+      const communityIds = userMemberships.map((m) => m.community);
+
+      if (communityIds.length === 0) {
+        socket.emit("sync:community:messages", { messages: [] });
+        return;
+      }
+
+      // Get recent messages from last 5 minutes
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+
+      const recentMessages = await MessageInComm.find({
+        community: { $in: communityIds },
+        createdAt: { $gte: fiveMinutesAgo },
+      })
+        .populate("sender", "username profilePicture")
+        .populate("community", "name")
+        .sort({ createdAt: -1 })
+        .limit(100)
+        .lean();
+
+      socket.emit("sync:community:messages", {
+        messages: recentMessages,
+        timestamp: new Date().toISOString(),
+      });
+
+      console.log(
+        `✅ Synced ${recentMessages.length} messages for user ${userId}`
+      );
+    } catch (err) {
+      console.error("Sync failed:", err);
+      socket.emit("sync:error", { message: "Sync failed" });
+    }
   });
 }

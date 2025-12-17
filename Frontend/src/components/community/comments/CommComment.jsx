@@ -129,6 +129,40 @@ export default function CommComment() {
     };
   }, [messageId]);
 
+  /* POLLING FALLBACK FOR COMMENTS (20 seconds) */
+  useEffect(() => {
+    if (!messageId) return;
+
+    const refetchComments = async () => {
+      try {
+        const res = await getMessageComments(messageId);
+        const freshComments = res.data.data.comments || [];
+
+        // Merge without duplicates
+        setComments((prev) => {
+          const existingIds = new Set(prev.map((c) => c._id));
+          const newOnes = freshComments.filter((c) => !existingIds.has(c._id));
+
+          if (newOnes.length > 0) {
+            console.log(`📥 Polling: Found ${newOnes.length} new comments`);
+            return [...newOnes, ...prev];
+          }
+          return prev;
+        });
+      } catch (err) {
+        console.error("Failed to refetch comments:", err);
+      }
+    };
+
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        refetchComments();
+      }
+    }, 20000);
+
+    return () => clearInterval(intervalId);
+  }, [messageId]);
+
   const rootComments = comments.filter((c) => !c.parentComment);
 
   return (

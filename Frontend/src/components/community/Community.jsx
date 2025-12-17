@@ -1,7 +1,7 @@
 // src/components/community/Community.jsx
 import React, { useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { socket } from "../../../Socket.js";
 
 import CommunityHeader from "./CommunityHeader.jsx";
@@ -9,11 +9,41 @@ import CommunityTabs from "./CommunityTabs.jsx";
 import RightSidebar from "./RightSidebar.jsx";
 // import RoomsSidebar from "./RoomSidebar.jsx";
 import useCommunityProfile from "@/hooks/useCommunityProfile";
+import { getCommunityMessages } from "@/api/community.js";
+import { appendCommunityMessages } from "@/redux/communitySlice.js";
 
 export default function Community() {
   const { id } = useParams();
   const { loading } = useCommunityProfile(id);
   const profile = useSelector((s) => s.community.profile);
+  const dispatch = useDispatch();
+
+  // Refetch messages for polling fallback
+  const refetchLatest = async () => {
+    if (!id) return;
+    try {
+      const res = await getCommunityMessages(id, { page: 1, limit: 50 });
+      const latestMessages = res.data.data.messages || [];
+
+      // Only append new messages (slice already handles duplicates)
+      dispatch(appendCommunityMessages(latestMessages));
+    } catch (err) {
+      console.error("Failed to refetch messages:", err);
+    }
+  };
+
+  // Polling interval for older devices (20 seconds)
+  useEffect(() => {
+    if (!profile?._id) return;
+
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        refetchLatest();
+      }
+    }, 20000);
+
+    return () => clearInterval(intervalId);
+  }, [profile?._id, id]);
 
   useEffect(() => {
     if (!profile?._id) return;
