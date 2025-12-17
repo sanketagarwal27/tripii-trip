@@ -13,7 +13,7 @@ import authroutes from "./routes/auth.routes.js";
 import communityRoute from "./routes/community.routes.js";
 import postRoute from "./routes/post.routes.js";
 import chatbotRoute from "./routes/chatbot.routes.js";
-import getNewsRoute from "./routes/news.routes.js";
+import placesRoute from "./routes/places.routes.js";
 import { initSocket } from "./socket/server.js";
 
 dotenv.config({});
@@ -47,7 +47,7 @@ app.use("/api/auth", authroutes);
 app.use("/api/community", communityRoute);
 app.use("/api/post", postRoute);
 app.use("/api/chatbot", chatbotRoute);
-app.use("/api/news", getNewsRoute);
+app.use("/api/places", placesRoute);
 
 server.listen(PORT, () => {
   connectDB();
