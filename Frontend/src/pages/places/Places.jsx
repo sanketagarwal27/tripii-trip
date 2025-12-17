@@ -4,7 +4,7 @@ import Tabs from "./components/Tabs";
 import NewsFeed from "./components/NewsFeed";
 import SearchBox from "./components/SearchBox";
 import styles from "./Places.module.css";
-import { fetchNews } from "@/api/news";
+import { fetchNews, fetchHeroImage } from "@/api/places";
 
 const Places = () => {
   const [activeTab, setActiveTab] = useState("Travel News");
@@ -58,12 +58,8 @@ const Places = () => {
 
         setNewsArticles(uniqueArticles);
 
-        // --- Hero Image Logic ---
-        // We explicitly look for the first article that has an image
-        const firstImageArticle = uniqueArticles.find((a) => a.urlToImage);
-
-        const heroUrl =
-          "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?q=80&w=1920&auto=format&fit=crop";
+        const axiosResponse = await fetchHeroImage(query);
+        const heroUrl = axiosResponse.data || "";
 
         const newPlaceData = {
           place: query,
@@ -95,7 +91,7 @@ const Places = () => {
         className="container"
         style={{ textAlign: "center", marginTop: "100px" }}
       >
-        <h2>Searching for the best spots... ✈️</h2>
+        <h2>Searching for the details</h2>
       </div>
     );
   }

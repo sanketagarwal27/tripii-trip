@@ -21,8 +21,8 @@ const NewsFeed = ({ news }) => {
             key={article.url}
             title={article.title}
             snippet={article.description}
-            date={new Date(article.publishedAt).toLocaleDateString()}
             image={article.urlToImage} //Todo: Add a random pic of the place searched if image not found
+            url={article.url}
           />
         ))}
       </div>
