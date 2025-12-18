@@ -23,77 +23,55 @@ const Places = () => {
 
   const handleSearch = async (query) => {
     setLoading(true);
-
     try {
-      const result = await fetchNews(query);
+      const [newsResult, heroImageResult, photosResult, overviewResult] =
+        await Promise.all([
+          fetchNews(query),
+          fetchHeroImage(query),
+          fetchPhotos(query),
+          fecthOverview(query),
+        ]);
 
-      if (result && result.data && result.data.articles) {
-        const rawArticles = result.data.articles;
-
-        // We use a Map to store "Clean Title" -> "Best Article Found So Far"
+      if (newsResult?.data?.articles) {
         const articleMap = new Map();
 
-        rawArticles.forEach((article) => {
-          const rawTitle = article.title;
+        newsResult.data.articles.forEach((article) => {
+          if (!article?.title || article.title === "[Removed]") return;
 
-          // 1. Safety Check
-          if (!rawTitle || rawTitle === "[Removed]") return;
-
-          // 2. Normalize Title
-          const cleanTitle = rawTitle
+          const cleanTitle = article.title
             .split(" - ")[0]
             .split(" | ")[0]
             .split("【")[0]
             .trim()
             .toLowerCase();
 
-          // 3. COMPARE LOGIC
-          if (!articleMap.has(cleanTitle)) {
-            // Case A: First time seeing this title? Save it.
+          if (
+            !articleMap.has(cleanTitle) ||
+            (!articleMap.get(cleanTitle)?.urlToImage && article.urlToImage)
+          ) {
             articleMap.set(cleanTitle, article);
-          } else {
-            // Case B: We already have this title. Is the NEW one better?
-            const existingArticle = articleMap.get(cleanTitle);
-
-            // CRITICAL: If existing has NO image, but new one HAS image -> SWAP IT!
-            if (!existingArticle.urlToImage && article.urlToImage) {
-              articleMap.set(cleanTitle, article);
-            }
           }
         });
-        // Convert Map values back to an Array
-        const uniqueArticles = Array.from(articleMap.values());
-        setNewsArticles(uniqueArticles);
+
+        setNewsArticles(Array.from(articleMap.values()));
       } else {
         setNewsArticles([]);
       }
 
-      const heroUrl = heroImageResult.data || "";
-      const newPlaceData = {
+      setPlaceData({
         place: query,
-        heroImage: heroUrl,
-      };
-      setPlaceData(newPlaceData);
+        heroImage: heroImageResult?.data || "",
+      });
 
-      if (photosResult) {
-        setPhotos(photosResult.data);
-      } else {
-        console.log("No photos found on frontend !");
-      }
-
-      if (overviewResult) {
-        setOverview(overviewResult.data);
-      } else {
-        console.log("No Overview Found on Frontend !");
-      }
-    } catch (error) {
-      console.error(error);
+      setPhotos(photosResult?.data || []);
+      setOverview(overviewResult?.data || null);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Helper to reset search
   const resetSearch = () => {
     setPlaceData(null);
     setActiveTab("Travel News");
@@ -101,10 +79,7 @@ const Places = () => {
 
   if (loading) {
     return (
-      <div
-        className="container"
-        style={{ textAlign: "center", marginTop: "100px" }}
-      >
+      <div className="container text-center mt-24">
         <h2>Searching for the details</h2>
       </div>
     );
@@ -116,55 +91,37 @@ const Places = () => {
 
   return (
     <>
-      {/* Optional: Add a back button to search again */}
+      {/* Back Button */}
       <div
-        className="container"
+        onClick={resetSearch}
         style={{
-          marginBottom: "10px",
-          height: "30px",
-          width: "max-content",
-          backgroundColor: "rgba(255, 255, 255, 0.2)",
-          backdropFilter: "blur(10px)",
           position: "absolute",
           top: "80px",
           left: "20px",
-          zIndex: "2",
+          zIndex: 2,
+          padding: "0 12px",
+          height: "30px",
           display: "flex",
-          alignContent: "center",
-          justifyContent: "center",
-          padding: "0 10px",
-          border: "1px solid rgba(255, 255, 255, 0.3)",
+          alignItems: "center",
+          background: "rgba(255,255,255,0.2)",
+          backdropFilter: "blur(10px)",
           borderRadius: "12px",
           cursor: "pointer",
         }}
-        onClick={resetSearch}
       >
-        <button
-          style={{
-            fontWeight: "700",
-            color: "white",
-          }}
-        >
-          Back
-        </button>
+        <span style={{ fontWeight: 700, color: "#fff" }}>Back</span>
       </div>
+
       <div style={{ marginTop: "60px" }}>
-        {" "}
         <HeroSection place={placeData.place} imageUrl={placeData.heroImage} />
+
         <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
+
         <div className={styles.contentArea}>
           {activeTab === "Travel News" && <NewsFeed news={newsArticles} />}
-
-        {activeTab !== "Travel News" && (
-          <div className="container">
-            <div className={styles.placeholderBox}>
-              <h3>
-                {activeTab} for {placeData.place}
-              </h3>
-              <p>Fetching data...</p>
-            </div>
-          </div>
-        )}
+          {activeTab === "Photos" && <PhotoSection photos={photos} />}
+          {activeTab === "Overview" && <Overview data={overview} />}
+        </div>
       </div>
     </>
   );
