@@ -4,11 +4,20 @@ import Tabs from "./components/Tabs";
 import NewsFeed from "./components/NewsFeed";
 import SearchBox from "./components/SearchBox";
 import styles from "./Places.module.css";
-import { fetchNews, fetchHeroImage } from "@/api/places";
+import {
+  fetchNews,
+  fetchHeroImage,
+  fetchPhotos,
+  fecthOverview,
+} from "@/api/places";
+import PhotoSection from "./components/PhotoSection";
+import Overview from "./components/Overview";
 
 const Places = () => {
   const [activeTab, setActiveTab] = useState("Travel News");
   const [newsArticles, setNewsArticles] = useState([]);
+  const [photos, setPhotos] = useState([]);
+  const [overview, setOverview] = useState(null);
   const [placeData, setPlaceData] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -16,10 +25,15 @@ const Places = () => {
     setLoading(true);
 
     try {
-      const result = await fetchNews(query);
-
-      if (result && result.data && result.data.articles) {
-        const rawArticles = result.data.articles;
+      const [newsResult, heroImageResult, photosResult, overviewResult] =
+        await Promise.all([
+          fetchNews(query),
+          fetchHeroImage(query),
+          fetchPhotos(query),
+          fecthOverview(query),
+        ]);
+      if (newsResult && newsResult.data && newsResult.data.articles) {
+        const rawArticles = newsResult.data.articles;
 
         // We use a Map to store "Clean Title" -> "Best Article Found So Far"
         const articleMap = new Map();
@@ -52,39 +66,44 @@ const Places = () => {
             }
           }
         });
-
         // Convert Map values back to an Array
         const uniqueArticles = Array.from(articleMap.values());
-
         setNewsArticles(uniqueArticles);
-
-        const axiosResponse = await fetchHeroImage(query);
-        const heroUrl = axiosResponse.data || "";
-
-        const newPlaceData = {
-          place: query,
-          heroImage: heroUrl,
-        };
-
-        setPlaceData(newPlaceData);
       } else {
         setNewsArticles([]);
       }
+
+      const heroUrl = heroImageResult.data || "";
+      const newPlaceData = {
+        place: query,
+        heroImage: heroUrl,
+      };
+      setPlaceData(newPlaceData);
+
+      if (photosResult) {
+        setPhotos(photosResult.data);
+      } else {
+        console.log("No photos found on frontend !");
+      }
+
+      if (overviewResult) {
+        setOverview(overviewResult.data);
+      } else {
+        console.log("No Overview Found on Frontend !");
+      }
     } catch (error) {
-      console.error("Search failed:", error);
-      setNewsArticles([]);
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Helper to reset search (optional, creates a 'Back' button behavior)
+  // Helper to reset search
   const resetSearch = () => {
     setPlaceData(null);
     setActiveTab("Travel News");
   };
 
-  // 1. LOADING STATE
   if (loading) {
     return (
       <div
@@ -96,12 +115,10 @@ const Places = () => {
     );
   }
 
-  // 2. SEARCH STATE (Initial View)
   if (!placeData) {
     return <SearchBox onSearch={handleSearch} />;
   }
 
-  // 3. RESULTS STATE (The page we built earlier)
   return (
     <>
       {/* Optional: Add a back button to search again */}
@@ -127,16 +144,22 @@ const Places = () => {
       <div className={styles.contentArea}>
         {activeTab === "Travel News" && <NewsFeed news={newsArticles} />}
 
-        {activeTab !== "Travel News" && (
-          <div className="container">
-            <div className={styles.placeholderBox}>
-              <h3>
-                {activeTab} for {placeData.place}
-              </h3>
-              <p>Fetching data...</p>
+        {activeTab === "Photos" && <PhotoSection photos={photos} />}
+
+        {activeTab === "Overview" && <Overview data={overview} />}
+
+        {activeTab !== "Travel News" &&
+          activeTab !== "Photos" &&
+          activeTab !== "Overview" && (
+            <div className="container">
+              <div className={styles.placeholderBox}>
+                <h3>
+                  {activeTab} for {placeData.place}
+                </h3>
+                <p>Fetching data...</p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
       </div>
     </>
   );

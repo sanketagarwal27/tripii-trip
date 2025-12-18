@@ -22,3 +22,16 @@ export const getHeroImageFromApi = async (place) => {
     console.log("Error in getting Hero Image: ", err);
   }
 };
+
+export const getImagesFromApi = async (place) => {
+  try {
+    const result = await unsplash.search.getPhotos({
+      query: `Tourist Attractions of ${place}`,
+      orderBy: "relevant",
+      perPage: 30,
+    });
+    return result;
+  } catch (err) {
+    console.log("Error in Calling Images API: ", err);
+  }
+};

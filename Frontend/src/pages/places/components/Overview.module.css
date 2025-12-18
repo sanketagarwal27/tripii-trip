@@ -1,0 +1,172 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #333;
+}
+
+/* --- Hero Section (Wiki Image + AI Blurb) --- */
+.hero {
+  position: relative;
+  height: 300px;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: flex-end;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.heroImage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+
+.heroOverlay {
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  width: 100%;
+  padding: 30px;
+  color: white;
+}
+
+.title {
+  font-size: 3rem;
+  margin: 0 0 8px 0;
+  font-weight: 700;
+  letter-spacing: -1px;
+}
+
+.blurb {
+  font-size: 1.2rem;
+  font-weight: 400;
+  opacity: 0.9;
+  max-width: 800px;
+  line-height: 1.5;
+}
+
+/* --- The Data Grid --- */
+.grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr; /* Left (Wiki) is wider, Right (Stats) is narrower */
+  gap: 24px;
+}
+
+/* --- Cards (Generic Style) --- */
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  height: max-content;
+}
+
+.cardTitle {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #666;
+  font-weight: 600;
+  margin-bottom: 16px;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 8px;
+}
+
+/* --- Specific Widgets --- */
+
+/* 1. Wiki Summary Text */
+.summaryText {
+  line-height: 1.8;
+  color: #444;
+  font-size: 1.05rem;
+}
+
+/* 2. Weather Widget (High/Low) */
+.weatherRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.weatherTemp {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.weatherLabel {
+  display: flex;
+  flex-direction: column;
+  text-align: right;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+/* 3. Budget Rating ($$$) */
+.budgetWrapper {
+  display: flex;
+  gap: 8px;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.activeCost {
+  color: #27ae60; /* Green for active $ */
+}
+
+.inactiveCost {
+  color: #e0e0e0; /* Grey for inactive */
+}
+
+/* 4. Tags (Best For) */
+.tagContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tag {
+  background-color: #f0f7ff;
+  color: #0066cc;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border: 1px solid #d0e7ff;
+}
+
+/* 5. Hidden Gem Box */
+.gemCard {
+  background: linear-gradient(135deg, #fff5f5 0%, #fff 100%);
+  border-color: #ffe0e0;
+}
+
+.gemText {
+  font-style: italic;
+  color: #c0392b;
+  font-weight: 500;
+}
+
+/* --- Responsive Design --- */
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr; /* Stack everything on mobile */
+  }
+
+  .title {
+    font-size: 2rem;
+  }
+
+  .hero {
+    height: 250px;
+  }
+}
