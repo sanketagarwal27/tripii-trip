@@ -6,56 +6,20 @@
   color: #333;
 }
 
-/* --- Hero Section (Wiki Image + AI Blurb) --- */
-.hero {
-  position: relative;
-  height: 300px;
-  border-radius: 16px;
-  overflow: hidden;
-  margin-bottom: 24px;
-  display: flex;
-  align-items: flex-end;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-}
-
-.heroImage {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  z-index: 1;
-}
-
-.heroOverlay {
-  position: relative;
-  z-index: 2;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
-  width: 100%;
-  padding: 30px;
-  color: white;
-}
-
-.title {
-  font-size: 3rem;
-  margin: 0 0 8px 0;
-  font-weight: 700;
-  letter-spacing: -1px;
-}
-
 .blurb {
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   font-weight: 400;
   opacity: 0.9;
-  max-width: 800px;
+  /* max-width: 800px; */
   line-height: 1.5;
+  margin-bottom: 40px;
+  text-align: center;
 }
 
 /* --- The Data Grid --- */
 .grid {
   display: grid;
-  grid-template-columns: 2fr 1fr; /* Left (Wiki) is wider, Right (Stats) is narrower */
+  grid-template-columns: 2fr 1fr;
   gap: 24px;
 }
 
@@ -78,6 +42,38 @@
   margin-bottom: 16px;
   border-bottom: 2px solid #f0f0f0;
   padding-bottom: 8px;
+}
+
+.touristPlaces {
+  margin-top: 20px;
+}
+
+.touristPlaces h2 {
+  font-weight: 700;
+  font-size: 1.2rem;
+  margin-bottom: 5px;
+  margin-top: 30px;
+}
+
+.redirections {
+  margin-top: 30px;
+  display: inline-block;
+  padding: 8px 20px;
+  background-color: transparent;
+  color: #333; /* Dark text */
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 2px solid #e0e0e0; /* Light grey border */
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.redirections:hover {
+  border-color: #333; /* Border turns dark on hover */
+  background-color: #333;
+  color: #fff; /* Text turns white */
 }
 
 /* --- Specific Widgets --- */
@@ -115,16 +111,22 @@
 .budgetWrapper {
   display: flex;
   gap: 8px;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   font-weight: bold;
+  font-family: "Lucida Sans", "Lucida Sans Regular", "Lucida Grande",
+    "Lucida Sans Unicode", Geneva, Verdana, sans-serif;
 }
 
-.activeCost {
-  color: #27ae60; /* Green for active $ */
+.cheapBudget {
+  color: green;
 }
 
-.inactiveCost {
-  color: #e0e0e0; /* Grey for inactive */
+.moderateBudget {
+  color: cadetblue;
+}
+
+.expensiveBudget {
+  color: red;
 }
 
 /* 4. Tags (Best For) */

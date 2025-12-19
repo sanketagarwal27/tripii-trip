@@ -120,7 +120,9 @@ const Places = () => {
         <div className={styles.contentArea}>
           {activeTab === "Travel News" && <NewsFeed news={newsArticles} />}
           {activeTab === "Photos" && <PhotoSection photos={photos} />}
-          {activeTab === "Overview" && <Overview data={overview} />}
+          {activeTab === "Overview" && (
+            <Overview data={overview} setActiveTab={setActiveTab} />
+          )}
         </div>
       </div>
     </>

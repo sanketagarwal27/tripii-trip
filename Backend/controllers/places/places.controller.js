@@ -51,6 +51,8 @@ export const getNews = asyncHandler(async (req, res) => {
         new ApiResponse(200, data.newsData, `Place news fetched from cache`)
       );
   }
+  //Cache Miss
+  console.log(`Cache Miss for News for ${place}`);
 
   // 🌍 API FETCH + FILTER
   const apiResponse = await getNewsFromApi(place);
@@ -107,7 +109,7 @@ export const getPhotos = asyncHandler(async (req, res) => {
   const cachedPhotos = await Photo.findOne({ place: place });
   //Cache Hit
   if (cachedPhotos) {
-    console.log(`Cache hit for photos of ${place}`);
+    console.log(`✅ Cache hit: Photos for ${place}`);
     const response = cachedPhotos.photos;
     return res
       .status(200)
@@ -145,7 +147,7 @@ export const getOverview = asyncHandler(async (req, res) => {
   const cachedPlace = await Overview.findOne({ place: place });
   //Cache Hit
   if (cachedPlace) {
-    console.log(`Cache hit for Overview for ${place}`);
+    console.log(`✅ Cache hit: Overview for ${place}`);
     const finalData = {
       location: {
         name: cachedPlace.place,
@@ -164,14 +166,14 @@ export const getOverview = asyncHandler(async (req, res) => {
   }
   //Cache Miss
   else {
-    console.log(`Cache Miss for Overview of ${place}`);
+    console.log(`Cache Miss for Overview of ${place}. Calling APIs...`);
     try {
       const coords = await getCoordinates(place);
       if (!coords) {
-        throw new ApiError(404, "Place Not Found !");
+        throw new ApiError(404, "Coordinates Not Found !");
       }
       const [weatherData, wikiData, aiData] = await Promise.all([
-        getWeather(coords.lat, coords.lon, coords.timezone),
+        getWeather(coords.lat, coords.lon),
         getWikiOverview(place),
         getAiOverview(place),
       ]);
@@ -186,7 +188,7 @@ export const getOverview = asyncHandler(async (req, res) => {
           wiki: wikiData,
           ai: aiData,
           weather: {
-            summary: `Expect a high of ${weatherData.high}°C and low of ${weatherData.low}°C`,
+            summary: `Expect a high of ${weatherData.high}°C and low of ${weatherData.low}°C currently`,
             high: weatherData.high,
             low: weatherData.low,
             conditionCode: weatherData.code,

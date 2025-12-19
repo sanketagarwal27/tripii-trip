@@ -1,20 +1,23 @@
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
 export async function getCoordinates(place) {
-  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${place}&count=1&language=en&format=json`;
-  const res = await fetch(url);
+  const url = `https://nominatim.openstreetmap.org/search?q=${place}&format=json&limit=1`;
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent": "CoordinatesApp/1.0",
+    },
+  });
   const data = await res.json();
 
-  if (!data.results || data.results.length === 0) return null;
+  if (!data || data.length === 0) return null;
 
   return {
-    lat: data.results[0].latitude,
-    lon: data.results[0].longitude,
-    timezone: data.results[0].timezone,
+    lat: data[0].lat,
+    lon: data[0].lon,
   };
 }
 
-export async function getWeather(lat, lon, timezone) {
+export async function getWeather(lat, lon) {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto`;
   const res = await fetch(url);
   const data = await res.json();
@@ -56,9 +59,10 @@ export const getWikiOverview = async (place) => {
 };
 
 export async function getAiOverview(location, interests = "general tourism") {
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY_FOR_OVERVIEW);
+  const ai = new GoogleGenAI({
+    apiKey: process.env.GEMINI_API_KEY_FOR_OVERVIEW,
+  });
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     const prompt = `
       Act as a travel expert. Create a short travel overview for "${location}" based on these interests: "${interests}".
       
@@ -68,15 +72,16 @@ export async function getAiOverview(location, interests = "general tourism") {
         "oneLineBlurb": "A catchy single sentence summary.",
         "bestFor": ["Interest 1", "Interest 2", "Interest 3"],
         "hiddenGem": "Name of a specific cool spot.",
-        "budgetRating": "$ or $$ or $$$"
+        "budgetRating": "Cheap Moderate or Expensive",
+        "touristPlaces": "Places visited by tourists",
       }
     `;
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash-lite",
+      contents: prompt,
+    });
     console.log(response);
-
-    let text = response.text();
+    let text = response?.candidates?.[0]?.content?.parts?.[0]?.text;
     text = text
       .replace(/```json/g, "")
       .replace(/```/g, "")
@@ -92,6 +97,7 @@ export async function getAiOverview(location, interests = "general tourism") {
       bestFor: ["Sightseeing", "Relaxation"],
       hiddenGem: "City Center",
       budgetRating: "$$",
+      touristPlaces: "There are several tourist places !",
     };
   }
 }

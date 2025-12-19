@@ -1,30 +1,28 @@
 import styles from "./overview.module.css";
 
-const Overview = ({ data }) => {
+const Overview = ({ data, setActiveTab }) => {
   if (!data) return <div>Loading...</div>;
 
   const { wiki, ai, weather } = data.content;
 
   return (
     <div className={styles.container}>
-      <div className={styles.hero}>
-        <img
-          src={wiki.imageUrl}
-          alt={data.location.name}
-          className={styles.heroImage}
-        />
-        <div className={styles.heroOverlay}>
-          <h1 className={styles.title}>{data.location.name}</h1>
-          <p className={styles.blurb}>{ai.oneLineBlurb}</p>
-        </div>
-      </div>
-
+      <p className={styles.blurb}>{ai.oneLineBlurb.toUpperCase()}</p>
       <div className={styles.grid}>
         <div className={styles.card}>
           <h3 className={styles.cardTitle}>About the City</h3>
           <p className={styles.summaryText}>{wiki.summary}</p>
+          <div className={styles.touristPlaces}>
+            <h2>Tourist Places: </h2>
+            <p>
+              {ai.touristPlaces ? ai.touristPlaces : "Several Tourist Spots !"}
+            </p>
+          </div>
+          {/* Think more about displaying tourist places */}
+          <div className={styles.redirections}>
+            <button onClick={() => setActiveTab("Photos")}>View Photos</button>
+          </div>
         </div>
-
         <div className={styles.statsColumn}>
           <div className={styles.card}>
             <h3 className={styles.cardTitle}>Today's Forecast</h3>
@@ -41,35 +39,17 @@ const Overview = ({ data }) => {
           </div>
 
           <div className={styles.card}>
-            <h3 className={styles.cardTitle}>Budget Rating</h3>
+            <h3 className={styles.cardTitle}>🤑Budget Rating</h3>
             <div className={styles.budgetWrapper}>
-              <span
-                className={
-                  ai.budgetRating.length >= 1
-                    ? styles.activeCost
-                    : styles.inactiveCost
-                }
-              >
-                $
-              </span>
-              <span
-                className={
-                  ai.budgetRating.length >= 2
-                    ? styles.activeCost
-                    : styles.inactiveCost
-                }
-              >
-                $
-              </span>
-              <span
-                className={
-                  ai.budgetRating.length >= 3
-                    ? styles.activeCost
-                    : styles.inactiveCost
-                }
-              >
-                $
-              </span>
+              {ai.budgetRating === "Cheap" && (
+                <span className={styles.cheapBudget}>Cheap</span>
+              )}
+              {ai.budgetRating === "Moderate" && (
+                <span className={styles.moderateBudget}>Moderate</span>
+              )}
+              {ai.budgetRating === "Expensive" && (
+                <span className={styles.expensiveBudget}>Expensive</span>
+              )}
             </div>
           </div>
 
