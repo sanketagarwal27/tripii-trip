@@ -987,15 +987,28 @@ body {
 }
 
 .rs-follow {
-  background: #00ffe5;
-  border: none;
-  width: max-content;
-  height: max-content;
-  border-radius: 4px;
-  font-weight: 600;
-  padding: 2px 5px;
+  padding: 3px 5px;
+  border-radius: 8px;
   font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #15f0db;
+  background: linear-gradient(to right, #15f0db, #0ec9b5);
+  color: white;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.rs-follow:hover {
+  opacity: 0.9;
+}
+
+.rs-following {
+  background: transparent;
+  color: #15f0db;
+}
+
+.rs-following:hover {
+  background: rgba(21, 240, 219, 0.08);
 }
 
 .rs-load {

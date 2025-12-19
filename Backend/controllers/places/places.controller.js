@@ -121,9 +121,9 @@ export const getPhotos = asyncHandler(async (req, res) => {
   const photos = [];
   for (let i = 0; i < 30; i++) {
     photos.push({
-      raw_url: apiResponse.response.results[i].urls.raw,
-      small_url: apiResponse.response.results[i].urls.small,
-      alt_description: apiResponse.response.results[i].alt_description,
+      raw_url: apiResponse.response?.results[i]?.urls.raw,
+      small_url: apiResponse.response?.results[i]?.urls.small,
+      alt_description: apiResponse.response?.results[i]?.alt_description,
     });
   }
   await Photo.findOneAndUpdate(

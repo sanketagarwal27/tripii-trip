@@ -70,9 +70,12 @@ export default function RightSidebar({ profile }) {
 
               return (
                 <li key={r._id}>
-                  <Link
-                    to={`/room/${r._id}`}
+                  <div
+                    onClick={() =>
+                      navigate(`/community/${r.parentCommunity}/room/${r._id}`)
+                    }
                     className="flex items-center gap-3 p-2 rounded-lg hover:bg-white transition"
+                    style={{ cursor: "pointer" }}
                   >
                     {/* ROOM IMAGE */}
                     <div
@@ -88,7 +91,16 @@ export default function RightSidebar({ profile }) {
                     {/* ROOM INFO */}
                     <div className="flex flex-col flex-1 min-w-0">
                       <span className="text-xs font-semibold truncate">
-                        {r.name}
+                        {r.name} ·{" "}
+                        <span
+                          style={{
+                            color: "red",
+                            fontSize: "10px",
+                            fontWeight: "700",
+                          }}
+                        >
+                          {r.roomtype === "Trip" ? "Trip" : "Norm"}
+                        </span>
                       </span>
 
                       <span className="text-[11px] text-gray-500">
@@ -107,7 +119,7 @@ export default function RightSidebar({ profile }) {
                     >
                       {statusMeta.label}
                     </span>
-                  </Link>
+                  </div>
                 </li>
               );
             })}

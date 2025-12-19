@@ -26,6 +26,7 @@ import CommComment from "./components/community/comments/CommComment";
 import Places from "./pages/places/Places";
 import Chatbot from "./pages/chatbot/Chatbot";
 import CreateRoom from "./components/community/rooms/CreateRoom";
+import Room from "./components/community/rooms/Room";
 
 // Auth Logic
 function RequireAuth({ children }) {
@@ -77,6 +78,10 @@ function AppRouter() {
             <Route
               path="/community/:communityId/createRoom"
               element={<CreateRoom />}
+            />
+            <Route
+              path="/community/:communityId/room/:roomId"
+              element={<Room />}
             />
           </Route>
 

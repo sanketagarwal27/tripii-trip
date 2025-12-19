@@ -86,7 +86,7 @@ export const createRoom = asyncHandler(async (req, res) => {
     roomTags = "[]",
     initialMembers = "[]",
     tripType,
-    location,
+    locationName,
   } = req.body;
 
   // Parse JSON
@@ -129,8 +129,8 @@ export const createRoom = asyncHandler(async (req, res) => {
   if (roomtype === "Trip") {
     if (!tripType || !["national", "international"].includes(tripType))
       throw new ApiError(400, "tripType (national/international) is required");
-    if (!location?.name)
-      throw new ApiError(400, "location.name is required for trip");
+    if (!locationName)
+      throw new ApiError(400, "locationname is required for trip");
   }
 
   // Upload background image
@@ -204,7 +204,9 @@ export const createRoom = asyncHandler(async (req, res) => {
       createdBy: userId,
       participants: roomMembers.map((m) => m.user),
       type: tripType,
-      location,
+      location: {
+        name: locationName, // ✅ FIXED
+      },
       visibility: "private",
       visibleInCommunities: [communityId],
       roomsReleted: [room._id],

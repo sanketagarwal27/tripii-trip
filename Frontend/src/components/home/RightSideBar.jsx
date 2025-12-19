@@ -27,6 +27,10 @@ const RightSideBar = () => {
 
   const [loadingUsers, setLoadingUsers] = useState(false);
 
+  const isFollowing = (userId) => {
+    return userProfile.following?.includes(userId);
+  };
+
   if (!userProfile) return null;
 
   useEffect(() => {
@@ -47,8 +51,20 @@ const RightSideBar = () => {
   const toggleFollow = async (id) => {
     try {
       const res = await followOrUnfollow(id);
+
       if (res?.data?.data?.updatedUser) {
-        dispatch(setUserProfile(res.data.data.updatedUser));
+        const updatedProfile = res.data.data.updatedUser;
+
+        // Update current user profile
+        dispatch(setUserProfile(updatedProfile));
+
+        dispatch(
+          setSuggestedUser(
+            suggestedUser.map((u) =>
+              u._id === id ? { ...u, _isFollowing: !isFollowing(id) } : u
+            )
+          )
+        );
       }
     } catch (err) {
       console.error(err);
@@ -185,8 +201,13 @@ const RightSideBar = () => {
                 </div>
               </div>
 
-              <button className="rs-follow" onClick={() => toggleFollow(u._id)}>
-                Follow
+              <button
+                className={`rs-follow ${
+                  isFollowing(u._id) ? "rs-following" : ""
+                }`}
+                onClick={() => toggleFollow(u._id)}
+              >
+                {isFollowing(u._id) ? "Following" : "Follow"}
               </button>
             </div>
           ))}

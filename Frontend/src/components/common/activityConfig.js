@@ -13,7 +13,7 @@ export const ACTIVITY_CONFIG = {
   trip_created: {
     label: "Trip created",
     emoji: "🧭",
-    color: "bg-purple-500",
+    color: "bg-rose-500",
   },
   poll: {
     label: "Poll created",
@@ -28,7 +28,7 @@ export const ACTIVITY_CONFIG = {
   member_joined: {
     label: "Member_joined",
     emoji: "😶‍🌫️",
-    color: "bg-green-500",
+    color: "bg-lime-500",
   },
   settings_updated: {
     label: "Settings updated",

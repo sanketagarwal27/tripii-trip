@@ -12,8 +12,9 @@ import {
 import { toast } from "react-hot-toast";
 import { addRoom } from "@/redux/roomSlice";
 import { setCommunityRooms } from "@/redux/communitySlice";
-import { createRoom } from "@/api/community";
+import { createRoom } from "@/api/room";
 import { searchUsers } from "@/api/users";
+import useCommunityProfile from "@/hooks/useCommunityProfile";
 
 const TAGS = [
   "Adventure",
@@ -179,7 +180,7 @@ const CreateRoom = () => {
 
     if (roomtype === "Trip") {
       formData.append("tripType", tripType);
-      formData.append("location", JSON.stringify({ name: location }));
+      formData.append("locationName", location);
     }
 
     setLoading(true);
@@ -191,6 +192,8 @@ const CreateRoom = () => {
         dispatch(addRoom(newRoom));
         dispatch(setCommunityRooms([newRoom, ...rooms]));
         navigate(`/community/${communityId}`);
+
+        useCommunityProfile();
       }
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to create room");
