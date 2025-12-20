@@ -8,29 +8,38 @@ import {
   fetchNews,
   fetchHeroImage,
   fetchPhotos,
-  fecthOverview,
+  fetchOverview,
+  fetchSafety,
 } from "@/api/places";
 import PhotoSection from "./components/PhotoSection";
 import Overview from "./components/Overview";
+import SafetyPage from "./components/SafetyPage";
 
 const Places = () => {
   const [activeTab, setActiveTab] = useState("Travel News");
   const [newsArticles, setNewsArticles] = useState([]);
   const [photos, setPhotos] = useState([]);
   const [overview, setOverview] = useState(null);
+  const [safetyData, setSafetyData] = useState({});
   const [placeData, setPlaceData] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const handleSearch = async (query) => {
     setLoading(true);
     try {
-      const [newsResult, heroImageResult, photosResult, overviewResult] =
-        await Promise.all([
-          fetchNews(query),
-          fetchHeroImage(query),
-          fetchPhotos(query),
-          fecthOverview(query),
-        ]);
+      const [
+        newsResult,
+        heroImageResult,
+        photosResult,
+        overviewResult,
+        safetyResult,
+      ] = await Promise.all([
+        fetchNews(query),
+        fetchHeroImage(query),
+        fetchPhotos(query),
+        fetchOverview(query),
+        fetchSafety(query),
+      ]);
 
       if (newsResult?.data?.articles) {
         const articleMap = new Map();
@@ -65,6 +74,7 @@ const Places = () => {
 
       setPhotos(photosResult?.data || []);
       setOverview(overviewResult?.data || null);
+      setSafetyData(safetyResult?.data || null);
     } catch (err) {
       console.error(err);
     } finally {
@@ -122,6 +132,9 @@ const Places = () => {
           {activeTab === "Photos" && <PhotoSection photos={photos} />}
           {activeTab === "Overview" && (
             <Overview data={overview} setActiveTab={setActiveTab} />
+          )}
+          {activeTab === "Safety & Scams" && (
+            <SafetyPage safetyData={safetyData} />
           )}
         </div>
       </div>

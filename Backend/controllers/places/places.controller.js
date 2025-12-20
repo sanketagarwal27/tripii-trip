@@ -4,6 +4,7 @@ import { ApiResponse } from "../../utils/ApiResponse.js";
 import { Place } from "../../models/places/searchedPlaces.model.js";
 import { Photo } from "../../models/places/photos.model.js";
 import { Overview } from "../../models/places/overview.model.js";
+import { Safety } from "../../models/places/scams.model.js";
 import { getNewsFromApi } from "./news.controller.js";
 import {
   getCoordinates,
@@ -11,6 +12,7 @@ import {
   getWikiOverview,
   getAiOverview,
 } from "./overview.controller.js";
+import { getAiScams } from "./scams.controller.js";
 import { getHeroImageFromApi, getImagesFromApi } from "./images.controller.js";
 
 /* -------------------------------------------------
@@ -101,6 +103,9 @@ export const getHeroImage = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, apiResponse, "Hero image fetched successfully"));
 });
 
+/* -------------------------------------------------
+ * GET PLACE PHOTOS
+ * ------------------------------------------------- */
 export const getPhotos = asyncHandler(async (req, res) => {
   const place = req.query.place;
   if (!place) {
@@ -142,6 +147,9 @@ export const getPhotos = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, photos, "Fetched Photos successfully !"));
 });
 
+/* -------------------------------------------------
+ * GET PLACE OVERVIEW
+ * ------------------------------------------------- */
 export const getOverview = asyncHandler(async (req, res) => {
   const place = req.query.place;
   const cachedPlace = await Overview.findOne({ place: place });
@@ -215,6 +223,60 @@ export const getOverview = asyncHandler(async (req, res) => {
         );
     } catch (err) {
       console.error("Error in Generating Overview: ", err);
+    }
+  }
+});
+
+/* -------------------------------------------------
+ * GET PLACE SCAMS
+ * ------------------------------------------------- */
+export const getScams = asyncHandler(async (req, res) => {
+  const place = req.query.place;
+  if (!place) {
+    throw new ApiError(500, "Place parameter not found !");
+  }
+  const cachedPlace = await Safety.findOne({ place });
+  // Cache Hit
+  if (cachedPlace) {
+    console.log(`✅ Cache hit: Scams for ${place}`);
+    const response = cachedPlace.aiData;
+    res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          response,
+          "Safety details found successfully from DB !"
+        )
+      );
+  }
+  // Cache Miss
+  else {
+    console.log(`Cache Miss for Scams of ${place}. Calling APIs...`);
+    try {
+      const finalAiData = await getAiScams(place);
+      if (!finalAiData) {
+        throw new ApiError(500, "Error in getting AI data");
+      }
+      await Safety.findOneAndUpdate(
+        { place },
+        {
+          place: place,
+          aiData: finalAiData,
+        },
+        { upsert: true, new: true }
+      );
+      res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            finalAiData,
+            "Safety Details fetched successfully from AI..."
+          )
+        );
+    } catch (error) {
+      console.log("Error in calling API: ", error);
     }
   }
 });
