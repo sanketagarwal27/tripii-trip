@@ -2,7 +2,7 @@ import React from "react";
 import styles from "./Tabs.module.css";
 
 const Tabs = ({ activeTab, setActiveTab }) => {
-  const tabs = ["Overview", "Travel News", "Photos", "People Reviews", "Scams"];
+  const tabs = ["Overview", "Travel News", "Photos", "Safety & Scams"];
 
   return (
     <div className="container">

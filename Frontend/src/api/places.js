@@ -30,8 +30,18 @@ export const fetchPhotos = async (place) => {
   return response.data;
 };
 
-export const fecthOverview = async (place) => {
+export const fetchOverview = async (place) => {
   const response = await api.get("/api/places/get-overview", {
+    params: {
+      place,
+    },
+    withCredentials: true,
+  });
+  return response.data;
+};
+
+export const fetchSafety = async (place) => {
+  const response = await api.get("/api/places/get-scams", {
     params: {
       place,
     },
