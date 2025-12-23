@@ -6,6 +6,13 @@
 
 ---
 
+## Preview of my work
+
+![Chatbot Demo](assets/chatbot.gif)
+![Place Search Demo](assets/places.gif)
+
+---
+
 ## My Contributions & Technical Impact
 
 While this was a collaborative effort, I served as the **primary owner of the "Places Search" feature and the chatbot**, building it end-to-end—from the responsive React frontend to the AI-powered backend services with server-side caching mechanism.
