@@ -1,3 +1,4 @@
+// src/api/room.js
 import api from "./axios";
 
 export const createRoom = (communityId, formData) =>
@@ -36,3 +37,13 @@ export const getRoomDetails = (roomId) =>
   api.get(`/api/community/room/${roomId}`, {
     withCredentials: true,
   });
+
+// 🔥 NEW: Join room function
+export const joinRoom = (roomId) =>
+  api.post(
+    `/api/community/joinRoom/${roomId}`,
+    {},
+    {
+      withCredentials: true,
+    }
+  );

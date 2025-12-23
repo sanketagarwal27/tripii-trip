@@ -106,7 +106,7 @@ const Places = () => {
         onClick={resetSearch}
         style={{
           position: "absolute",
-          top: "80px",
+          top: "90px",
           left: "20px",
           zIndex: 2,
           padding: "0 12px",
@@ -122,7 +122,7 @@ const Places = () => {
         <span style={{ fontWeight: 700, color: "#fff" }}>Back</span>
       </div>
 
-      <div style={{ marginTop: "60px" }}>
+      <div style={{ marginTop: "70px" }}>
         <HeroSection place={placeData.place} imageUrl={placeData.heroImage} />
 
         <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />

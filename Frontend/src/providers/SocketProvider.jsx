@@ -14,16 +14,16 @@ import {
   addCommunityActivity,
   setCommunityProfile,
   moveCommunityToTop,
+  addCommunityRoom,
+  updateCommunityRoom,
 } from "@/redux/communitySlice";
-
-// Also import room-related reducers if you keep a separate rooms/messages slice.
-// For now we will handle community and room messages via communitySlice for community page,
-// and we will dispatch generic notifications for other events.
+import { updateRoomMembers } from "@/redux/roomSlice.js";
 
 const SocketProvider = ({ children }) => {
   const dispatch = useDispatch();
   const user = useSelector((s) => s.auth?.user);
   const selectedCommunity = useSelector((s) => s.community.selectedCommunity);
+  const communityProfile = useSelector((s) => s.community.profile);
 
   useEffect(() => {
     const onFocus = () => {
@@ -46,23 +46,17 @@ const SocketProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    // connect only when user is available
     if (!user) {
-      // ensure disconnected
       disconnectSocket();
       dispatch(setSocketConnected(false));
       return;
     }
 
-    // connect
     connectSocket();
 
-    // basic connection events
     socket.on("connect", () => {
       dispatch(setSocketConnected(true));
-      // optional: tell server who I am (if server expects explicit auth)
       try {
-        // If server expects a "join-user" or such, you can emit here
         socket.emit("identify", { userId: user._id });
       } catch (e) {}
     });
@@ -83,12 +77,7 @@ const SocketProvider = ({ children }) => {
         payload.community?._id || payload.community
       );
 
-      const activeCommunityId = String(selectedCommunity?._id || "");
-
-      // 🔥 ALWAYS add message to Redux store
       dispatch(addCommunityMessage(payload));
-
-      // Move community to top in sidebar
       dispatch(moveCommunityToTop(payloadCommunityId));
     });
 
@@ -109,17 +98,51 @@ const SocketProvider = ({ children }) => {
     });
 
     socket.on("community:message:pinned", ({ messageId, pinnedBy }) => {
-      dispatch(
-        updateCommunityMessage({
-          _id: messageId,
-          pinnedMessage: { message: messageId, pinnedBy },
-        })
-      );
+      if (communityProfile && communityProfile._id === selectedCommunity?._id) {
+        const updatedPinnedMessages = [
+          ...(communityProfile.pinnedMessages || []),
+        ];
+
+        const alreadyPinned = updatedPinnedMessages.some((p) => {
+          const pId = typeof p === "object" && p.message ? p.message : p;
+          const currentId = typeof pId === "object" && pId._id ? pId._id : pId;
+          return String(currentId) === String(messageId);
+        });
+
+        if (!alreadyPinned) {
+          updatedPinnedMessages.push({
+            message: messageId,
+            pinnedBy: pinnedBy,
+            pinnedAt: new Date().toISOString(),
+          });
+
+          dispatch(
+            setCommunityProfile({
+              ...communityProfile,
+              pinnedMessages: updatedPinnedMessages,
+            })
+          );
+        }
+      }
     });
 
     socket.on("community:message:unpinned", ({ messageId }) => {
-      // remove pinnedMessage property if exists
-      dispatch(updateCommunityMessage({ _id: messageId, pinnedMessage: null }));
+      if (communityProfile && communityProfile._id === selectedCommunity?._id) {
+        const updatedPinnedMessages = (
+          communityProfile.pinnedMessages || []
+        ).filter((p) => {
+          const pId = typeof p === "object" && p.message ? p.message : p;
+          const currentId = typeof pId === "object" && pId._id ? pId._id : pId;
+          return String(currentId) !== String(messageId);
+        });
+
+        dispatch(
+          setCommunityProfile({
+            ...communityProfile,
+            pinnedMessages: updatedPinnedMessages,
+          })
+        );
+      }
     });
 
     socket.on("community:updated", (data) => {
@@ -151,14 +174,11 @@ const SocketProvider = ({ children }) => {
 
     socket.on("community:seen", ({ communityId }) => {
       // optional: mark community notifications as seen
-      // do nothing for now, but KEEP THIS EVENT
     });
 
     // -----------------------
     // COMMUNITY COMMENTS
     // -----------------------
-
-    // ---------------- COMMENT COUNT ----------------
     socket.on(
       "community:message:commentCount",
       ({ messageId, commentCount }) => {
@@ -175,7 +195,6 @@ const SocketProvider = ({ children }) => {
     // MESSAGE HELPFUL
     // -----------------------
     socket.on("community:message:helpful", ({ messageId, helpfulCount }) => {
-      // 🔥 This updates ANY message with this ID across all communities
       dispatch(
         updateCommunityMessage({
           _id: messageId,
@@ -185,22 +204,8 @@ const SocketProvider = ({ children }) => {
     });
 
     // -----------------------
-    // ROOM EVENTS
+    // ROOM EVENTS - 🔥 KEY CHANGES HERE
     // -----------------------
-    // socket.on("room:message:new", (msg) => {
-    //   // For simplicity, if the message belongs to the currently-open community, add to messages.
-    //   // Ideally you have a room slice; adapt as needed.
-    //   dispatch(addCommunityMessage(msg));
-    // });
-
-    // socket.on("room:message:deleted", ({ messageId }) => {
-    //   dispatch(removeCommunityMessage(messageId));
-    // });
-
-    // socket.on("room:reaction:updated", ({ messageId, reactions }) => {
-    //   dispatch(updateCommunityMessage({ _id: messageId, reactions }));
-    // });
-
     socket.on("room:userJoined", ({ roomId, user: joinedUser }) => {
       dispatch(
         addCommunityActivity({
@@ -215,16 +220,41 @@ const SocketProvider = ({ children }) => {
           payload: { roomId, user: joinedUser },
         })
       );
-    });
 
-    socket.on("room:created", (data) => {
+      // Update the room's member list
       dispatch(
-        addCommunityActivity({
-          type: "room_created",
-          payload: data,
-          createdAt: new Date().toISOString(),
+        updateRoomMembers({
+          user: joinedUser,
+          role: "member",
+          joinedAt: new Date(),
         })
       );
+    });
+
+    // 🔥 CRITICAL: Handle room:created event
+    socket.on("room:created", (data) => {
+      console.log("Room created event received:", data);
+      const { room, trip, activity } = data;
+
+      // Add room to Redux store (will appear in RightSidebar and RoomsTab)
+      if (room) {
+        dispatch(addCommunityRoom(room));
+      }
+
+      // Add activity
+      if (activity) {
+        dispatch(addCommunityActivity(activity));
+      } else {
+        dispatch(
+          addCommunityActivity({
+            type: "room_created",
+            payload: data,
+            createdAt: new Date().toISOString(),
+          })
+        );
+      }
+
+      // Add notification
       dispatch(addNotification({ type: "room:created", payload: data }));
     });
 
@@ -236,7 +266,6 @@ const SocketProvider = ({ children }) => {
     });
 
     socket.on("presence:update", (p) => {
-      // p = { userId, online, lastSeen }
       dispatch(setPresence(p));
     });
 
@@ -271,22 +300,15 @@ const SocketProvider = ({ children }) => {
       socket.off("community:created");
       socket.off("community:deleted");
 
-      // socket.off("room:message:new");
-      // socket.off("room:message:deleted");
-      // socket.off("room:reaction:updated");
       socket.off("room:userJoined");
       socket.off("room:created");
 
       socket.off("notification:new");
       socket.off("presence:update");
 
-      // Add this line in the cleanup return function
       socket.off("sync:community:messages");
-
-      // Don't disconnect the socket here if you want global persistence across route changes.
-      // If you do want to disconnect when user logs out, handle that in auth logic.
     };
-  }, [user, dispatch, selectedCommunity]);
+  }, [user, dispatch, selectedCommunity, communityProfile]);
 
   return <>{children}</>;
 };

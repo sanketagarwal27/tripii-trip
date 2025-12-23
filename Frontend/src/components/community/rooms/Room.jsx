@@ -9,7 +9,6 @@ import useSendRoomMessage from "./hooks/useSendRoomMessage";
 
 import RoomChat from "./components/RoomChat";
 import RoomInput from "./components/RoomInput";
-import RoomMembers from "./components/RoomMembers";
 import TripInfoCard from "./components/TripInfoCard";
 import RoomHeader from "./components/RoomHeader";
 import { useEffect, useState } from "react";
@@ -38,6 +37,18 @@ const Room = () => {
       dispatch(clearRoomState());
     };
   }, [roomId, dispatch]);
+
+  useEffect(() => {
+    if (!roomId || !socket.connected) return;
+
+    // ✅ JOIN ROOM SOCKET
+    socket.emit("room:join", roomId);
+
+    return () => {
+      // ✅ LEAVE ROOM SOCKET
+      socket.emit("room:leave", roomId);
+    };
+  }, [roomId]);
 
   const { roomMessages } = useSelector((s) => s.room);
 

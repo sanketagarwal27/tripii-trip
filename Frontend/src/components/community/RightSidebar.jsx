@@ -8,13 +8,12 @@ import { formatDate, ROOM_STATUS_META } from "../common/roomStatus";
 
 export default function RightSidebar({ profile }) {
   const navigate = useNavigate();
+  // 🔥 Get rooms from Redux store - will update in real-time via socket
   const rooms = useSelector((s) => s.community.rooms || []);
   const activities = useSelector((s) => s.community.activities || []);
   const [showAllActivities, setShowAllActivities] = useState(false);
   const [similarCommunities, setSimilarCommunities] = useState([]);
   const [loading, setLoading] = useState(false);
-
-  console.log("ROom:", rooms);
 
   // Fetch similar communities based on tags
   useEffect(() => {
@@ -42,12 +41,10 @@ export default function RightSidebar({ profile }) {
     ? activities
     : activities.slice(0, 5);
   const rules = Array.isArray(profile.rules) ? profile.rules : [];
-  const admins =
-    profile.members?.filter((m) => ["admin", "owner"].includes(m.role)) || [];
 
   return (
     <div className="space-y-4 w-80">
-      {/* ---------------- ROOMS ---------------- */}
+      {/* ---------------- ROOMS - 🔥 REAL-TIME UPDATES ---------------- */}
       <div
         className="rounded-lg p-4"
         style={{ backgroundColor: "rgba(250,250,250,1)" }}
@@ -129,12 +126,12 @@ export default function RightSidebar({ profile }) {
         )}
 
         {rooms.length > 6 && (
-          <Link
-            to="#"
-            className="block mt-2 text-xs text-blue-600 hover:underline"
+          <button
+            onClick={() => navigate(`/community/${profile._id}?tab=rooms`)}
+            className="block mt-2 text-xs text-blue-600 hover:underline w-full text-left"
           >
-            Show all rooms
-          </Link>
+            Show all {rooms.length} rooms
+          </button>
         )}
       </div>
 
@@ -152,7 +149,7 @@ export default function RightSidebar({ profile }) {
           <div className="flex flex-col gap-3">
             {visibleActivities.map((a, i) => (
               <ActivityItem
-                key={a._id}
+                key={a._id || i}
                 a={a}
                 isLast={i === visibleActivities.length - 1}
               />
@@ -255,7 +252,7 @@ export default function RightSidebar({ profile }) {
           className="rounded-lg p-4"
           style={{ backgroundColor: "rgba(250,250,250,1)" }}
         >
-          <h3 className=" text-md mb-3">Communities of your taste</h3>
+          <h3 className="text-md mb-3">Communities of your taste</h3>
 
           {loading ? (
             <p className="text-xs text-gray-600">Loading...</p>
@@ -275,7 +272,7 @@ export default function RightSidebar({ profile }) {
                       })`,
                     }}
                   />
-                  <span className="text-md  text-gray-800 group-hover:text-blue-600 transition truncate">
+                  <span className="text-md text-gray-800 group-hover:text-blue-600 transition truncate">
                     {comm.name}
                   </span>
                 </Link>

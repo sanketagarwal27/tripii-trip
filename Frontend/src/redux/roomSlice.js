@@ -64,6 +64,23 @@ const roomSlice = createSlice({
         state.rooms[idx] = { ...state.rooms[idx], ...updated };
       }
     },
+    updateRoomMembers(state, action) {
+      const { user, role, joinedAt } = action.payload;
+
+      if (!state.selectedRoomData) return;
+
+      const exists = state.selectedRoomData.members?.some(
+        (m) => m.user?._id === user._id
+      );
+
+      if (!exists) {
+        state.selectedRoomData.members.push({
+          user,
+          role,
+          joinedAt,
+        });
+      }
+    },
     removeRoom: (state, action) => {
       const roomId = action.payload;
       state.rooms = state.rooms.filter((r) => r._id !== roomId);
@@ -91,6 +108,7 @@ export const {
   updateRoom,
   removeRoom,
   clearRoomState,
+  updateRoomMembers,
 } = roomSlice.actions;
 
 export default roomSlice.reducer;

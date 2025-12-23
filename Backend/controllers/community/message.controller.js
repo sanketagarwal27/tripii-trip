@@ -20,6 +20,8 @@ import { rollbackPointsForModel } from "../../points/rollbackPoints.js";
 import { awardPoints } from "../../points/awardPoints.js";
 import { CommComment } from "../../models/community/CommCommunity.model.js";
 import { Notification } from "../../models/user/notification.model.js";
+import { Activity } from "../../models/community/activity.model.js";
+import { User } from "../../models/user/user.model.js";
 
 /**
  * Upload media helper
@@ -620,39 +622,86 @@ export const deleteMessage = asyncHandler(async (req, res) => {
   const { messageId } = req.params;
   const userId = req.user._id;
 
+  /* ---------------- FIND MESSAGE ---------------- */
   const message = await MessageInComm.findById(messageId);
   if (!message) throw new ApiError(404, "Message not found");
 
+  /* ---------------- MEMBERSHIP CHECK ---------------- */
   const membership = await CommunityMembership.findOne({
     community: message.community,
     user: userId,
   });
-  if (!membership) throw new ApiError(403, "Only members can delete");
 
+  if (!membership) {
+    throw new ApiError(403, "Only community members can delete messages");
+  }
+
+  /* ---------------- PIN PROTECTION ---------------- */
+  const community = await Community.findById(message.community).select(
+    "pinnedMessages"
+  );
+
+  const isPinned = community?.pinnedMessages?.some(
+    (p) => p.message.toString() === messageId.toString()
+  );
+
+  if (isPinned) {
+    throw new ApiError(403, "Pinned messages cannot be deleted");
+  }
+
+  /* ---------------- PERMISSION CHECK ---------------- */
   const isSender = message.sender.toString() === userId.toString();
   const isAdmin = membership.role === "admin";
-  if (!isSender && !isAdmin)
-    throw new ApiError(403, "Only sender or admin can delete");
+  const isModerator = membership.role === "moderator";
 
+  if (!isSender && !isAdmin && !isModerator) {
+    throw new ApiError(403, "You are not allowed to delete this message");
+  }
+
+  /* ---------------- DELETE MESSAGE MEDIA ---------------- */
   if (message.media?.publicId) {
     try {
       await cloudinary.uploader.destroy(message.media.publicId, {
-        resource_type: message.media.mimeType?.startsWith("image/")
+        resource_type: message.media.mimeType?.startsWith("image")
           ? "image"
           : "raw",
       });
     } catch (err) {
-      console.error("Cloudinary deletion failed:", err);
+      console.error("Message media deletion failed:", err);
     }
   }
 
+  /* ---------------- DELETE COMMENTS (CASCADE) ---------------- */
+  const comments = await CommComment.find({ message: messageId });
+
+  for (const c of comments) {
+    if (c.media?.publicId) {
+      try {
+        await cloudinary.uploader.destroy(c.media.publicId, {
+          resource_type: c.media.mimeType?.startsWith("image")
+            ? "image"
+            : "raw",
+        });
+      } catch (err) {
+        console.error("Comment media deletion failed:", err);
+      }
+    }
+  }
+
+  // delete all comments in one go
+  await CommComment.deleteMany({ message: messageId });
+
+  /* ---------------- DELETE MESSAGE ---------------- */
   await MessageInComm.findByIdAndDelete(messageId);
 
+  /* ---------------- SOCKET EVENT ---------------- */
   emitToCommunity(message.community.toString(), "community:message:deleted", {
     messageId,
   });
 
-  return res.status(200).json(new ApiResponse(200, {}, "Message deleted"));
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Message and its comments deleted"));
 });
 
 export const deleteComment = asyncHandler(async (req, res) => {
@@ -792,46 +841,78 @@ export const togglePinMessage = asyncHandler(async (req, res) => {
   const message = await MessageInComm.findById(messageId);
   if (!message) throw new ApiError(404, "Message not found");
 
+  const user = await User.findById(userId);
+
   const membership = await CommunityMembership.findOne({
     community: message.community,
     user: userId,
   });
-  if (!membership) throw new ApiError(403, "Only members can pin");
+
+  if (!membership || !["admin", "moderator"].includes(membership.role)) {
+    throw new ApiError(403, "Only admins or moderators can pin messages");
+  }
 
   const community = await Community.findById(message.community);
 
-  const isPinned = community.pinnedMessage?.message?.toString() === messageId;
+  if (!Array.isArray(community.pinnedMessages)) {
+    community.pinnedMessages = [];
+  }
 
-  if (isPinned) {
-    community.pinnedMessage = undefined;
+  const pinIndex = community.pinnedMessages.findIndex(
+    (p) => p.message.toString() === messageId
+  );
+
+  // 🔁 TOGGLE LOGIC
+  if (pinIndex !== -1) {
+    // 🔓 UNPIN
+    community.pinnedMessages.splice(pinIndex, 1);
     await community.save();
+
+    await Activity.findOneAndDelete({
+      community: message.community,
+      type: "message_pinned",
+      "payload.messageId": messageId,
+    });
 
     emitToCommunity(
       message.community.toString(),
       "community:message:unpinned",
       {
         messageId,
+        unpinnedBy: user.username,
       }
     );
 
     return res.status(200).json(new ApiResponse(200, {}, "Message unpinned"));
   }
 
-  community.pinnedMessage = {
+  // 📌 PIN
+  community.pinnedMessages.push({
     message: messageId,
     pinnedBy: userId,
     pinnedAt: new Date(),
-  };
+  });
+
   await community.save();
+
+  // 🔥 CREATE ACTIVITY
+  await Activity.create({
+    community: message.community,
+    actor: userId,
+    type: "message_pinned",
+    payload: {
+      messageId,
+      content: message.content, // optional but useful for UI
+    },
+    createdAt: new Date(),
+  });
 
   emitToCommunity(message.community.toString(), "community:message:pinned", {
     messageId,
-    pinnedBy: userId,
+    pinnedBy: user.username,
   });
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, community.pinnedMessage, "Message pinned"));
+  return res.status(200).json(new ApiResponse(200, {}, "Message pinned"));
 });
 
 /**

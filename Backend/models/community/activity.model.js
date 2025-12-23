@@ -22,6 +22,7 @@ const activitySchema = new Schema(
         "settings_updated",
         "community_left",
         "role_changed",
+        "message_pinned",
       ],
       required: true,
     },

@@ -1377,3 +1377,14 @@ body {
 .room-header-icon:hover {
   height: 20px;
 }
+
+/* For linkify */
+.chat-link {
+  color: blue;
+  /* text-decoration: underline; */
+  word-break: break-word;
+}
+
+.chat-link:hover {
+  color: red;
+}

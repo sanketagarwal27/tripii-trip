@@ -345,13 +345,27 @@ export const updateCommunitySettings = asyncHandler(async (req, res) => {
  * GET COMMUNITY PROFILE
  */
 export const getCommunityProfile = asyncHandler(async (req, res) => {
-  const communityId = req.params.communityId;
+  const { communityId } = req.params;
   const userId = req.user._id;
 
-  // Fetch community
   const community = await Community.findById(communityId)
     .select(
-      "name description backgroundImage.url rules type visibility createdBy updatedAt memberCount roomsLast7DaysCount rooms featuredTrips tags"
+      `
+        name
+        description
+        backgroundImage.url
+        rules
+        type
+        visibility
+        createdBy
+        updatedAt
+        memberCount
+        roomsLast7DaysCount
+        rooms
+        featuredTrips
+        tags
+        pinnedMessages
+      `
     )
     .populate("createdBy", "username profilePicture bio")
     .populate({
@@ -363,29 +377,56 @@ export const getCommunityProfile = asyncHandler(async (req, res) => {
       "featuredTrips",
       "title startDate endDate createdBy type coverPhoto.url"
     )
+    .populate({
+      path: "pinnedMessages.message",
+      select: `
+        type
+        content
+        media.url
+        media.publicId
+        media.mimeType
+        poll.question
+        poll.options
+        poll.totalVotes
+        poll.allowMultipleVotes
+        poll.expiresAt
+        reactions
+        commentCount
+        helpfulCount
+        sender
+        senderDisplayName
+        senderDisplayProfile
+        createdAt
+        updatedAt
+      `,
+      populate: {
+        path: "sender",
+        select: "username profilePicture",
+      },
+    })
+    .populate({
+      path: "pinnedMessages.pinnedBy",
+      select: "username profilePicture",
+    })
     .lean();
 
   if (!community) throw new ApiError(404, "Community not found");
 
-  const isPublic =
-    community.type === "public_group" ||
-    community.type === "regional_hub" ||
-    community.type === "global_hub";
+  const isPublic = ["public_group", "regional_hub", "global_hub"].includes(
+    community.type
+  );
 
-  // Check membership
   const membership = await CommunityMembership.findOne({
     community: communityId,
     user: userId,
   }).lean();
 
-  const isMember = !!membership;
-
-  // PRIVATE COMMUNITY → block for non-members
-  if (!isPublic && !isMember)
+  if (!isPublic && !membership) {
     throw new ApiError(
       403,
       "You must join this private community to view content"
     );
+  }
 
   return res.status(200).json(
     new ApiResponse(
@@ -393,13 +434,16 @@ export const getCommunityProfile = asyncHandler(async (req, res) => {
       {
         ...community,
         rules: community.rules || [],
+        pinnedMessages: community.pinnedMessages || [],
         isPublic,
-        isMember,
+        isMember: !!membership,
         currentUserRole: membership?.role || null,
-        canPost: isMember, // <— FRONTEND USES THIS
-        canCreateRoom: isMember,
-        canReact: isMember,
-        canVote: isMember,
+
+        // permissions
+        canPost: !!membership,
+        canCreateRoom: !!membership,
+        canReact: !!membership,
+        canVote: !!membership,
 
         totalMembers: community.memberCount,
         roomsLast7Days: community.roomsLast7DaysCount,

@@ -23,16 +23,22 @@ export const ACTIVITY_CONFIG = {
   member_added: {
     label: "Member added",
     emoji: "➕",
-    color: "bg-emerald-500",
+    color: "bg-lime-500",
   },
   member_joined: {
     label: "Member_joined",
     emoji: "😶‍🌫️",
-    color: "bg-lime-500",
+    color: "bg-emerald-500",
   },
   settings_updated: {
     label: "Settings updated",
     emoji: "⚙️",
     color: "bg-gray-500",
+  },
+
+  message_pinned: {
+    label: "Message Pinned",
+    emoji: "📌",
+    color: "bg-yellow-500",
   },
 };

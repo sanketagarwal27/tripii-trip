@@ -1,29 +1,25 @@
 {
   "name": "tripii-trip",
   "version": "1.0.0",
-  "description": "TripiiTrip is an intelligent travel platform that provides users with a comprehensive overview of global destinations. It integrates real-time news and a contextual AI consultant to help travelers navigate new cities safely and efficiently. It also contains features of a social media app like posting, chatting in communities and rooms for group trip planning through the app only.",
+  "description": "**TripiiTrip** is a full-stack, social-first travel platform designed to fundamentally upgrade how people **discover destinations, connect with others, plan trips, communicate in real time, and build trust-driven travel experiences**.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "concurrently \"cd frontend && npm run dev\" \"cd backend && npm run dev\""
+   "dev": "concurrently \"cd frontend && npm run dev\" \"cd backend && npm run dev\""
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sanketagarwal27/tripii-trip.git"
+    "url": "git+https://github.com/himanshuiitd-ism/tripii-trip.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "bugs": {
-    "url": "https://github.com/sanketagarwal27/tripii-trip/issues"
+    "url": "https://github.com/himanshuiitd-ism/tripii-trip/issues"
   },
-  "homepage": "https://github.com/sanketagarwal27/tripii-trip#readme",
+  "homepage": "https://github.com/himanshuiitd-ism/tripii-trip#readme",
   "dependencies": {
     "concurrently": "^9.2.1"
   },
-  "workspaces": [
-    "backend",
-    "frontend"
-  ]
+  "workspaces":["backend","frontend"]
 }

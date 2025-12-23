@@ -1,4 +1,5 @@
 // src/redux/communitySlice.js
+// src/redux/communitySlice.js
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
@@ -54,6 +55,45 @@ const communitySlice = createSlice({
       state.messages = [];
       state.activities = [];
       state.error = null;
+    },
+
+    // ---------------- ROOMS - 🔥 NEW ACTIONS ----------------
+    addCommunityRoom: (state, action) => {
+      const room = action.payload;
+      // Check if room already exists
+      const exists = state.rooms.some((r) => r._id === room._id);
+      if (!exists) {
+        state.rooms.unshift(room); // Add to beginning for newest first
+      }
+    },
+
+    updateCommunityRoom: (state, action) => {
+      const updated = action.payload;
+      const idx = state.rooms.findIndex((r) => r._id === updated._id);
+
+      if (idx !== -1) {
+        // Handle special case for adding members
+        if (updated.$addMember) {
+          const currentMembers = state.rooms[idx].members || [];
+          const memberExists = currentMembers.some(
+            (m) =>
+              m.user?._id?.toString() ===
+              updated.$addMember.user?._id?.toString()
+          );
+
+          if (!memberExists) {
+            state.rooms[idx].members = [...currentMembers, updated.$addMember];
+          }
+        } else {
+          // Normal update
+          state.rooms[idx] = { ...state.rooms[idx], ...updated };
+        }
+      }
+    },
+
+    removeCommunityRoom: (state, action) => {
+      const roomId = action.payload;
+      state.rooms = state.rooms.filter((r) => r._id !== roomId);
     },
 
     // ---------------- MESSAGES ----------------
@@ -152,6 +192,11 @@ export const {
   setCommunityActivities,
   setCommunityError,
   clearCommunityState,
+
+  // 🔥 Export new room actions
+  addCommunityRoom,
+  updateCommunityRoom,
+  removeCommunityRoom,
 
   setSelectedMessage,
   addCommunityMessage,

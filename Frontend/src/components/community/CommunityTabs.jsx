@@ -2,9 +2,10 @@
 import React, { useState } from "react";
 import DiscussionTab from "./DiscussionTab.jsx";
 import MembersTab from "./MembersTab.jsx";
-// import RoomsTab from "./RoomTab.jsx";
+import PinnedMessages from "./PinnedMessages.jsx";
+import RoomsTab from "./RoomTab.jsx";
 
-const tabs = ["Discussion", "Rooms", "Members", "Admins"];
+const tabs = ["Discussion", "Rooms", "Pins", "Helpfulls", "Members", "Setting"];
 
 const CommunityTabs = () => {
   const [active, setActive] = useState("Discussion");
@@ -40,7 +41,8 @@ const CommunityTabs = () => {
 
       <div className="p-4">
         {active === "Discussion" && <DiscussionTab />}
-        {/* {active === "Rooms" && <RoomsTab />} */}
+        {active === "Rooms" && <RoomsTab />}
+        {active === "Pins" && <PinnedMessages />}
         {active === "Members" && <MembersTab />}
         {active === "Admins" && <MembersTab adminOnly />}
       </div>

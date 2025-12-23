@@ -12,6 +12,7 @@ import EmojiPickerPopover from "@/components/common/EmojiPickerPopover";
 import { aggregateReactions } from "@/utils/aggregateReactions";
 import { useNavigate } from "react-router-dom";
 import { setSelectedMessage } from "@/redux/communitySlice";
+import Linkify from "linkify-react";
 
 const CommunityPost = ({ post }) => {
   const user = useSelector((s) => s.auth.user);
@@ -22,7 +23,7 @@ const CommunityPost = ({ post }) => {
      🔥 GET LATEST POST DATA FROM REDUX
   ---------------------------- */
   const messages = useSelector((s) => s.community.messages || []);
-  const selectedCommunity = useSelector((s) => s.community.selectedCommunity);
+  const selectedCommunity = useSelector((s) => s.community.profile);
 
   const latestPost = useMemo(() => {
     return messages.find((m) => m._id === post._id) || post;
@@ -36,7 +37,7 @@ const CommunityPost = ({ post }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedPollOptions, setSelectedPollOptions] = useState([]);
-  const [isChangingVote, setIsChangingVote] = useState(false); // 🔥 NEW
+  const [isChangingVote, setIsChangingVote] = useState(false);
 
   const menuRef = useRef(null);
 
@@ -71,7 +72,23 @@ const CommunityPost = ({ post }) => {
      DERIVED STATE
   ---------------------------- */
   const helpfulCount = latestPost.helpfulCount ?? 0;
-  const isPinned = Boolean(latestPost.pinnedMessage);
+
+  // 🔥 FIXED: Check pinnedMessages array correctly
+  const isPinned = useMemo(() => {
+    if (!Array.isArray(selectedCommunity?.pinnedMessages)) return false;
+
+    return selectedCommunity.pinnedMessages.some((p) => {
+      // Handle both object with message property and direct string ID
+      const pinnedMessageId =
+        typeof p === "object" && p.message ? p.message : p;
+      const currentMessageId =
+        typeof pinnedMessageId === "object" && pinnedMessageId._id
+          ? pinnedMessageId._id
+          : pinnedMessageId;
+
+      return String(currentMessageId) === String(latestPost._id);
+    });
+  }, [selectedCommunity?.pinnedMessages, latestPost._id]);
 
   /* ---------------------------
      PERMISSIONS
@@ -82,9 +99,7 @@ const CommunityPost = ({ post }) => {
     (mod) => mod === user?._id || mod?._id === user?._id
   );
 
-  const isAdmin =
-    selectedCommunity?.admin === user?._id ||
-    selectedCommunity?.admin?._id === user?._id;
+  const isAdmin = selectedCommunity?.createdBy?._id === user?._id;
 
   const canDelete = isOwner || isModerator || isAdmin;
   const canPin = isModerator || isAdmin;
@@ -105,7 +120,7 @@ const CommunityPost = ({ post }) => {
   }, [latestPost.reactions]);
 
   /* ---------------------------
-     🔥 UPDATED POLL LOGIC
+     🔥 POLL LOGIC
   ---------------------------- */
   const hasVoted = useMemo(() => {
     if (!latestPost.poll?.options || !user?._id) return false;
@@ -133,7 +148,6 @@ const CommunityPost = ({ post }) => {
   }, [latestPost.poll?.expiresAt]);
 
   const togglePollOption = (optionId) => {
-    // 🔥 Allow clicking only if not expired AND (not voted OR is changing vote)
     if (isPollExpired || (hasVoted && !isChangingVote)) return;
 
     if (latestPost.poll.allowMultipleVotes) {
@@ -154,7 +168,7 @@ const CommunityPost = ({ post }) => {
       setLoading(true);
       await voteOnPoll(latestPost._id, selectedPollOptions);
       setSelectedPollOptions([]);
-      setIsChangingVote(false); // 🔥 Reset changing state
+      setIsChangingVote(false);
     } catch (err) {
       console.error("Poll vote error:", err);
     } finally {
@@ -162,13 +176,11 @@ const CommunityPost = ({ post }) => {
     }
   };
 
-  // 🔥 NEW: Start changing vote
   const handleChangeVote = () => {
     setIsChangingVote(true);
     setSelectedPollOptions(Array.from(myVotes));
   };
 
-  // 🔥 NEW: Cancel changing vote
   const handleCancelChange = () => {
     setIsChangingVote(false);
     setSelectedPollOptions([]);
@@ -222,10 +234,13 @@ const CommunityPost = ({ post }) => {
 
   const handlePin = async () => {
     try {
+      setLoading(true);
       await togglePinMessage(latestPost._id);
       setShowMenu(false);
     } catch (err) {
       console.error("Pin error:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -244,7 +259,7 @@ const CommunityPost = ({ post }) => {
   const avatar = latestPost.sender?.profilePicture?.url || "/public/travel.jpg";
 
   return (
-    <div className="group relative rounded-xl  p-4 bg-[rgb(250,250,250)] dark:bg-surface-dark">
+    <div className="group relative rounded-xl p-4 bg-[rgb(250,250,250)] dark:bg-surface-dark">
       {isPinned && (
         <div className="absolute -top-2 left-4 bg-primary text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
           <span className="material-symbols-outlined !text-[14px]">
@@ -344,11 +359,19 @@ const CommunityPost = ({ post }) => {
           {/* TEXT */}
           {latestPost.content && (
             <p className="text-[16px] leading-relaxed text-text-light mt-2">
-              {latestPost.content}
+              <Linkify
+                options={{
+                  target: "_blank",
+                  rel: "noopener noreferrer",
+                  className: "chat-link",
+                }}
+              >
+                {latestPost.content}
+              </Linkify>
             </p>
           )}
 
-          {/* 🔥 UPDATED POLL */}
+          {/* POLL */}
           {latestPost.type === "poll" && latestPost.poll && (
             <div className="mt-3 p-4 bg-white dark:bg-surface-darker rounded-lg border">
               <div className="flex items-start justify-between mb-3">
@@ -424,7 +447,7 @@ const CommunityPost = ({ post }) => {
                 })}
               </div>
 
-              {/* 🔥 UPDATED BUTTON LOGIC */}
+              {/* POLL ACTIONS */}
               {!hasVoted &&
                 !isPollExpired &&
                 selectedPollOptions.length > 0 && (
@@ -437,7 +460,6 @@ const CommunityPost = ({ post }) => {
                   </button>
                 )}
 
-              {/* 🔥 NEW: Change Vote Button */}
               {hasVoted && !isPollExpired && !isChangingVote && (
                 <button
                   onClick={handleChangeVote}
@@ -447,7 +469,6 @@ const CommunityPost = ({ post }) => {
                 </button>
               )}
 
-              {/* 🔥 NEW: Cancel/Update Buttons When Changing */}
               {hasVoted && !isPollExpired && isChangingVote && (
                 <div className="mt-3 flex gap-2">
                   <button
@@ -507,7 +528,7 @@ const CommunityPost = ({ post }) => {
             </div>
           )}
 
-          {/* 🔥 ACTION BAR WITH REACTIONS IN LINE */}
+          {/* ACTION BAR */}
           <div className="flex items-center gap-3 mt-3">
             {/* REACT BUTTON */}
             <div className="relative">
@@ -545,7 +566,7 @@ const CommunityPost = ({ post }) => {
               <span className="font-bold">{latestPost.commentCount || 0}</span>
             </div>
 
-            {/* 🔥 REACTIONS DISPLAY - IN LINE */}
+            {/* REACTIONS DISPLAY */}
             {aggregatedReactions.length > 0 && (
               <div className="flex gap-2 flex-1 overflow-x-auto reaction-scrollbar">
                 {aggregatedReactions.map((r) => {

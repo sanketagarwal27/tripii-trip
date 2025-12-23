@@ -500,8 +500,13 @@ export const joinRoom = asyncHandler(async (req, res) => {
 
   // Emit to room
   emitToRoom(roomId.toString(), "room:userJoined", {
-    roomId,
-    user: userData,
+    roomId: room._id,
+    user: {
+      _id: userData._id,
+      username: userData.username,
+      profilePicture: userData.profilePicture.url,
+    },
+    role: "member",
     joinedAt: new Date(),
   });
 
@@ -567,16 +572,26 @@ export const sendRoomMessage = asyncHandler(async (req, res) => {
   const { content = "", gifUrl } = req.body;
   const file = req.files?.media?.[0];
 
-  const room = await Room.findById(roomId).select("members parentCommunity");
+  const room = await Room.findById(roomId).select(
+    "members parentCommunity status"
+  );
   if (!room) throw new ApiError(404, "Room not found");
 
   const isMember = room.members.some(
     (m) => m.user.toString() === userId.toString()
   );
-  if (!isMember) throw new ApiError(403, "Only room members can send messages");
+  if (!isMember) {
+    throw new ApiError(403, "Only room members can send messages");
+  }
 
-  if (!content && !gifUrl && !file)
+  /* ---------------- STATUS GUARD ---------------- */
+  if (["finished", "cancelled"].includes(room.status)) {
+    throw new ApiError(403, `Messages are disabled for ${room.status} rooms`);
+  }
+
+  if (!content && !gifUrl && !file) {
     throw new ApiError(400, "Message must contain text, media, or GIF");
+  }
 
   const messageData = {
     room: roomId,
@@ -601,7 +616,6 @@ export const sendRoomMessage = asyncHandler(async (req, res) => {
   const message = await MessageInRoom.create(messageData);
   await message.populate("sender", "username profilePicture");
 
-  // Emit to room via wrapper
   emitToRoom(roomId.toString(), "room:message:new", message);
 
   return res.status(201).json(new ApiResponse(201, message, "Message sent"));
@@ -969,14 +983,30 @@ export const updateRoomSettings = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, populatedRoom, "Room updated successfully"));
 });
 
+// helper function for grtting room status
+const computeRoomStatus = (room) => {
+  if (!room.startDate || !room.endDate) return room.status;
+
+  const now = new Date();
+  const start = new Date(room.startDate);
+  const end = new Date(room.endDate);
+
+  if (room.status === "cancelled") return "cancelled";
+
+  if (now < start) return "upcoming";
+  if (now >= start && now <= end) return "active";
+  if (now > end) return "finished";
+
+  return room.status;
+};
+
 export const getRoomDetails = asyncHandler(async (req, res) => {
   const { roomId } = req.params;
   const userId = req.user._id;
 
-  const room = await Room.findById(roomId)
+  let room = await Room.findById(roomId)
     .populate("createdBy", "username profilePicture.url")
-    .populate("members.user", "username profilePicture.url")
-    .lean();
+    .populate("members.user", "username profilePicture.url");
 
   if (!room) {
     throw new ApiError(404, "Room not found");
@@ -984,12 +1014,23 @@ export const getRoomDetails = asyncHandler(async (req, res) => {
 
   // ensure user is a member
   const isMember = room.members.some(
-    (m) => m.user._id.toString() === userId.toString()
+    (m) => m.user?._id.toString() === userId.toString()
   );
 
   if (!isMember) {
     throw new ApiError(403, "You are not a member of this room");
   }
+
+  /* ---------------- AUTO STATUS SYNC ---------------- */
+  const expectedStatus = computeRoomStatus(room);
+
+  if (expectedStatus !== room.status) {
+    room.status = expectedStatus;
+    await room.save();
+  }
+
+  // convert to plain object AFTER save
+  room = room.toObject();
 
   return res
     .status(200)

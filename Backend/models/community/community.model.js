@@ -65,11 +65,19 @@ const communitySchema = new Schema(
     featuredTrips: [{ type: Schema.Types.ObjectId, ref: "Trip" }],
 
     // pinned message pattern remains
-    pinnedMessage: {
-      message: { type: Schema.Types.ObjectId, ref: "MessageInComm" },
-      pinnedBy: { type: Schema.Types.ObjectId, ref: "User" },
-      pinnedAt: { type: Date },
-    },
+    pinnedMessages: [
+      {
+        message: {
+          type: Schema.Types.ObjectId,
+          ref: "MessageInComm",
+          required: true,
+        },
+        pinnedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+        pinnedAt: { type: Date, default: Date.now },
+        locked: { type: Boolean, default: true }, // 🔥 IMMUTABLE PIN
+        _id: false,
+      },
+    ],
 
     // community-specific settings (important)
     settings: {
