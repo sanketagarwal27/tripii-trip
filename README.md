@@ -6,13 +6,13 @@
 
 ---
 
-## Preview of my work
+## Feature Demos (My Work)
 
 **Chatbot:**
-![Chatbot Demo](https://res.cloudinary.com/dpg94yqwz/video/upload/v1766491127/chatbot_xsv8um.mp4)
+https://res.cloudinary.com/dpg94yqwz/video/upload/f_auto,q_auto/v1766491127/chatbot_xsv8um.mp4
 
 **Place Search:**
-![Place Search Demo](https://res.cloudinary.com/dpg94yqwz/video/upload/v1766491720/places_dq0qch.mp4)
+https://res.cloudinary.com/dpg94yqwz/video/upload/f_auto,q_auto/v1766491720/places_dq0qch.mp4
 
 ---
 
