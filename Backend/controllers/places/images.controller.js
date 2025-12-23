@@ -28,7 +28,7 @@ export const getImagesFromApi = async (place) => {
     const result = await unsplash.search.getPhotos({
       query: `Tourist Attractions of ${place}`,
       orderBy: "relevant",
-      perPage: 32,
+      perPage: 30,
     });
     return result;
   } catch (err) {

@@ -123,16 +123,16 @@ export const getPhotos = asyncHandler(async (req, res) => {
       );
   }
   //Cache Miss
-  console.log(`Cache miss for photos for ${place}. Calling API...`);
+  console.log(`Cache Miss for photos for ${place}. Calling API...`);
   const apiResponse = await getImagesFromApi(place);
   const photos = [];
-  for (let i = 0; i < 30; i++) {
+  apiResponse.response?.results.forEach((pic) => {
     photos.push({
-      raw_url: apiResponse.response?.results[i]?.urls.raw,
-      small_url: apiResponse.response?.results[i]?.urls.small,
-      alt_description: apiResponse.response?.results[i]?.alt_description,
+      raw_url: pic?.urls.raw,
+      small_url: pic.urls.small,
+      alt_description: pic?.alt_description,
     });
-  }
+  });
   await Photo.findOneAndUpdate(
     { place: place },
     {
@@ -168,7 +168,7 @@ export const getOverview = asyncHandler(async (req, res) => {
         weather: cachedPlace.weatherData,
       },
     };
-    res
+    return res
       .status(200)
       .json(new ApiResponse(200, finalData, "Got Overview from DB"));
   }
@@ -216,7 +216,7 @@ export const getOverview = asyncHandler(async (req, res) => {
         },
         { upsert: true, new: true }
       );
-      res
+      return res
         .status(200)
         .json(
           new ApiResponse(200, finalData, "Fetched Overview Data from APIs")
@@ -240,7 +240,7 @@ export const getScams = asyncHandler(async (req, res) => {
   if (cachedPlace) {
     console.log(`✅ Cache hit: Scams for ${place}`);
     const response = cachedPlace.aiData;
-    res
+    return res
       .status(200)
       .json(
         new ApiResponse(
@@ -266,7 +266,7 @@ export const getScams = asyncHandler(async (req, res) => {
         },
         { upsert: true, new: true }
       );
-      res
+      return res
         .status(200)
         .json(
           new ApiResponse(
@@ -280,3 +280,11 @@ export const getScams = asyncHandler(async (req, res) => {
     }
   }
 });
+
+/* -------------------------------------------------
+ * GET SUGGESTED PLACES
+ * ------------------------------------------------- */
+export const getSuggestedPlaces = asyncHandler(async(req, res) => {
+  const place = req.query.place;
+  
+})

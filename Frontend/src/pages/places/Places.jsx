@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import HeroSection from "./components/HeroSection";
 import Tabs from "./components/Tabs";
 import NewsFeed from "./components/NewsFeed";
-import SearchBox from "./components/SearchBox";
+import LandingPage from "./components/LandingPage";
 import styles from "./Places.module.css";
 import {
   fetchNews,
@@ -25,6 +25,9 @@ const Places = () => {
   const [loading, setLoading] = useState(false);
 
   const handleSearch = async (query) => {
+    if(!query) {
+      return;
+    }
     setLoading(true);
     try {
       const [
@@ -96,7 +99,7 @@ const Places = () => {
   }
 
   if (!placeData) {
-    return <SearchBox onSearch={handleSearch} />;
+    return <LandingPage onSearch={handleSearch} />;
   }
 
   return (
