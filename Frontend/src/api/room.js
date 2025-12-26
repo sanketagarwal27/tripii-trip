@@ -47,3 +47,16 @@ export const joinRoom = (roomId) =>
       withCredentials: true,
     }
   );
+
+export const getMyRooms = () =>
+  api.get("/api/community/allMyRooms", {
+    withCredentials: true,
+  });
+
+export const getSuggestedRooms = () =>
+  api.get("/api/community/suggestedRoom", {
+    withCredentials: true,
+  });
+
+export const getActiveTripRooms = () =>
+  api.get("/api/community/rooms/tripRooms", { withCredentials: true });

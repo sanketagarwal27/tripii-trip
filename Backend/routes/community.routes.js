@@ -49,6 +49,7 @@ import {
 import {
   createRoom,
   deleteRoomMessage,
+  getActiveTripRooms,
   getCommunityRooms,
   getMyCommunityRooms,
   getMyRoomsAcrossCommunities,
@@ -172,5 +173,6 @@ router.post("/:messageId/react", reactToRoomMessage);
 router.delete("/:messageId/deleteMessage", deleteRoomMessage);
 router.patch("/updateRoom/:roomId", updateRoomSettings);
 router.get("/room/:roomId", getRoomDetails);
+router.get("/rooms/tripRooms", getActiveTripRooms); //"s" is used because tripRooms is used as id for getRoomDetails (confusion for express)
 
 export default router;

@@ -424,29 +424,68 @@ export const getMyCommunityRooms = asyncHandler(async (req, res) => {
 export const getMyRoomsAcrossCommunities = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
-  const memberships = await CommunityMembership.find({ user: userId })
-    .select("community")
-    .lean();
-  const communityIds = memberships.map((m) => m.community);
+  const rooms = await Room.aggregate([
+    { $match: { "members.user": userId } },
+    {
+      $addFields: {
+        isFinished: { $in: ["$status", ["finished", "cancelled"]] },
+        memberCount: { $size: "$members" },
+      },
+    },
+    { $sort: { isFinished: 1, lastActivityAt: -1 } },
+    {
+      $lookup: {
+        from: "communities",
+        localField: "parentCommunity",
+        foreignField: "_id",
+        as: "parentCommunity",
+      },
+    },
+    { $unwind: { path: "$parentCommunity", preserveNullAndEmptyArrays: true } },
+    {
+      $project: {
+        name: 1,
+        roomTags: 1,
+        memberCount: 1,
+        roombackgroundImage: 1,
+        roomtype: 1,
+        linkedTrip: 1,
+        lastActivityAt: 1,
+        status: 1,
+        parentCommunity: {
+          _id: "$parentCommunity._id",
+          name: "$parentCommunity.name",
+        },
+      },
+    },
+  ]);
+
+  res.status(200).json(new ApiResponse(200, { rooms }, "My rooms fetched"));
+});
+
+/* ===========================
+   GET SUGGESTED Trip rooms
+   =========================== */
+export const getActiveTripRooms = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+
+  const communityIds = await CommunityMembership.find({
+    user: userId,
+  }).distinct("community");
 
   const rooms = await Room.find({
     parentCommunity: { $in: communityIds },
-    "members.user": userId,
+    roomtype: "Trip",
+    status: "active",
+    "members.user": { $ne: userId },
   })
-    .select("name roombackgroundImage parentCommunity linkedTrip")
-    .populate("parentCommunity", "name")
+    .sort({ lastActivityAt: -1 })
     .populate("linkedTrip", "title startDate endDate location")
-    .lean();
+    .populate("parentCommunity", "name");
 
-  return res
+  res
     .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        { rooms },
-        "All user rooms across communities fetched"
-      )
-    );
+    .json(new ApiResponse(200, { rooms }, "Active trip rooms fetched"));
 });
 
 /* ===========================
@@ -455,21 +494,20 @@ export const getMyRoomsAcrossCommunities = asyncHandler(async (req, res) => {
 export const getSuggestedRooms = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
-  const memberships = await CommunityMembership.find({ user: userId }).lean();
-  const communityIds = memberships.map((m) => m.community);
+  const communityIds = await CommunityMembership.find({
+    user: userId,
+  }).distinct("community");
 
-  const rooms = await Room.aggregate([
-    {
-      $match: {
-        parentCommunity: { $in: communityIds },
-        "members.user": { $ne: userId },
-      },
-    },
-    { $addFields: { memberCount: { $size: "$members" } } },
-    { $sort: { memberCount: -1 } },
-  ]);
+  const rooms = await Room.find({
+    parentCommunity: { $in: communityIds },
+    "members.user": { $ne: userId },
+    status: { $nin: ["finished", "cancelled"] },
+  })
+    .populate("parentCommunity", "name")
+    .sort({ lastActivityAt: -1 })
+    .limit(20);
 
-  return res
+  res
     .status(200)
     .json(new ApiResponse(200, { rooms }, "Suggested rooms fetched"));
 });
@@ -624,6 +662,10 @@ export const sendRoomMessage = asyncHandler(async (req, res) => {
   await message.populate("sender", "username profilePicture");
 
   emitToRoom(roomId.toString(), "room:message:new", message);
+
+  await Room.findByIdAndUpdate(roomId, {
+    lastActivityAt: new Date(),
+  });
 
   return res.status(201).json(new ApiResponse(201, message, "Message sent"));
 });

@@ -7,6 +7,9 @@ const initialState = {
   roomMessages: [],
   loading: false,
   error: null,
+  myRooms: [],
+  suggestedRooms: [],
+  tripRooms: [],
 };
 
 const roomSlice = createSlice({
@@ -91,6 +94,15 @@ const roomSlice = createSlice({
       state.loading = false;
       state.error = null;
     },
+    setMyRooms: (state, action) => {
+      state.myRooms = action.payload;
+    },
+    setSuggestedRooms: (state, action) => {
+      state.suggestedRooms = action.payload;
+    },
+    setTripRooms: (state, action) => {
+      state.tripRooms = action.payload;
+    },
   },
 });
 
@@ -109,6 +121,10 @@ export const {
   removeRoom,
   clearRoomState,
   updateRoomMembers,
+
+  setMyRooms,
+  setSuggestedRooms,
+  setTripRooms,
 } = roomSlice.actions;
 
 export default roomSlice.reducer;

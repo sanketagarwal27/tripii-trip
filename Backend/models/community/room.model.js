@@ -54,6 +54,12 @@ const roomSchema = new Schema(
       required: true,
     },
 
+    lastActivityAt: {
+      type: Date,
+      default: Date.now,
+      index: true,
+    },
+
     linkedTrip: { type: Schema.Types.ObjectId, ref: "Trip", default: null },
 
     isEphemeral: { type: Boolean, default: false },
@@ -112,6 +118,8 @@ roomSchema.index({ parentCommunity: 1, createdAt: -1 });
 roomSchema.index({ roomTags: 1 });
 roomSchema.index({ status: 1, startDate: 1 });
 roomSchema.index({ name: "text", description: "text" });
+roomSchema.index({ parentCommunity: 1, status: 1, lastActivityAt: -1 });
+roomSchema.index({ "members.user": 1 });
 
 export const Room = mongoose.model("Room", roomSchema);
 export { ROOM_TAGS };
