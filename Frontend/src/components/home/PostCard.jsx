@@ -19,15 +19,15 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 const PostCard = ({ post }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user } = useSelector((s) => s.auth);
+  const { userProfile } = useSelector((s) => s.auth);
 
-  const [isLiked, setIsLiked] = useState(post.likes.includes(user?._id));
+  const [isLiked, setIsLiked] = useState(post.likes.includes(userProfile?._id));
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const [inlineComment, setInlineComment] = useState("");
@@ -36,7 +36,7 @@ const PostCard = ({ post }) => {
      LIKE HANDLER
   -------------------------------------------- */
   const handleLike = async () => {
-    if (!user) return toast.error("Login required");
+    if (!userProfile) return toast.error("Login required");
 
     const prev = isLiked;
     setIsLiked(!isLiked); // optimistic
@@ -97,19 +97,20 @@ const PostCard = ({ post }) => {
     <div className="postcard">
       {/* HEADER */}
       <div className="postcard-header">
+        <Link to = {`/profile/${post.author._id}`}>
         <img
           src={post.author?.profilePicture?.url || "/travel.jpg"}
           className="postcard-avatar"
         />
-
-        <div className="postcard-header-info">
+        </Link>
+        <Link to = {`/profile/${post.author._id}`} className="postcard-header-info">
           <p className="postcard-username">{post.author.username}</p>
           <p className="postcard-time">
             {new Date(post.createdAt).toLocaleString()}
           </p>
-        </div>
+        </Link>
 
-        {post.author._id === user?._id && (
+        {post.author._id === userProfile?._id && (
           <button className="postcard-delete-btn" onClick={handleDelete}>
             <Trash2 size={18} />
           </button>

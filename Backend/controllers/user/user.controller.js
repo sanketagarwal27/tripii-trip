@@ -320,17 +320,10 @@ export const getProfile = asyncHandler(async (req, res) => {
     const isOwnProfile = requestingUserId.toString() === userId.toString();
 
     const userProfile = await User.findById(userId)
-      .select("-password -refreshToken")
+      .select("-password -refreshToken -aiChatHistory")
       .populate({
         path: "posts",
         options: { sort: { createdAt: -1 } },
-      })
-      .populate({
-        path: "tripPosts",
-        options: { sort: { createdAt: -1 } },
-        populate: {
-          path: "tripId",
-        },
       });
 
     if (!userProfile) {
@@ -364,10 +357,16 @@ export const getProfile = asyncHandler(async (req, res) => {
 export const editProfile = asyncHandler(async (req, res) => {
   try {
     const userId = req.user._id;
-    const { bio, gender, privacy } = req.body;
+    const { fullName, bio, address, privacy } = req.body;
     const profilePicture = req.file;
 
-    const user = await User.findById(userId);
+    const user = await User.findById(userId)
+      .select("-password -refreshToken -aiChatHistory")
+      .populate({
+        path: "posts",
+        select: "type caption media createdAt",
+        options: { sort: { createdAt: -1 } },
+      });
     if (!user) throw new ApiError(404, "User not found");
 
     // Handle profile picture update
@@ -396,28 +395,18 @@ export const editProfile = asyncHandler(async (req, res) => {
     }
 
     // Update other fields
+    if (address !== undefined) user.address = address;
+    if (fullName !== undefined) user.fullName = fullName;
     if (bio !== undefined) user.bio = bio;
-    if (gender !== undefined) user.gender = gender;
     if (privacy !== undefined) {
       user.privacy = privacy === "true" || privacy === true; //now any other thing than "true" or true is consider false
     }
 
     await user.save({ validateBeforeSave: false });
 
-    return res.status(200).json(
-      new ApiResponse(
-        200,
-        {
-          _id: user._id,
-          username: user.username,
-          profilePicture: user.profilePicture,
-          bio: user.bio,
-          gender: user.gender,
-          privacy: user.privacy,
-        },
-        "Profile updated successfully"
-      )
-    );
+    return res
+      .status(200)
+      .json(new ApiResponse(200, user, "Profile updated successfully"));
   } catch (error) {
     throw new ApiError(
       error.statusCode || 500,

@@ -14,6 +14,18 @@ const userSchema = new Schema(
       trim: true,
     },
 
+    fullName: {
+      type: String,
+      required: false,
+      unique: false,
+    },
+
+    address: {
+      type: String,
+      required: false,
+      unique: false,
+    },
+
     email: {
       type: String,
       lowercase: true,
@@ -88,16 +100,24 @@ const userSchema = new Schema(
     ],
 
     profilePicture: {
-      url: { type: String, default: "" },
+      url: {
+        type: String,
+        default:
+          "https://p.kindpng.com/picc/s/685-6851196_person-icon-grey-hd-png-download.png",
+      },
       publicId: { type: String, default: "" },
     },
 
     aiChatHistory: [
       {
-        id: {type: Number, default: Date.now()},
-        text: {type: String, default: "Error occurred" },
-        sender: {type: String, enum: ["user", "ai","Error occurred"], default: "Error occurred"},
-      }
+        id: { type: Number, default: Date.now() },
+        text: { type: String, default: "Error occurred" },
+        sender: {
+          type: String,
+          enum: ["user", "ai", "Error occurred"],
+          default: "Error occurred",
+        },
+      },
     ],
 
     bio: { type: String, default: "" },

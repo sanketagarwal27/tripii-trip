@@ -1,0 +1,180 @@
+/* --- Modal / Popup Styles --- */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6); /* Dark background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; /* On top of everything */
+}
+
+.modalContent {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  max-height: 100vh;
+  overflow-y: auto;
+}
+
+.modalHeader {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 1.5rem;
+  color: #333;
+}
+
+.formGroup {
+  margin-bottom: 0.5rem;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #666;
+}
+
+.formInput, .formTextarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.formTextarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.cancelButton {
+  padding: 0.75rem 1.5rem;
+  background: #f1f1f1;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #555;
+}
+
+.saveButton {
+  padding: 0.75rem 1.5rem;
+  background: #40E0D0; /* Teal */
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  color: white;
+}
+/* --- Avatar Uploader --- */
+.avatarUpload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.avatarPreview {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #f0f0f0;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.avatarPreview:hover {
+  opacity: 0.8;
+}
+
+.uploadLabel {
+  font-size: 0.85rem;
+  color: #40E0D0;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* --- Privacy Toggle Switch --- */
+.toggleContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.toggleLabel {
+  font-weight: 600;
+  color: #333;
+}
+
+.toggleDescription {
+  font-size: 0.8rem;
+  color: #777;
+}
+
+/* The Switch Box */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 26px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+/* Checked State */
+input:checked + .slider {
+  background-color: #40E0D0;
+}
+
+input:checked + .slider:before {
+  transform: translateX(24px);
+}

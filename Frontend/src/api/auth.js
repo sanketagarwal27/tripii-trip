@@ -17,6 +17,23 @@ export const googleLoginRequest = (credential) =>
 export const logoutRequest = () =>
   api.post("/api/auth/logout", {}, { withCredentials: true });
 
-// FETCH PROFILE (if needed later)
-export const getMyProfile = () =>
-  api.get("/api/auth/profile/me", { withCredentials: true });
+// FETCH PROFILE
+export const getUserProfile = async (userId) => {
+  const response = await api.get(`/api/auth/profile/${userId}`, {
+    withCredentials: true,
+  });
+  return response.data;
+};
+
+// Update Profile
+export const updateUserProfile = async (payload) => {
+  const response = await api.put("/api/auth/edit-profile", payload, {
+    withCredentials: true,
+  });
+  return response.data;
+};
+
+export const getLoggedInUser = async () => {
+  const response = await api.get("/api/auth/me", { withCredentials: true });
+  return response.data;
+};

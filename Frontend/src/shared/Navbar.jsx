@@ -2,14 +2,13 @@
 import { useSelector } from "react-redux";
 import profileimage from "../../public/travel.jpg";
 import { Bell, MessageSquare } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { logoutRequest } from "@/api/auth";
 import { disconnectSocket } from "../../Socket.js";
 
 const Navbar = () => {
-  const { user } = useSelector((store) => store.auth);
+  const { userProfile } = useSelector((store) => store.auth);
   const navigate = useNavigate();
-  console.log("user:", user);
 
   return (
     <div className="navbar">
@@ -40,14 +39,18 @@ const Navbar = () => {
         <button className="icon-btn">
           <Bell size={22} />
         </button>
-
         <button className="icon-btn">
           <MessageSquare size={22} />
         </button>
-
-        <button className="navbar-profile">
-          <img src={user?.profilePicture?.url || profileimage} alt="profile" />
-        </button>
+        {/* <button className="navbar-profile"> */}{" "}
+        {/*Done for testing purposes*/}
+        <Link to={`/profile/${userProfile._id}`} className="navbar-profile">
+          <img
+            src={userProfile?.profilePicture?.url || profileimage}
+            alt="profile"
+          />
+        </Link>
+        {/* </button> */}
       </div>
     </div>
   );

@@ -1,0 +1,147 @@
+/* src/components/PostCard.module.css */
+
+/* --- VISUAL CARD STYLES --- */
+.visualCard {
+  height: 100%;
+  background: white;
+  border-radius: 16px;
+  transition: transform 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+.visualCard:hover {
+  transform: translateY(-5px);
+}
+
+.imageWrapper {
+  width: 100%;
+  aspect-ratio: 3/2;
+  position: relative;
+  overflow: hidden;
+  background-color: #f0f0f0;
+  border-radius: 12px 12px 0 0;
+}
+
+.multiBadge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent black */
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  backdrop-filter: blur(2px); /* Nice blur effect */
+  z-index: 2;
+}
+
+.postImage {
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  object-fit: cover;
+}
+
+.cardContent {
+  padding: 16px;
+  overflow: hidden;
+}
+
+.title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+}
+
+.postcardActions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+
+  padding-top: 12px;
+  border-top: 1px solid #dce5e4;
+  color: #648783;
+}
+
+.postCardActionBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+
+  background: none;
+  border: none;
+  color: #648783;
+}
+
+.postCardActionBtn:hover {
+  color: #00ffe5
+}
+
+.postcardLiked {
+  fill: #ff3b7b !important;
+  stroke: #ff3b7b !important;
+}
+
+/* --- LOG CARD STYLES --- */
+.logCard {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  gap: 16px;
+  transition: transform 0.3s ease;
+  align-items: flex-start;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  border: 1px solid #f0f0f0;
+}
+
+.logCard:hover {
+  transform: translateY(-5px);
+}
+
+.logIconBox {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #e0f7fa; /* Light cyan background */
+  color: #00b4d8; /* Icon color */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.logContent {
+  flex-grow: 1;
+}
+
+.logText {
+  font-size: 0.95rem;
+  color: #333;
+  margin: 0 0 8px 0;
+  line-height: 1.5;
+}
+
+/* --- SHARED FOOTER --- */
+.footer, .logFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #999;
+  font-size: 0.8rem;
+}
+
+.stats {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}

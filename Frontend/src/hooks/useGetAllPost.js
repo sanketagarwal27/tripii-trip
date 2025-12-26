@@ -27,7 +27,6 @@ const useGetAllPost = (shouldfetch) => {
         setError(null);
 
         const res2 = await getMe();
-        console.log("res2:", res2);
         dispatch(setUserProfile(res2.data?.data));
       } catch (err) {
         if (cancelled) return;

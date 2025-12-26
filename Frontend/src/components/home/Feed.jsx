@@ -5,7 +5,6 @@ import React from "react";
 
 const Feed = () => {
   const posts = useSelector((state) => state.post.posts);
-  console.log("Himanshu");
   return (
     <div className="feed">
       <CreatePostBox />

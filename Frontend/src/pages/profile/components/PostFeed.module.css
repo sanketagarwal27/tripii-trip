@@ -1,0 +1,60 @@
+/* src/components/ProfileFeed.module.css */
+
+.container {
+  width: 100%;        /* CHANGED: Takes full available width */
+  max-width: 100%;    /* CHANGED: Removed the 900px limit */
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  /* Removed padding so it aligns perfectly with the edges */
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.sectionHeader h2 {
+  font-size: 1.5rem; /* Increased size slightly */
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.icon {
+  color: #00b4d8;
+}
+
+/* --- THE GRID FOR PHOTOS --- */
+.visualGrid {
+  display: grid;
+  /* CHANGED: Forces exactly 3 equal columns */
+  grid-template-columns: repeat(3, 1fr); 
+  gap: 20px; /* Space between the images */
+}
+
+/* --- THE VERTICAL STACK FOR LOGS --- */
+.logStack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* --- RESPONSIVENESS --- */
+/* On smaller laptops/tablets, switch to 2 columns */
+@media (max-width: 1024px) {
+  .visualGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* On mobile phones, switch to 1 column */
+@media (max-width: 600px) {
+  .visualGrid {
+    grid-template-columns: 1fr;
+  }
+}

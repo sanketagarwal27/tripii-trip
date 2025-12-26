@@ -27,6 +27,7 @@ import Places from "./pages/places/Places";
 import Chatbot from "./pages/chatbot/Chatbot";
 import CreateRoom from "./components/community/rooms/CreateRoom";
 import Room from "./components/community/rooms/Room";
+import ProfilePage from "./pages/profile/Profile";
 
 // Auth Logic
 function RequireAuth({ children }) {
@@ -91,6 +92,7 @@ function AppRouter() {
           </Route>
 
           <Route path="/places" element={<Places />} />
+          <Route path="/profile/:id" element={<ProfilePage />}/>
         </Route>
       </Routes>
     </BrowserRouter>
