@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { ChevronLeft, ThumbsUp, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -138,8 +138,6 @@ const CommentPage = () => {
     }
   };
 
-  console.log("comment:", comments);
-
   useEffect(() => {
     loadComments();
   }, [id]);
@@ -242,7 +240,7 @@ const CommentPage = () => {
           onClick={() => navigate(-1)}
           className="flex mb-3 items-center gap-2 text-gray-700 hover:text-primary transition"
         >
-          <ChevronLeft size={20} /> Back to Feed
+          <ChevronLeft size={20} /> Back
         </button>
 
         {/* POST */}
@@ -362,15 +360,21 @@ const CommentItem = ({
       }`}
     >
       <div className="flex w-full gap-3 p-4 rounded-lg">
-        <img
-          src={comment.author.profilePicture?.url || "/travel.jpg"}
-          className="size-10 rounded-full object-cover mt-1"
-        />
+        <Link to={`/profile/${comment.author._id}`}>
+          <img
+            src={comment.author.profilePicture?.url || "/travel.jpg"}
+            className="size-10 rounded-full object-cover mt-1"
+          />
+        </Link>
 
         <div className="flex flex-col flex-1">
           <div className="flex justify-between items-start">
             <div className="flex items-baseline gap-2">
-              <p className="font-semibold text-sm">{comment.author.username}</p>
+              <Link to={`/profile/${comment.author._id}`}>
+                <p className="font-semibold text-sm">
+                  {comment.author.username}
+                </p>
+              </Link>
               <p className="text-xs text-gray-500">
                 {timeAgo(comment.createdAt)}
               </p>
@@ -496,16 +500,21 @@ const CommentItem = ({
             "
                 />
               )}
-
-              <img
-                src={r.author.profilePicture?.url || "/travel.jpg"}
-                className="size-10 rounded-full object-cover mt-1"
-              />
+              <Link to={`/profile/${r.author._id}`}>
+                <img
+                  src={r.author.profilePicture?.url || "/travel.jpg"}
+                  className="size-10 rounded-full object-cover mt-1"
+                />
+              </Link>
 
               <div className="flex flex-col flex-1">
                 <div className="flex justify-between items-start">
                   <div className="flex items-baseline gap-2">
-                    <p className="font-semibold text-sm">{r.author.username}</p>
+                    <Link to={`/profile/${r.author._id}`}>
+                      <p className="font-semibold text-sm">
+                        {r.author.username}
+                      </p>
+                    </Link>
                     <p className="text-xs text-gray-500">
                       {timeAgo(r.createdAt)}
                     </p>
