@@ -103,6 +103,39 @@ export const getHeroImage = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, apiResponse, "Hero image fetched successfully"));
 });
 
+const getWeatherData = async (place) => {
+  place = place.trim().toLowerCase();
+
+  const { isFound, data } = await presentInDb(place, "weatherData");
+
+  // Cache Hit
+  if (isFound && data.weatherData) {
+    return data.weatherData;
+  }
+  // Cache Miss
+  console.log(`Cache Miss for weather data of ${place}. Calling APIs...`);
+  try {
+    const coords = await getCoordinates(place);
+    if (!coords) {
+      console.error("Coordinates not found for ", place);
+      return null;
+    }
+    const weatherData = await getWeather(coords.lat, coords.lon);
+    weatherData.summary = `Expect a high of ${weatherData.high} and low of ${weatherData.low} currently`;
+    if (weatherData) {
+      await Place.findOneAndUpdate(
+        { place },
+        { lat: coords.lat, lon: coords.lon, weatherData: weatherData },
+        { new: true, upsert: true, setDefaultsOnInsert: true }
+      );
+      return weatherData;
+    } else return null;
+  } catch (err) {
+    console.error("Weather Data Error: ", err);
+    return null;
+  }
+};
+
 /* -------------------------------------------------
  * GET PLACE PHOTOS
  * ------------------------------------------------- */
@@ -153,19 +186,18 @@ export const getPhotos = asyncHandler(async (req, res) => {
 export const getOverview = asyncHandler(async (req, res) => {
   const place = req.query.place;
   const cachedPlace = await Overview.findOne({ place: place });
+  const weatherData = await getWeatherData(place);
   //Cache Hit
   if (cachedPlace) {
     console.log(`✅ Cache hit: Overview for ${place}`);
     const finalData = {
       location: {
         name: cachedPlace.place,
-        lat: cachedPlace.lat,
-        lon: cachedPlace.lon,
       },
       content: {
         wiki: cachedPlace.wikiData,
         ai: cachedPlace.aiData,
-        weather: cachedPlace.weatherData,
+        weather: weatherData,
       },
     };
     return res
@@ -176,12 +208,7 @@ export const getOverview = asyncHandler(async (req, res) => {
   else {
     console.log(`Cache Miss for Overview of ${place}. Calling APIs...`);
     try {
-      const coords = await getCoordinates(place);
-      if (!coords) {
-        throw new ApiError(404, "Coordinates Not Found !");
-      }
-      const [weatherData, wikiData, aiData] = await Promise.all([
-        getWeather(coords.lat, coords.lon),
+      const [wikiData, aiData] = await Promise.all([
         getWikiOverview(place),
         getAiOverview(place),
       ]);
@@ -189,8 +216,6 @@ export const getOverview = asyncHandler(async (req, res) => {
       const finalData = {
         location: {
           name: place,
-          lat: coords.lat,
-          lon: coords.lon,
         },
         content: {
           wiki: wikiData,
@@ -208,11 +233,8 @@ export const getOverview = asyncHandler(async (req, res) => {
         { place: place },
         {
           place: place,
-          lat: finalData.location.lat,
-          lon: finalData.location.lon,
           wikiData: finalData.content.wiki,
           aiData: finalData.content.ai,
-          weatherData: finalData.content.weather,
         },
         { upsert: true, new: true }
       );
@@ -284,7 +306,37 @@ export const getScams = asyncHandler(async (req, res) => {
 /* -------------------------------------------------
  * GET SUGGESTED PLACES
  * ------------------------------------------------- */
-export const getSuggestedPlaces = asyncHandler(async(req, res) => {
-  const place = req.query.place;
-  
-})
+export const getSuggestedPlaces = asyncHandler(async (req, res) => {
+  try {
+    const places = await Place.find()
+      .sort({ updatedAt: -1 })
+      .limit(15)
+      .select("-newsData -lat -lon -weatherData")
+      .lean();
+
+    const overview = await Overview.find().sort({ updatedAt: -1 }).lean();
+
+    places.forEach((placeObj) => {
+      const words = placeObj.place.split(", ");
+      const capitalizedWords = words.map((word) => {
+        return word.charAt(0).toUpperCase() + word.slice(1);
+      });
+      placeObj.place = capitalizedWords.join(", ");
+      const matchingOverview = overview.find(
+        (item) => item.place.toLowerCase() === placeObj.place.toLowerCase()
+      );
+      if (matchingOverview) {
+        placeObj.overview = matchingOverview;
+      } else {
+        placeObj.overview = null;
+      }
+    });
+
+    res
+      .status(200)
+      .json(new ApiResponse(200, places, "Places Fetched Successfully!"));
+  } catch (error) {
+    console.log("Error getting suggested Places: ", error);
+    throw new ApiError(500, "Error getting Suggested Places !");
+  }
+});

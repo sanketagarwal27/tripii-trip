@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react"; // Import useEffect and useCallback
+import { useSearchParams } from "react-router-dom"; // Import this hook
 import HeroSection from "./components/HeroSection";
 import Tabs from "./components/Tabs";
 import NewsFeed from "./components/NewsFeed";
@@ -16,6 +17,10 @@ import Overview from "./components/Overview";
 import SafetyPage from "./components/SafetyPage";
 
 const Places = () => {
+  // 1. Setup Search Params
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryFromUrl = searchParams.get("query"); // Gets value of ?query=...
+
   const [activeTab, setActiveTab] = useState("Travel News");
   const [newsArticles, setNewsArticles] = useState([]);
   const [photos, setPhotos] = useState([]);
@@ -24,10 +29,10 @@ const Places = () => {
   const [placeData, setPlaceData] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const handleSearch = async (query) => {
-    if(!query) {
-      return;
-    }
+  // 2. Wrap handleSearch in useCallback to prevent infinite loops in useEffect
+  const handleSearch = useCallback(async (query) => {
+    if (!query) return;
+
     setLoading(true);
     try {
       const [
@@ -46,10 +51,8 @@ const Places = () => {
 
       if (newsResult?.data?.articles) {
         const articleMap = new Map();
-
         newsResult.data.articles.forEach((article) => {
           if (!article?.title || article.title === "[Removed]") return;
-
           const cleanTitle = article.title
             .split(" - ")[0]
             .split(" | ")[0]
@@ -64,7 +67,6 @@ const Places = () => {
             articleMap.set(cleanTitle, article);
           }
         });
-
         setNewsArticles(Array.from(articleMap.values()));
       } else {
         setNewsArticles([]);
@@ -83,9 +85,26 @@ const Places = () => {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  // 3. Effect to trigger search when URL changes
+  useEffect(() => {
+    if (queryFromUrl) {
+      // If URL has ?query=Paris, fetch data for Paris
+      handleSearch(queryFromUrl);
+    } else {
+      // If URL has no query, reset state to show Landing Page
+      setPlaceData(null);
+    }
+  }, [queryFromUrl, handleSearch]);
+
+  // 4. Update internal search to change URL
+  const onInternalSearch = (query) => {
+    setSearchParams({ query: query }); // This updates URL to ?query=... which triggers the useEffect
   };
 
   const resetSearch = () => {
+    setSearchParams({}); // Clears the URL params
     setPlaceData(null);
     setActiveTab("Travel News");
   };
@@ -93,18 +112,18 @@ const Places = () => {
   if (loading) {
     return (
       <div className="container text-center mt-24">
-        <h2>Searching for the details</h2>
+        <h2>Searching for the details...</h2>
       </div>
     );
   }
 
   if (!placeData) {
-    return <LandingPage onSearch={handleSearch} />;
+    // Pass the new internal search handler
+    return <LandingPage onSearch={onInternalSearch} />;
   }
 
   return (
     <>
-      {/* Back Button */}
       <div
         onClick={resetSearch}
         style={{
@@ -127,9 +146,7 @@ const Places = () => {
 
       <div style={{ marginTop: "70px" }}>
         <HeroSection place={placeData.place} imageUrl={placeData.heroImage} />
-
         <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
-
         <div className={styles.contentArea}>
           {activeTab === "Travel News" && <NewsFeed news={newsArticles} />}
           {activeTab === "Photos" && <PhotoSection photos={photos} />}

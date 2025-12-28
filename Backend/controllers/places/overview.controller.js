@@ -70,10 +70,12 @@ export async function getAiOverview(location, interests = "general tourism") {
       The JSON must match this structure exactly:
       {
         "oneLineBlurb": "A catchy single sentence summary.",
-        "bestFor": ["Interest 1", "Interest 2", "Interest 3"],
+        "bestFor": [
+          "Select categories ONLY from this list: Beaches, Mountains, Cities, Nature, Historical, Cuisines."
+        ],
         "hiddenGem": "Name of a specific cool spot.",
-        "budgetRating": "Cheap Moderate or Expensive",
-        "touristPlaces": "Places visited by tourists",
+        "budgetRating": "Cheap, Moderate, or Expensive",
+        "touristPlaces": "Return a single comma-separated string of the top tourist places. Do NOT return an array. Example: 'Place A, Place B, Place C'"
       }
     `;
     const response = await ai.models.generateContent({

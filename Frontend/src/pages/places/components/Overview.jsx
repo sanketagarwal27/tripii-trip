@@ -11,11 +11,13 @@ const Overview = ({ data, setActiveTab }) => {
       <div className={styles.grid}>
         <div className={styles.card}>
           <h3 className={styles.cardTitle}>About the City</h3>
-          <p className={styles.summaryText}>{wiki.summary}</p>
+          <p className={styles.summaryText}>{wiki?.summary}</p>
           <div className={styles.touristPlaces}>
             <h2>Tourist Places: </h2>
             <p>
-              {ai.touristPlaces ? ai.touristPlaces : "Several Tourist Spots !"}
+              {ai.touristPlaces.length !== 0
+                ? ai.touristPlaces
+                : "Several Tourist Spots !"}
             </p>
           </div>
           {/* Think more about displaying tourist places */}

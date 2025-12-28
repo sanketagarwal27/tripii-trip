@@ -8,7 +8,8 @@ import {
   deleteComment,
   getPostById,
 } from "@/api/post";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux"; // 1. Import useDispatch
+import { updatePost, setSelectedPost } from "@/redux/postSlice"; // 2. Import Actions
 import toast from "react-hot-toast";
 
 /* -------------------------------------------------
@@ -79,10 +80,11 @@ const PostCarousel = ({ images }) => {
 const CommentPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch(); // 3. Initialize Dispatch
 
   const userProfile = useSelector((s) => s.auth.userProfile);
-  // const feedPost = useSelector((s) => s.post.posts.find((p) => p._id === id));
-  const feedPost = useSelector((s) => s.post.selectedPost); //Yaad rkhna uper wale like ko hata ke ye line lagae hai (post ke comment load krne me koi dikkat ho to yaha se kr lena tk , uper wale me sb tk hai)
+  // Using selectedPost to keep things consistent with where we came from
+  const feedPost = useSelector((s) => s.post.selectedPost);
 
   const [post, setPost] = useState(feedPost || null);
   const [loadingPost, setLoadingPost] = useState(!post);
@@ -109,7 +111,6 @@ const CommentPage = () => {
     loadPost();
   }, [id, post]);
 
-  /* FETCH COMMENTS */
   /* LOAD COMMENTS */
   const loadComments = async () => {
     try {
@@ -148,11 +149,31 @@ const CommentPage = () => {
 
     try {
       const res = await addComment(id, text, null);
+      const newComment = res.data.data;
+
+      // Update Local Comments State
       setComments((prev) => [
-        { ...res.data.data, replies: [], _remove: false },
+        { ...newComment, replies: [], _remove: false },
         ...prev,
       ]);
       setText("");
+
+      // --- REDUX UPDATE START ---
+      // Update global post state so the feed shows correct comment count
+      if (post) {
+        const updatedPost = {
+          ...post,
+          // Add new comment to the list (safe check for array)
+          comments: [newComment, ...(post.comments || [])],
+        };
+
+        // Update local post state
+        setPost(updatedPost);
+        // Update Redux Store (Feed & Selected Post)
+        dispatch(updatePost(updatedPost));
+        dispatch(setSelectedPost(updatedPost));
+      }
+      // --- REDUX UPDATE END ---
     } catch {
       toast.error("Failed to comment");
     }
@@ -174,6 +195,10 @@ const CommentPage = () => {
 
       setReplyText("");
       setActiveReplyBox(null);
+
+      // Note: Depending on your backend, adding a reply might NOT increase
+      // the main post's "comments" array length if it only tracks top-level.
+      // If your 'post.comments' includes replies, repeat the Redux Update logic here.
     } catch {
       toast.error("Failed to reply");
     }
@@ -193,7 +218,23 @@ const CommentPage = () => {
           () => setComments((prev) => prev.filter((c) => c._id !== commentId)),
           300
         );
+
+        // --- REDUX UPDATE START (Delete) ---
+        // If we deleted a top-level comment, decrease count in Redux
+        if (post) {
+          const updatedPost = {
+            ...post,
+            comments: (post.comments || []).filter(
+              (c) => (c._id || c) !== commentId
+            ),
+          };
+          setPost(updatedPost);
+          dispatch(updatePost(updatedPost));
+          dispatch(setSelectedPost(updatedPost));
+        }
+        // --- REDUX UPDATE END ---
       } else {
+        // Handle Reply Deletion locally
         setComments((prev) =>
           prev.map((c) =>
             c._id === parentId
@@ -322,7 +363,7 @@ const CommentPage = () => {
               setReplyText={setReplyText}
               activeReplyBox={activeReplyBox}
               setActiveReplyBox={setActiveReplyBox}
-              handleSubmitReply={handleSubmitReply} // ✅ ADD THIS
+              handleSubmitReply={handleSubmitReply}
             />
           ))}
         </div>
