@@ -16,6 +16,18 @@ const searchedPlacesSchema = new Schema(
       type: String,
       required: true,
     },
+    weatherData: {
+      type: Object,
+      required: true,
+    },
+    lat: {
+      type: String,
+      required: true,
+    },
+    lon: {
+      type: String,
+      required: true,
+    },
   },
   { timestamps: true }
 );
