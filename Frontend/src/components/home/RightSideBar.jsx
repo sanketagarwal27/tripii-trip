@@ -1,71 +1,83 @@
 import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
+import { Link, useNavigate } from "react-router-dom";
 
 import { getSuggestedUsers, followOrUnfollow } from "@/api/users";
 import { setSuggestedUser, setUserProfile } from "@/redux/authslice";
-import { Link, Navigate } from "react-router-dom";
-
-const dummyPlaces = [
-  {
-    id: 1,
-    name: "Kyoto, Japan",
-    speciality: "Ancient temples & gardens",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuASwsX5KxQqrf_XMJ6OerWEFC15JuSwtX-64zihu4Sg7bwpSMkgfO7IWm3Es4_NbTHCM2StJEvVtYMuBhw18yKHZp43szkjMrEYEcAQf2lmguf8qT32OLBPhyxhVEwMxix3gjmF2nm0eFdm1gR0hm6k_qEp5onQeJUH_z9pKuoD13B1uqp2TzNkKkgalDUOgFguwjZXtHoo0apvI4ffELS-qR5fy41oCz4JwFHFKIQitOw8WO21_A66fn_qNjETgsJryC70Js2YecE",
-  },
-  {
-    id: 2,
-    name: "Patagonia, Chile",
-    speciality: "Dramatic peaks & ice fjords",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuCdQX3Gc8X-qjov5mDZEQnZiyt7NSsNpBpiPwPZQTj1VwswSwBMz3kymEJ0pfeMETFfSz8bKL5ct2Hy-Lzuz8kfWM3VJooiwjdiVGbFbR-NLIvsHpEDyjAOBYyJg_3k22GjYNB2oQAnNAA2TGMJ6ZIDYxd9Nd-NHzp8pLoO0aXM-077sUzc9h1ZINncwOYcRkA952XMDGLIx9eVlGUyWuhCY7wWKixB0jxjq0jDFKnD5Wxtv4KJvqa7SrU1sMlzX-TRGCXTSDbDMaU",
-  },
-];
+import { getSuggestedPlaces } from "@/api/places"; // Your API import
 
 const RightSideBar = () => {
   const dispatch = useDispatch();
-  const { userProfile, suggestedUser } = useSelector((s) => s.auth);
+  const navigate = useNavigate();
 
-  const [loadingUsers, setLoadingUsers] = useState(false);
+  // --- 1. STATE FOR PLACES ---
+  const [places, setPlaces] = useState([]); // Store places here
+  const [loadingPlaces, setLoadingPlaces] = useState(false);
 
-  const isFollowing = (userId) => {
-    return userProfile.following?.includes(userId);
+  // --- 2. FETCH PLACES (Inside useEffect) ---
+  useEffect(() => {
+    const loadPlaces = async () => {
+      try {
+        setLoadingPlaces(true);
+        const res = await getSuggestedPlaces();
+        setPlaces(res.data || []);
+      } catch (err) {
+        console.error("Error fetching places:", err);
+      } finally {
+        setLoadingPlaces(false);
+      }
+    };
+
+    loadPlaces();
+  }, []);
+
+  const handlePlaceClick = (placeName) => {
+    navigate(`/places/?query=${placeName}`);
   };
+
+  const { userProfile, suggestedUser } = useSelector((s) => s.auth);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   if (!userProfile) return null;
 
+  // --- FETCH USERS ---
   useEffect(() => {
-    const load = async () => {
+    const loadUsers = async () => {
       try {
         setLoadingUsers(true);
         const res = await getSuggestedUsers();
-        dispatch(setSuggestedUser(res.data.data.users || []));
+
+        const users = (res.data.data.users || []).map((u) => ({
+          ...u,
+          _isFollowing: userProfile.following?.includes(u._id),
+        }));
+
+        dispatch(setSuggestedUser(users));
       } catch (err) {
         console.error(err);
       } finally {
         setLoadingUsers(false);
       }
     };
-    load();
-  }, [dispatch]);
+
+    loadUsers();
+  }, [dispatch, userProfile.following]); // added dependency to keep sync
 
   const toggleFollow = async (id) => {
     try {
+      // Optimistic UI update
+      dispatch(
+        setSuggestedUser(
+          suggestedUser.map((u) =>
+            u._id === id ? { ...u, _isFollowing: !u._isFollowing } : u
+          )
+        )
+      );
+
       const res = await followOrUnfollow(id);
 
       if (res?.data?.data?.updatedUser) {
-        const updatedProfile = res.data.data.updatedUser;
-
-        // Update current user profile
-        dispatch(setUserProfile(updatedProfile));
-
-        dispatch(
-          setSuggestedUser(
-            suggestedUser.map((u) =>
-              u._id === id ? { ...u, _isFollowing: !isFollowing(id) } : u
-            )
-          )
-        );
+        dispatch(setUserProfile(res.data.data.updatedUser));
       }
     } catch (err) {
       console.error(err);
@@ -86,6 +98,7 @@ const RightSideBar = () => {
   const filteredSuggested = suggestedUser?.filter(
     (u) => u._id !== userProfile._id
   );
+
   return (
     <div className="rightsidebar">
       <div className="rightsidebar-inner">
@@ -164,22 +177,67 @@ const RightSideBar = () => {
 
         {/* --- PLACES --- */}
         <div className="rs-card">
-          <h4 className="rs-title">Suggested Places</h4>
+          <div className="rs-header">
+            <h4 className="rs-title">Trending Destinations</h4>
+            {/* Optional: Add a 'See all' link if you have one */}
+          </div>
 
-          {dummyPlaces.map((p) => (
-            <div className="rs-place" key={p.id}>
+          {loadingPlaces && <div className="rs-loading-skeleton"></div>}
+
+          {!loadingPlaces && places.length === 0 && (
+            <p className="rs-empty">No places found</p>
+          )}
+
+          <div className="rs-places-list">
+            {places.slice(0, 3).map((p) => (
               <div
-                className="rs-place-img"
-                style={{ backgroundImage: `url(${p.image})` }}
-              ></div>
+                className="rs-place-card"
+                key={p._id}
+                onClick={() => handlePlaceClick(p.place)}
+              >
+                {/* Image Section */}
+                <div
+                  className="rs-place-img"
+                  style={{
+                    backgroundImage: `url(${p.heroImageUrl || "/travel.jpg"})`,
+                  }}
+                >
+                  {/* Optional: Rating badge overlay */}
+                  <span className="rs-place-rating">★ {p.rating || "4.5"}</span>
+                </div>
 
-              <div className="rs-place-info">
-                <p className="rs-place-name">{p.name}</p>
-                <p className="rs-place-sub">{p.speciality}</p>
-                <button className="rs-visit">Visit</button>
+                {/* Content Section */}
+                <div className="rs-place-content">
+                  <h5 className="rs-place-name">{p.place}</h5>
+
+                  {/* Render Tags as Mini Pills */}
+                  <div className="rs-place-tags">
+                    {p.overview?.aiData?.bestFor?.slice(0, 2).map((tag, i) => (
+                      <span key={i} className="rs-tag-pill">
+                        {tag}
+                      </span>
+                    ))}
+                    {/* If more than 2 tags, show a small dot */}
+                    {(p.overview?.aiData?.bestFor?.length || 0) > 2 && (
+                      <span className="rs-tag-more">+</span>
+                    )}
+                  </div>
+
+                  <div className="rs-place-footer">
+                    {/* Price Indicator */}
+                    <span className="rs-price">
+                      {p.overview?.aiData?.budgetRating === "Expensive"
+                        ? "$$$"
+                        : p.overview?.aiData?.budgetRating === "Moderate"
+                        ? "$$"
+                        : "$"}
+                    </span>
+                    <button className="rs-visit-btn">View &rarr;</button>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
         {/* --- FRIENDS --- */}
@@ -187,35 +245,36 @@ const RightSideBar = () => {
           <h4 className="rs-title">Suggested Friends</h4>
 
           {loadingUsers && <p className="rs-load">Loading...</p>}
+          <div className="rs-friend-list">
+            {filteredSuggested?.slice(0, 10).map((u) => (
+              <div className="rs-friend" key={u._id}>
+                <div className="rs-friend-left">
+                  <div
+                    className="rs-friend-img"
+                    style={{
+                      backgroundImage: `url(${
+                        u.profilePicture?.url || "/travel.jpg"
+                      })`,
+                    }}
+                  ></div>
 
-          {filteredSuggested?.slice(0, 10).map((u) => (
-            <div className="rs-friend" key={u._id}>
-              <div className="rs-friend-left">
-                <div
-                  className="rs-friend-img"
-                  style={{
-                    backgroundImage: `url(${
-                      u.profilePicture?.url || "/travel.jpg"
-                    })`,
-                  }}
-                ></div>
-
-                <div>
-                  <p className="rs-friend-name">{u.username}</p>
-                  <p className="rs-friend-sub">Suggested for you</p>
+                  <div>
+                    <p className="rs-friend-name">{u.username}</p>
+                    <p className="rs-friend-sub">Suggested for you</p>
+                  </div>
                 </div>
-              </div>
 
-              <button
-                className={`rs-follow ${
-                  isFollowing(u._id) ? "rs-following" : ""
-                }`}
-                onClick={() => toggleFollow(u._id)}
-              >
-                {isFollowing(u._id) ? "Following" : "Follow"}
-              </button>
-            </div>
-          ))}
+                <button
+                  className={`rs-follow ${
+                    u._isFollowing ? "rs-following" : ""
+                  }`}
+                  onClick={() => toggleFollow(u._id)}
+                >
+                  {u._isFollowing ? "Following" : "Follow"}
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

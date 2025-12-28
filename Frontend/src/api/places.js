@@ -49,3 +49,10 @@ export const fetchSafety = async (place) => {
   });
   return response.data;
 };
+
+export const getSuggestedPlaces = async () => {
+  const response = await api.get("/api/places/get-suggested-places", {
+    withCredentials: true,
+  });
+  return response.data;
+};

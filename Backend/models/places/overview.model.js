@@ -6,14 +6,6 @@ const overviewSchema = new Schema(
       type: String,
       required: true,
     },
-    lat: {
-      type: String,
-      required: true,
-    },
-    lon: {
-      type: String,
-      required: true,
-    },
     wikiData: {
       type: Object,
       required: true,
@@ -22,14 +14,8 @@ const overviewSchema = new Schema(
       type: Object,
       required: true,
     },
-    weatherData: {
-      type: Object,
-      required: true,
-    },
   },
   { timestamps: true }
 );
-
-overviewSchema.index({ updatedAt: 1 }, { expireAfterSeconds: 21600 });
 
 export const Overview = mongoose.model("Overview", overviewSchema);
