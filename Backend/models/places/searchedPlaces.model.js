@@ -28,6 +28,11 @@ const searchedPlacesSchema = new Schema(
       type: String,
       required: true,
     },
+    lastSearched: {
+      type: Number,
+      required: true,
+      default: Date.now(),
+    },
   },
   { timestamps: true }
 );

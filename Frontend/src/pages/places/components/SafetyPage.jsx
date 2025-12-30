@@ -9,7 +9,7 @@ const SafetyPage = ({ safetyData }) => {
   const getScoreNumber = (ratingString) => {
     if (!ratingString) return 0;
     const match = ratingString.match(/\d+/);
-    return match ? parseInt(match[0], 10) : 0;
+    return match ? parseFloat(match[0], 10) : 0;
   };
 
   const numericScore = getScoreNumber(overallSafetyRating);

@@ -82,7 +82,7 @@ const ProfileSidebar = ({ user, onEditClick }) => {
   };
 
   const EditButtonText =
-    user.bio && user.fullName && user.profilePicture?.url
+    user.bio && user.fullName && user.profilePicture?.url && user.address
       ? `Edit Profile`
       : `Complete Profile`;
 

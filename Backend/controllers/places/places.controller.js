@@ -22,6 +22,8 @@ const presentInDb = async (place, field) => {
   try {
     const cachedPlace = await Place.findOne({ place });
     if (cachedPlace && cachedPlace[field]) {
+      cachedPlace.lastSearched = Date.now();
+      await cachedPlace.save();
       console.log(`✅ Cache hit: ${field} for ${place}`);
       return { isFound: true, data: cachedPlace };
     }
@@ -190,6 +192,8 @@ export const getOverview = asyncHandler(async (req, res) => {
   //Cache Hit
   if (cachedPlace) {
     console.log(`✅ Cache hit: Overview for ${place}`);
+    cachedPlace.lastSearched = Date.now();
+    await cachedPlace.save();
     const finalData = {
       location: {
         name: cachedPlace.place,

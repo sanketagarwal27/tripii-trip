@@ -13,6 +13,7 @@ import AppLayout from "./shared/AppLayout";
 import MiniAppLayout from "./shared/MiniAppLayout";
 import MiniCommunityLayout from "./shared/MiniCommunityLayout";
 import MiniSundayLayout from "./shared/MiniSundayLayout";
+import TripLayout from "./shared/TripLayout";
 
 // Pages
 import AuthPage from "@/pages/auth/AuthPage";
@@ -27,10 +28,16 @@ import Places from "./pages/places/Places";
 import Chatbot from "./pages/chatbot/Chatbot";
 import CreateRoom from "./components/community/rooms/CreateRoom";
 import Room from "./components/community/rooms/Room";
-import TripLayout from "./shared/TripLayout";
 import ProfilePage from "./pages/profile/Profile";
 import Trips from "./components/trip/Trips";
 import Trip from "./components/trip/Trip";
+
+// --- CONTRIBUTION IMPORTS ---
+import Contribution from "./pages/contribution/Contribution";
+import Accomodation from "./pages/contribution/components/Accomodation";
+import Dining from "./pages/contribution/components/Dining";
+import Spot from "./pages/contribution/components/Spot";
+import { ContributionProvider } from "./context/ContributionContext";
 
 // Auth Logic
 function RequireAuth({ children }) {
@@ -102,19 +109,30 @@ function AppRouter() {
 
           <Route path="/places" element={<Places />} />
           <Route path="/profile/:id" element={<ProfilePage />} />
+
+          {/* --- CONTRIBUTION ROUTES (FLAT) --- */}
+          <Route path="/contribute" element={<Contribution />} />
+          <Route
+            path="/contribute/add-accommodation"
+            element={<Accomodation />}
+          />
+          <Route path="/contribute/add-dining" element={<Dining />} />
+          <Route path="/contribute/add-spot" element={<Spot />} />
         </Route>
       </Routes>
     </BrowserRouter>
   );
 }
 
-// ✅ WRAP WITH GOOGLE OAUTH PROVIDER
+// ✅ WRAP WITH CONTRIBUTION PROVIDER
 createRoot(document.getElementById("root")).render(
   <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
         <SocketProvider>
-          <AppRouter />
+          <ContributionProvider>
+            <AppRouter />
+          </ContributionProvider>
         </SocketProvider>
       </PersistGate>
     </Provider>

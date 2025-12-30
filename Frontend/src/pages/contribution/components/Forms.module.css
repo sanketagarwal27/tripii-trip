@@ -1,0 +1,349 @@
+/* --- Color & Theme Variables --- */
+.pageContainer {
+  --primary: #1abc9c;
+  --primary-dark: #16a085;
+  --primary-light: #e8f8f5;
+  --accent-gold: #fbbd08;
+  --bg-page: #f2f6f9;
+  --bg-card: #ffffff;
+  --text-dark: #2c3e50;
+  --text-medium: #7f8c8d;
+  --shadow-soft: 0 12px 24px -6px rgba(0, 0, 0, 0.05);
+  --shadow-hover: 0 20px 30px -10px rgba(26, 188, 156, 0.2);
+
+  min-height: 100vh;
+  background-color: var(--bg-page);
+  padding: 2rem 1rem 4rem 1rem;
+  margin: 60px auto;
+  font-family: 'Inter', sans-serif;
+  color: var(--text-dark);
+}
+
+/* Layout Wrapper */
+.formWrapper {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* --- Header --- */
+.header {
+  max-width: 800px;
+  margin: 0 auto 2rem auto;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header h1 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.backBtn {
+  background: white;
+  border: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dark);
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+  transition: all 0.2s ease;
+}
+
+.backBtn:hover {
+  transform: translateX(-3px);
+  color: var(--primary);
+}
+
+/* --- Card Sections --- */
+.section {
+  background: var(--bg-card);
+  border-radius: 24px; /* Rounded modern corners */
+  padding: 2rem;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid rgba(0,0,0,0.02); /* Very subtle border definition */
+}
+
+.sectionHeading {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--text-dark);
+  position: relative;
+}
+
+/* Add a small teal accent underline to headings */
+.sectionHeading::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 40px;
+  height: 3px;
+  background: var(--primary);
+  border-radius: 2px;
+}
+
+/* --- Inputs & Forms --- */
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1.5rem;
+}
+
+.inputGroup label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Modern Input Styling */
+.input, .select, .textarea {
+  padding: 1rem;
+  /* Use a light gray fill instead of a harsh border */
+  background: #f8f9fa; 
+  border: 2px solid transparent; /* Transparent border ready for focus state */
+  border-radius: 12px;
+  font-size: 1rem;
+  color: var(--text-dark);
+  width: 100%;
+  outline: none;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+/* The "Teal Pop" on focus */
+.input:focus, .select:focus, .textarea:focus {
+  background: white;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-light); /* Subtle outer glow */
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+/* Grid for side-by-side inputs */
+.rowGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+/* Inputs with Icons */
+.iconInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 14px;
+  color: var(--primary); /* Make icons teal */
+  pointer-events: none;
+  z-index: 2;
+}
+
+.hasIcon {
+  padding-left: 3rem; /* Make room for the icon */
+}
+
+/* --- Interactive Elements (Pills & Amenities) --- */
+.pillContainer, .amenitiesGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.pill, .amenityCard {
+  padding: 0.7rem 1.2rem;
+  background: white;
+  border: 2px solid #e0e0e0; /* Subtle gray border initially */
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-medium);
+  transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Pill Hover */
+.pill:hover, .amenityCard:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
+/* Active (Selected) State - Vibrant Teal Pop */
+.activePill, .activeAmenity {
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: white !important;
+  box-shadow: 0 4px 15px rgba(26, 188, 156, 0.4); /* Teal glow */
+  transform: translateY(-2px);
+}
+
+.amenitiesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+}
+.amenityCard {
+  border-radius: 12px; /* Slightly squarer for amenities */
+  font-size: 0.9rem;
+  padding: 0.8rem;
+}
+
+/* --- Star Rating --- */
+.starRatingWrapper {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+
+.starBtn {
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy effect */
+}
+.starBtn:hover { transform: scale(1.2); }
+
+/* --- Upload Zone --- */
+.uploadZone {
+  border: 3px dashed #dce4ec;
+  border-radius: 20px;
+  padding: 3rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #fdfdfd;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.uploadZone:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.uploadIconCircle {
+  background: var(--primary-light);
+  color: var(--primary);
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  transition: transform 0.3s ease;
+}
+
+.uploadZone:hover .uploadIconCircle {
+  transform: scale(1.1) rotate(5deg);
+  background: var(--primary);
+  color: white;
+}
+
+.uploadZone h4 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+.uploadZone p { color: var(--text-medium); font-size: 0.9rem; }
+
+/* --- Final Action Button --- */
+.footerAction {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.btnMainCTA {
+  width: 20%;
+  padding: 1.2rem;
+  position: relative;
+  left: 80%;
+  /* Gradient-like solid fill */
+  background: var(--primary);
+  border: none;
+  border-radius: 16px;
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  cursor: pointer;
+  /* Deep teal shadow for pop */
+  box-shadow: 0 10px 25px -5px rgba(26, 188, 156, 0.5);
+  transition: all 0.2s ease;
+}
+
+.btnMainCTA:hover {
+  background: var(--primary-dark);
+  transform: translateY(-3px);
+  box-shadow: 0 15px 30px -5px rgba(26, 188, 156, 0.7);
+}
+
+.btnMainCTA:active { transform: translateY(-1px); }
+
+/* Price Range Toggle ($ $$ $$$) */
+.priceToggle {
+  display: flex;
+  background: #f1f2f6;
+  border-radius: 12px;
+  padding: 4px;
+  gap: 4px;
+  width: fit-content;
+}
+
+.priceBtn {
+  flex: 1;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-medium);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.activePrice {
+  background: white;
+  color: var(--primary);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* Dietary Amenity Card Adjustment in dining */
+.amenityCard {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Toggle Row for Free/Paid in spots
+.toggleRow {
+  display: flex;
+  gap: 1rem;
+}
+
+/* --- Mobile Responsiveness --- */
+@media (max-width: 600px) {
+  .pageContainer { padding: 1rem 1rem 3rem 1rem; }
+  .rowGrid { grid-template-columns: 1fr; gap: 0; }
+  .section { padding: 1.5rem; }
+}

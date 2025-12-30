@@ -24,7 +24,7 @@ const Navbar = () => {
         <button onClick={() => navigate("/chatbot")}>Sunday AI</button>
         <button onClick={() => navigate("/trips")}>Trips</button>
         <button onClick={() => navigate("/places")}>Places</button>
-        <button>Marketplace</button>
+        <button onClick={() => navigate("/contribute")}>Contribute</button>
         <button
           onClick={() => {
             logoutRequest(), disconnectSocket();

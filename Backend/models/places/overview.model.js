@@ -14,6 +14,11 @@ const overviewSchema = new Schema(
       type: Object,
       required: true,
     },
+    lastSearched: {
+      type: Number,
+      required: true,
+      default: Date.now(),
+    },
   },
   { timestamps: true }
 );
