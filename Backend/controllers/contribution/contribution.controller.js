@@ -91,11 +91,26 @@ export const uploadImages = asyncHandler(async (req, res) => {
       throw new ApiError(400, "No files Uploaded !");
     }
 
+    //Validate file types and sizes
+    const allowedTypes = ["image/jpeg","image/jpg","image/png","image/webp"];
+    const maxSize = 5 * 1024 * 1024; //5MB
+
+    for(const file of files) {
+      if(!allowedTypes.includes(file.mimetype)) {
+        throw new ApiError(400, `Invalid file type: ${file.mimetype}. Only JPEG, PNG, and WebP images are allowed.`)
+      }
+      if(file.size > maxSize) {
+        throw new ApiError(400, `File ${file.originalname} exceeds 5MB limit.`)
+      }
+    }
+
     const uploadPromises = files.map((file) => {
       return new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
           {
             folder: "place_reviews",
+            resource_type: "image",
+            allowed_formats: ["jpg", "jpeg", "png", "webp"],
           },
           (error, result) => {
             if (error) reject(error);
@@ -111,6 +126,7 @@ export const uploadImages = asyncHandler(async (req, res) => {
       .json(new ApiResponse(200, imageUrls, "Images Uploaded Successfully"));
   } catch (err) {
     console.error("Upload Error", err);
+    if(err instanceof ApiError) throw err;
     throw new ApiError(500, "Error in uploading files !");
   }
 });
