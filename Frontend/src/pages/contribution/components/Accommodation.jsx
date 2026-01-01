@@ -10,8 +10,9 @@ import {
   Star,
   PlusCircle,
 } from "lucide-react";
+import ReviewPhotos from "./ReviewPhotos";
 
-const Accomodation = () => {
+const Accommodation = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -25,9 +26,11 @@ const Accomodation = () => {
     location: editData?.location || "",
     dateOfVisit: editData?.dateOfVisit || tripMeta.date || "",
     description: editData?.description || "",
-    rating: editData?.rating || 0,
-    hospitality: editData?.hospitality || 0,
-    rooms: editData?.rooms || 0,
+    contactNumber: editData?.contactNumber || "",
+    contactPerson: editData?.contactPerson || "",
+    rating: editData?.rating || null,
+    hospitality: editData?.hospitality || null,
+    rooms: editData?.rooms || null,
     hotelStars: editData?.hotelStars || "",
     hostelVibe: editData?.hostelVibe || "",
     amenities: editData?.amenities || [],
@@ -55,18 +58,18 @@ const Accomodation = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (formData.rating === 0) {
+    if (formData.rating === null || formData.rating === 0) {
       setErrors((prev) => ({ ...prev, rating: "Please give overall rating." }));
       return;
     }
-    if (formData.hospitality === 0) {
+    if (formData.hospitality === null || formData.hospitality === 0) {
       setErrors((prev) => ({
         ...prev,
         hospitality: "Please give Hospitality rating.",
       }));
       return;
     }
-    if (formData.rooms === 0) {
+    if (formData.rooms === null || formData.rooms === 0) {
       setErrors((prev) => ({
         ...prev,
         rooms: "Please give rating for the rooms.",
@@ -140,6 +143,32 @@ const Accomodation = () => {
                   required
                 />
               </div>
+            </div>
+          </div>
+
+          <div className={styles.rowGrid}>
+            <div className={styles.inputGroup}>
+              <label>Person of Contact</label>
+              <input
+                type="text"
+                name="contactPerson"
+                placeholder="Name of some higher authority (optional)"
+                value={formData.contactPerson}
+                onChange={handleChange}
+                className={`${styles.input}`}
+              />
+            </div>
+            <div className={styles.inputGroup}>
+              <label>Contact Number</label>
+              <input
+                type="text"
+                name="contactNumber"
+                placeholder="Contact Number (required)"
+                value={formData.contactNumber}
+                onChange={handleChange}
+                className={`${styles.input}`}
+                required
+              />
             </div>
           </div>
 
@@ -249,8 +278,8 @@ const Accomodation = () => {
                   key={star}
                   size={36}
                   // Using a deeper gold/orange for better contrast
-                  fill={star <= formData.rating ? "#fbbd08" : "none"}
-                  color={star <= formData.rating ? "#fbbd08" : "#e0e0e0"}
+                  fill={star <= (formData.rating || 0) ? "#fbbd08" : "none"}
+                  color={star <= (formData.rating || 0) ? "#fbbd08" : "#e0e0e0"}
                   className={styles.starBtn}
                   onClick={() => {
                     setFormData((prev) => ({ ...prev, rating: star }));
@@ -282,8 +311,8 @@ const Accomodation = () => {
                 <Star
                   key={star}
                   size={36}
-                  fill={star <= formData.rooms ? "#fbbd08" : "none"}
-                  color={star <= formData.rooms ? "#fbbd08" : "#e0e0e0"}
+                  fill={star <= (formData.rooms || 0) ? "#fbbd08" : "none"}
+                  color={star <= (formData.rooms || 0) ? "#fbbd08" : "#e0e0e0"}
                   className={styles.starBtn}
                   onClick={() => {
                     setFormData((prev) => ({ ...prev, rooms: star }));
@@ -315,8 +344,12 @@ const Accomodation = () => {
                 <Star
                   key={star}
                   size={36}
-                  fill={star <= formData.hospitality ? "#fbbd08" : "none"}
-                  color={star <= formData.hospitality ? "#fbbd08" : "#e0e0e0"}
+                  fill={
+                    star <= (formData.hospitality || 0) ? "#fbbd08" : "none"
+                  }
+                  color={
+                    star <= (formData.hospitality || 0) ? "#fbbd08" : "#e0e0e0"
+                  }
                   className={styles.starBtn}
                   onClick={() => {
                     setFormData((prev) => ({ ...prev, hospitality: star }));
@@ -352,17 +385,16 @@ const Accomodation = () => {
               className={styles.textarea}
             />
           </div>
-
-          <div className={styles.uploadZone}>
-            <div className={styles.uploadIconCircle}>
-              <Camera size={32} />
-            </div>
-            <h4>Add Photos</h4>
-            <p>
-              <strong>
-                Upload original photos of the {formData.category} to be rewarded
-              </strong>
-            </p>
+          <div>
+            <ReviewPhotos
+              category={formData.category}
+              images={formData.images}
+              onImagesChange={(newImages) =>
+                setFormData((prev) => ({ ...prev, images: newImages }))
+              }
+              setErrors={setErrors}
+              errors={errors}
+            />
           </div>
         </section>
 
@@ -377,4 +409,4 @@ const Accomodation = () => {
   );
 };
 
-export default Accomodation;
+export default Accommodation;

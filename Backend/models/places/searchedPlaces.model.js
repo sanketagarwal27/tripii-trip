@@ -31,7 +31,7 @@ const searchedPlacesSchema = new Schema(
     lastSearched: {
       type: Number,
       required: true,
-      default: Date.now(),
+      default: Date.now,
     },
   },
   { timestamps: true }

@@ -11,6 +11,14 @@ export const newContribution = async (timeline, tripMeta) => {
   return res.data;
 };
 
+export const uploadImages = async (payload) => {
+  const response = await api.post("/api/contribution/upload-photos", payload, {
+    withCredentials: true,
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data;
+};
+
 // export const fetchDrafts = () => {
 //   api.get("/api/contribution/get-drafts", { withCredentials: true });
 // };

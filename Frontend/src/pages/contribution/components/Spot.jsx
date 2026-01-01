@@ -10,6 +10,7 @@ import {
   Clock,
 } from "lucide-react";
 import { useContribution } from "@/context/ContributionContext";
+import ReviewPhotos from "./ReviewPhotos";
 
 const Spot = () => {
   const navigate = useNavigate();
@@ -21,11 +22,13 @@ const Spot = () => {
     placeName: editData?.placeName || "",
     category: editData?.category || "Activity", // museum, park, adventure, historical
     location: editData?.location || "",
+    contactPerson: editData?.contactPerson || "",
+    contactNumber: editData?.contactNumber || "",
     dateOfVisit: editData?.dateOfVisit || tripMeta.date || "",
     timeSpent: editData?.timeSpent || "",
-    isFree: editData?.isFree || true,
+    isFree: editData?.isFree ?? true,
     entryCost: editData?.entryCost || "",
-    rating: editData?.rating || 0,
+    rating: editData?.rating || null,
     description: editData?.description || "",
     images: editData?.images || [],
   });
@@ -39,7 +42,7 @@ const Spot = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (formData.rating === 0) {
+    if (formData.rating === null || formData.rating === 0) {
       setErrors((prev) => ({
         ...prev,
         rating: "Please provide an overall rating.",
@@ -116,6 +119,30 @@ const Spot = () => {
               </div>
             </div>
           </div>
+          <div className={styles.rowGrid}>
+            <div className={styles.inputGroup}>
+              <label>Person of Contact</label>
+              <input
+                type="text"
+                name="contactPerson"
+                placeholder="Name of some higher authority (optional)"
+                value={formData.contactPerson}
+                onChange={handleChange}
+                className={`${styles.input}`}
+              />
+            </div>
+            <div className={styles.inputGroup}>
+              <label>Contact Number</label>
+              <input
+                type="text"
+                name="contactNumber"
+                placeholder="Contact Number"
+                value={formData.contactNumber}
+                onChange={handleChange}
+                className={`${styles.input}`}
+              />
+            </div>
+          </div>
         </section>
 
         {/* LOGISTICS */}
@@ -189,8 +216,8 @@ const Spot = () => {
                 <Star
                   key={star}
                   size={36}
-                  fill={star <= formData.rating ? "#fbbd08" : "none"}
-                  color={star <= formData.rating ? "#fbbd08" : "#e0e0e0"}
+                  fill={star <= (formData.rating || 0) ? "#fbbd08" : "none"}
+                  color={star <= (formData.rating || 0) ? "#fbbd08" : "#e0e0e0"}
                   className={styles.starBtn}
                   onClick={() => {
                     setFormData({ ...formData, rating: star });
@@ -225,12 +252,15 @@ const Spot = () => {
               className={styles.textarea}
             />
           </div>
-          <div className={styles.uploadZone}>
-            <div className={styles.uploadIconCircle}>
-              <Camera size={32} />
-            </div>
-            <h4>Add Photos of your experience</h4>
-          </div>
+          <ReviewPhotos
+            category={formData.category}
+            images={formData.images}
+            onImagesChange={(newImages) =>
+              setFormData((prev) => ({ ...prev, images: newImages }))
+            }
+            setErrors={setErrors}
+            errors={errors}
+          />
         </section>
 
         <div className={styles.footerAction}>
