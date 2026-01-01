@@ -10,6 +10,7 @@ import {
   Utensils,
 } from "lucide-react";
 import { useContribution } from "@/context/ContributionContext";
+import ReviewPhotos from "./ReviewPhotos";
 
 const Dining = () => {
   const navigate = useNavigate();
@@ -23,15 +24,17 @@ const Dining = () => {
     placeName: editData?.placeName || "",
     category: editData?.category || "Restaurant", // restaurant, cafe, street_food, bar
     location: editData?.location || "",
+    contactPerson: editData?.contactPerson || "",
+    contactNumber: editData?.contactNumber || "",
     dateOfVisit: editData?.dateOfVisit || tripMeta.date || "",
     cuisine: editData?.cuisine || [],
     priceRange: editData?.priceRange || "2", // 1, 2, 3
     dietary: editData?.dietary || [],
     mustTry: editData?.mustTry || "", // Specific to food
-    ambienceRating: editData?.ambienceRating || 0,
-    foodRating: editData?.foodRating || 0,
-    serviceRating: editData?.serviceRating || 0,
-    rating: editData?.rating || 0,
+    ambienceRating: editData?.ambienceRating || null,
+    foodRating: editData?.foodRating || null,
+    serviceRating: editData?.serviceRating || null,
+    rating: editData?.rating || null,
     description: editData?.description || "",
     images: editData?.images || [],
   });
@@ -57,28 +60,28 @@ const Dining = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (formData.ambienceRating === 0) {
+    if (formData.ambienceRating === null || formData.ambienceRating === 0) {
       setErrors((prev) => ({
         ...prev,
         ambienceRating: "Please provide a rating for the ambience.",
       }));
       return;
     }
-    if (formData.foodRating === 0) {
+    if (formData.foodRating === null || formData.foodRating === 0) {
       setErrors((prev) => ({
         ...prev,
         foodRating: "Please provide a rating for the food.",
       }));
       return;
     }
-    if (formData.serviceRating === 0) {
+    if (formData.serviceRating === null || formData.serviceRating === 0) {
       setErrors((prev) => ({
         ...prev,
         serviceRating: "Please provide a rating for the service.",
       }));
       return;
     }
-    if (formData.rating === 0) {
+    if (formData.rating === null || formData.rating === 0) {
       setErrors((prev) => ({
         ...prev,
         rating: "Please provide an overall rating.",
@@ -152,6 +155,32 @@ const Dining = () => {
                   required
                 />
               </div>
+            </div>
+          </div>
+
+          <div className={styles.rowGrid}>
+            <div className={styles.inputGroup}>
+              <label>Person of Contact</label>
+              <input
+                type="text"
+                name="contactPerson"
+                placeholder="Name of some higher authority (optional)"
+                value={formData.contactPerson}
+                onChange={handleChange}
+                className={`${styles.input}`}
+              />
+            </div>
+            <div className={styles.inputGroup}>
+              <label>Contact Number</label>
+              <input
+                type="text"
+                name="contactNumber"
+                placeholder="Contact Number (required)"
+                value={formData.contactNumber}
+                onChange={handleChange}
+                className={`${styles.input}`}
+                required
+              />
             </div>
           </div>
         </section>
@@ -256,8 +285,10 @@ const Dining = () => {
                 <Star
                   key={star}
                   size={36}
-                  fill={star <= formData.foodRating ? "#fbbd08" : "none"}
-                  color={star <= formData.foodRating ? "#fbbd08" : "#e0e0e0"}
+                  fill={star <= (formData.foodRating || 0) ? "#fbbd08" : "none"}
+                  color={
+                    star <= (formData.foodRating || 0) ? "#fbbd08" : "#e0e0e0"
+                  }
                   className={styles.starBtn}
                   onClick={() => {
                     setFormData({ ...formData, foodRating: star });
@@ -289,9 +320,13 @@ const Dining = () => {
                 <Star
                   key={star}
                   size={36}
-                  fill={star <= formData.ambienceRating ? "#fbbd08" : "none"}
+                  fill={
+                    star <= (formData.ambienceRating || 0) ? "#fbbd08" : "none"
+                  }
                   color={
-                    star <= formData.ambienceRating ? "#fbbd08" : "#e0e0e0"
+                    star <= (formData.ambienceRating || 0)
+                      ? "#fbbd08"
+                      : "#e0e0e0"
                   }
                   className={styles.starBtn}
                   onClick={() => {
@@ -324,8 +359,14 @@ const Dining = () => {
                 <Star
                   key={star}
                   size={36}
-                  fill={star <= formData.serviceRating ? "#fbbd08" : "none"}
-                  color={star <= formData.serviceRating ? "#fbbd08" : "#e0e0e0"}
+                  fill={
+                    star <= (formData.serviceRating || 0) ? "#fbbd08" : "none"
+                  }
+                  color={
+                    star <= (formData.serviceRating || 0)
+                      ? "#fbbd08"
+                      : "#e0e0e0"
+                  }
                   className={styles.starBtn}
                   onClick={() => {
                     setFormData({ ...formData, serviceRating: star });
@@ -357,8 +398,8 @@ const Dining = () => {
                 <Star
                   key={star}
                   size={36}
-                  fill={star <= formData.rating ? "#fbbd08" : "none"}
-                  color={star <= formData.rating ? "#fbbd08" : "#e0e0e0"}
+                  fill={star <= (formData.rating || 0) ? "#fbbd08" : "none"}
+                  color={star <= (formData.rating || 0) ? "#fbbd08" : "#e0e0e0"}
                   className={styles.starBtn}
                   onClick={() => {
                     setFormData({ ...formData, rating: star });
@@ -394,12 +435,15 @@ const Dining = () => {
               className={styles.textarea}
             />
           </div>
-          <div className={styles.uploadZone}>
-            <div className={styles.uploadIconCircle}>
-              <Camera size={32} />
-            </div>
-            <h4>Add Food and Menu Photos</h4>
-          </div>
+          <ReviewPhotos
+            category={formData.category}
+            images={formData.images}
+            onImagesChange={(newImages) =>
+              setFormData((prev) => ({ ...prev, images: newImages }))
+            }
+            setErrors={setErrors}
+            errors={errors}
+          />
         </section>
 
         <div className={styles.footerAction}>

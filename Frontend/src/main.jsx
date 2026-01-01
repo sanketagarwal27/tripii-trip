@@ -34,7 +34,7 @@ import Trip from "./components/trip/Trip";
 
 // --- CONTRIBUTION IMPORTS ---
 import Contribution from "./pages/contribution/Contribution";
-import Accomodation from "./pages/contribution/components/Accomodation";
+import Accommodation from "./pages/contribution/components/Accommodation";
 import Dining from "./pages/contribution/components/Dining";
 import Spot from "./pages/contribution/components/Spot";
 import { ContributionProvider } from "./context/ContributionContext";
@@ -114,7 +114,7 @@ function AppRouter() {
           <Route path="/contribute" element={<Contribution />} />
           <Route
             path="/contribute/add-accommodation"
-            element={<Accomodation />}
+            element={<Accommodation />}
           />
           <Route path="/contribute/add-dining" element={<Dining />} />
           <Route path="/contribute/add-spot" element={<Spot />} />
@@ -124,7 +124,7 @@ function AppRouter() {
   );
 }
 
-// ✅ WRAP WITH CONTRIBUTION PROVIDER
+// ✅ WRAP WITH CONTRIBUTION AND OAUTH PROVIDER
 createRoot(document.getElementById("root")).render(
   <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
     <Provider store={store}>

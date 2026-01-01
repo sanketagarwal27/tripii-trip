@@ -16,6 +16,8 @@ const placeSchema = new Schema(
     placeName: { type: String, required: true }, //Name of Hotel/Restaurant/Tourist Spot
     location: { type: String, required: true }, //Bigger Address (State or Country or City)
     address: { type: String, required: true }, //Specific Location (Street Name)
+    contactNumber: String, //POC contact
+    contactPerson: String, //POC
 
     // GeoJSON for Safety features later
     coordinates: {

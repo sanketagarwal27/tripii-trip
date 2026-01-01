@@ -21,6 +21,7 @@ const Contribution = () => {
   const locationInputRef = useRef(null);
   const dateInputRef = useRef(null);
 
+  const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const { tripMeta, updateMeta, timeline, removeFromTimeline, clearSession } =
     useContribution();
@@ -71,13 +72,21 @@ const Contribution = () => {
   const handleSubmit = async () => {
     if (timeline.length === 0) return;
     setSubmitting(true);
+    setError(null);
     try {
-      const response = await newContribution(timeline, tripMeta);
-      if (response.success) {
-        clearSession();
+      if (!tripMeta || !tripMeta.location || !tripMeta.date) {
+        setError("Enter the location and date visited.");
+      } else {
+        const response = await newContribution(timeline, tripMeta);
+        if (response.success) {
+          clearSession();
+        } else {
+          setError("Failed to submit contributions. Please try again.");
+        }
       }
     } catch (err) {
       console.error("Error: ", err);
+      setError("An error occurred. Please try again.");
     } finally {
       setSubmitting(false);
     }
