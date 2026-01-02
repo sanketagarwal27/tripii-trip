@@ -1,18 +1,18 @@
 // src/components/PostFeed.jsx
-import React, { useState } from "react";
+import React from "react";
 import PostCard from "./PostCard";
 import { Camera, AlignLeft } from "lucide-react";
 import styles from "./PostFeed.module.css";
 
-const PostFeed = ({ posts, user }) => {
-  posts.forEach((post) => {
-    {
-      post.author = user;
-    }
-  });
+const PostFeed = ({ posts, user, onPostUpdate }) => {
+  const enrichedPosts = posts.map((post) => ({ ...post, author: user }));
   // 1. Separate the data
-  const visualPosts = posts.filter((p) => p.media && p.media.length > 0);
-  const logPosts = posts.filter((p) => !p.media || p.media.length === 0);
+  const visualPosts = enrichedPosts.filter(
+    (p) => p.media && p.media.length > 0
+  );
+  const logPosts = enrichedPosts.filter(
+    (p) => !p.media || p.media.length === 0
+  );
 
   return (
     <div className={styles.container}>
@@ -29,7 +29,12 @@ const PostFeed = ({ posts, user }) => {
             {visualPosts.map((post) => (
               <div key={post._id}>
                 {/* Added onClick wrapper above */}
-                <PostCard post={post} type="visual" />
+                <PostCard
+                  key={post._id}
+                  post={post}
+                  onPostUpdate={onPostUpdate}
+                  type="visual"
+                />
               </div>
             ))}
           </div>
@@ -47,7 +52,12 @@ const PostFeed = ({ posts, user }) => {
           {/* This div enforces the Vertical List */}
           <div className={styles.logStack}>
             {logPosts.map((post) => (
-              <PostCard key={post._id} post={post} type="log" />
+              <PostCard
+                key={post._id}
+                post={post}
+                onPostUpdate={onPostUpdate}
+                type="log"
+              />
             ))}
           </div>
         </section>

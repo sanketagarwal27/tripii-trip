@@ -21,7 +21,7 @@ const Contribution = () => {
   const locationInputRef = useRef(null);
   const dateInputRef = useRef(null);
 
-  const [error, setError] = useState(null);
+  const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const { tripMeta, updateMeta, timeline, removeFromTimeline, clearSession } =
     useContribution();
@@ -72,21 +72,31 @@ const Contribution = () => {
   const handleSubmit = async () => {
     if (timeline.length === 0) return;
     setSubmitting(true);
-    setError(null);
+    setErrors({});
     try {
       if (!tripMeta || !tripMeta.location || !tripMeta.date) {
-        setError("Enter the location and date visited.");
+        setErrors((prev) => ({
+          ...prev,
+          location: "Enter the location and date visited.",
+        }));
+        return;
       } else {
         const response = await newContribution(timeline, tripMeta);
         if (response.success) {
           clearSession();
         } else {
-          setError("Failed to submit contributions. Please try again.");
+          setErrors((prev) => ({
+            ...prev,
+            submit: "Failed to submit contributions. Please try again.",
+          }));
         }
       }
     } catch (err) {
       console.error("Error: ", err);
-      setError("An error occurred. Please try again.");
+      setErrors((prev) => ({
+        ...prev,
+        submit: "An error occurred. Please try again.",
+      }));
     } finally {
       setSubmitting(false);
     }
@@ -115,6 +125,7 @@ const Contribution = () => {
               className={styles.mainInput}
             />
           </div>
+
           <div className={styles.divider}></div>
           <div className={styles.inputGroup}>
             <label>
@@ -131,6 +142,19 @@ const Contribution = () => {
             />
           </div>
         </div>
+        {errors.location && (
+          <span
+            className={styles.errorText}
+            style={{
+              color: "#e74c3c",
+              fontSize: "0.85rem",
+              marginTop: "0.5rem",
+              display: "block",
+            }}
+          >
+            {errors.location}
+          </span>
+        )}
       </header>
 
       <div className={styles.layoutSplit}>
@@ -260,6 +284,19 @@ const Contribution = () => {
                   "Submit All"
                 )}
               </button>
+            )}
+            {errors.submit && (
+              <span
+                className={styles.errorText}
+                style={{
+                  color: "#e74c3c",
+                  fontSize: "0.85rem",
+                  marginTop: "0.5rem",
+                  display: "block",
+                }}
+              >
+                {errors.submit}
+              </span>
             )}
           </div>
         </aside>

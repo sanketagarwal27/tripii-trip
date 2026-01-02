@@ -16,6 +16,7 @@ const ProfilePage = () => {
   const [selectedTab, setSelectedTab] = useState("Posts");
 
   const { id } = useParams();
+
   useEffect(() => {
     const getUser = async () => {
       try {
@@ -36,29 +37,39 @@ const ProfilePage = () => {
       setUserData(updatedUser.data);
     } catch (error) {
       console.error("Failed to update profile", error);
-      // Add a toast notification here for the error
     }
+  };
+
+  const handlePostUpdate = (updatedPost) => {
+    setUserData((prevData) => {
+      if (!prevData) return prevData;
+      return {
+        ...prevData,
+        posts: prevData.posts.map((p) =>
+          p._id === updatedPost._id ? updatedPost : p
+        ),
+      };
+    });
   };
 
   const renderTabContent = () => {
     switch (selectedTab) {
       case "Posts":
-        // Shows only normal posts
         return (
           <PostFeed
             posts={userData.posts.filter((post) => post.type === "normal")}
             user={userData}
+            onPostUpdate={handlePostUpdate} // <--- PASS IT HERE
           />
         );
 
       case "Trip Posts":
-        // Example: Filter for trip posts
-        /* Note: If you are using the new 'ProfileFeed' component created previously 
-           that separates Visual vs Log, you can use that here instead of PostFeed.
-        */
         const tripPosts = userData.posts.filter((post) => post.type === "trip");
         return tripPosts.length > 0 ? (
-          <PostFeed posts={tripPosts} />
+          <PostFeed
+            posts={tripPosts}
+            onPostUpdate={handlePostUpdate} // <--- AND HERE
+          />
         ) : (
           <div className={styles.emptyState}>No Trip Posts yet.</div>
         );
@@ -80,6 +91,7 @@ const ProfilePage = () => {
 
   if (loading) return <center>Loading Your Profile...</center>;
   if (!userData) return <center>User Not Found...</center>;
+
   return (
     <div className={styles.container}>
       <div className={styles.layout}>
@@ -88,18 +100,13 @@ const ProfilePage = () => {
           onEditClick={() => setIsEditing(true)}
         />
         <main className={styles.mainContent}>
-          {/* 1. The Tabs Component */}
           <ProfileTabs
             tabs={TABS}
             activeTab={selectedTab}
             onTabChange={setSelectedTab}
           />
-
-          {/* 2. The Dynamic Content */}
           {renderTabContent()}
         </main>
-
-        {/* Render modal if isEditing is true */}
         {isEditing && (
           <EditProfileModal
             user={userData}

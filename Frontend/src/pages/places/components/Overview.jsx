@@ -29,7 +29,9 @@ const Overview = ({ data, setActiveTab }) => {
           <div className={styles.card}>
             <h3 className={styles.cardTitle}>Today's Forecast</h3>
             <div className={styles.weatherRow}>
-              <span className={styles.weatherTemp}>{weather.high}°C</span>
+              <span className={styles.weatherTemp}>
+                {((weather.high + weather.low) / 2).toFixed(1)}°C
+              </span>
               <div className={styles.weatherLabel}>
                 <span>High: {weather.high}°</span>
                 <span>Low: {weather.low}°</span>

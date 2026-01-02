@@ -29,14 +29,20 @@ const searchedPlacesSchema = new Schema(
       required: true,
     },
     lastSearched: {
-      type: Number,
-      required: true,
+      type: Date,
+      default: Date.now,
+    },
+    dataRefreshedAt: {
+      type: Date,
       default: Date.now,
     },
   },
   { timestamps: true }
 );
 
-searchedPlacesSchema.index({ updatedAt: 1 }, { expireAfterSeconds: 21600 });
+searchedPlacesSchema.index(
+  { lastSearched: 1 },
+  { expireAfterSeconds: 7 * 24 * 60 * 60 }
+);
 
 export const Place = mongoose.model("Place", searchedPlacesSchema);

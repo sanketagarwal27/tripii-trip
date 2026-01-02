@@ -9,7 +9,7 @@ import { toggleLike } from "@/api/post";
 import toast from "react-hot-toast";
 import PostModal from "./PostModal";
 
-const PostCard = ({ post, type = "visual" }) => {
+const PostCard = ({ post, type = "visual", onPostUpdate }) => {
   const [forModal, setForModal] = useState(null);
   const isVisual = type === "visual";
   const imageCount = post.media?.length || 0;
@@ -51,6 +51,9 @@ const PostCard = ({ post, type = "visual" }) => {
 
         // 3. Update the Global Feed List
         dispatch(updatePost(updatedPostData));
+        if (onPostUpdate) {
+          onPostUpdate(updatedPostData);
+        }
 
         // 4. Update Selected Post (Syncs Details Page)
         // Since your slice doesn't do this automatically, we check manually:

@@ -3,7 +3,13 @@ import styles from "./Forms.module.css";
 import { useState } from "react";
 import { uploadImages } from "@/api/contribution";
 
-const ReviewPhotos = ({ category, images, onImagesChange, setErrors }) => {
+const ReviewPhotos = ({
+  category,
+  images,
+  onImagesChange,
+  setErrors,
+  errors,
+}) => {
   // States
   const [isUploading, setIsUploading] = useState(false);
 
@@ -11,7 +17,37 @@ const ReviewPhotos = ({ category, images, onImagesChange, setErrors }) => {
   const handleImageUpload = async (e) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
+
+    const maxPhotos = 5;
+    const maxSizeMb = 5;
+    const maxSize = 5 * 1024 * 1024;
+    const currentCount = images.length;
+    const newCount = files.length;
+
+    if (currentCount + newCount > maxPhotos) {
+      setErrors((prev) => ({
+        ...prev,
+        photos: `Can't upload more than ${maxPhotos} photos !`,
+      }));
+      e.target.value = "";
+      return;
+    }
+
+    for (let i = 0; i < files.length; i++) {
+      if (files[i].size > maxSize) {
+        setErrors((prev) => ({
+          ...prev,
+          photos: `Photo ${
+            files[i]?.name || ""
+          } is large. Maximum allowed size for each photo is ${maxSizeMb}MB.`,
+        }));
+        e.target.value = "";
+        return;
+      }
+    }
+
     setIsUploading(true);
+    setErrors((prev) => ({ ...prev, photos: null }));
     const uploadData = new FormData();
 
     for (let i = 0; i < files.length; i++) {
@@ -23,11 +59,11 @@ const ReviewPhotos = ({ category, images, onImagesChange, setErrors }) => {
       if (response.success) {
         onImagesChange([...images, ...response.data]);
       } else {
-        setErrors("Image Uploading Failed !");
+        setErrors((prev) => ({ ...prev, photos: "Image Uploading Failed !" }));
       }
     } catch (err) {
       console.error("Error: ", err);
-      setErrors("Error in Uploading image");
+      setErrors((prev) => ({ ...prev, photos: "Error in Uploading image" }));
     } finally {
       setIsUploading(false);
       e.target.value = "";
@@ -86,6 +122,19 @@ const ReviewPhotos = ({ category, images, onImagesChange, setErrors }) => {
             </div>
           ))}
         </div>
+      )}
+      {errors.photos && (
+        <span
+          className={styles.errorText}
+          style={{
+            color: "#e74c3c",
+            fontSize: "0.85rem",
+            marginTop: "0.5rem",
+            display: "block",
+          }}
+        >
+          {errors.photos}
+        </span>
       )}
     </div>
   );

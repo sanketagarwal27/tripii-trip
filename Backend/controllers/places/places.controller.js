@@ -19,9 +19,11 @@ import { getHeroImageFromApi, getImagesFromApi } from "./images.controller.js";
  * CACHE CHECK
  * ------------------------------------------------- */
 const presentInDb = async (place, field) => {
+  const six_hours = 6 * 24 * 3600;
+  const isStale = Date.now() - place.dataRefreshedAt > six_hours;
   try {
     const cachedPlace = await Place.findOne({ place });
-    if (cachedPlace && cachedPlace[field]) {
+    if (cachedPlace && cachedPlace[field] && !isStale) {
       cachedPlace.lastSearched = Date.now();
       await cachedPlace.save();
       console.log(`✅ Cache hit: ${field} for ${place}`);
@@ -56,7 +58,7 @@ export const getNews = asyncHandler(async (req, res) => {
       );
   }
   //Cache Miss
-  console.log(`Cache Miss for News for ${place}`);
+  console.log(`Cache Miss or data stale for News for ${place}`);
 
   // 🌍 API FETCH + FILTER
   const apiResponse = await getNewsFromApi(place);
@@ -115,7 +117,7 @@ const getWeatherData = async (place) => {
     return data.weatherData;
   }
   // Cache Miss
-  console.log(`Cache Miss for weather data of ${place}. Calling APIs...`);
+  console.log(`Fetching Weather data for ${place}...`);
   try {
     const coords = await getCoordinates(place);
     if (!coords) {

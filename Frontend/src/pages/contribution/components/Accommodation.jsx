@@ -393,6 +393,7 @@ const Accommodation = () => {
                 setFormData((prev) => ({ ...prev, images: newImages }))
               }
               setErrors={setErrors}
+              errors={errors}
             />
           </div>
         </section>
