@@ -29,8 +29,7 @@ const searchedPlacesSchema = new Schema(
       required: true,
     },
     lastSearched: {
-      type: Number,
-      required: true,
+      type: Date,
       default: Date.now,
     },
     dataRefreshedAt: {
