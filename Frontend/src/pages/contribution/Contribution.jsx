@@ -72,7 +72,7 @@ const Contribution = () => {
   const handleSubmit = async () => {
     if (timeline.length === 0) return;
     setSubmitting(true);
-    setErrors(null);
+    setErrors({});
     try {
       if (!tripMeta || !tripMeta.location || !tripMeta.date) {
         setErrors((prev) => ({
