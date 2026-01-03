@@ -8,6 +8,11 @@ const placeSchema = new Schema(
       ref: "User",
       required: true,
     },
+    status: {
+      type: String,
+      enum: ["Pending", "Approved", "Rejected"],
+      default: "Pending",
+    },
     type: {
       type: String,
       required: true,

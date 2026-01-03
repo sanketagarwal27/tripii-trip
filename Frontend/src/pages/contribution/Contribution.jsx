@@ -25,6 +25,7 @@ const Contribution = () => {
   const [submitting, setSubmitting] = useState(false);
   const { tripMeta, updateMeta, timeline, removeFromTimeline, clearSession } =
     useContribution();
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const handleSelection = (type) => {
     if (!tripMeta.location.trim()) {
@@ -83,7 +84,12 @@ const Contribution = () => {
       } else {
         const response = await newContribution(timeline, tripMeta);
         if (response.success) {
-          clearSession();
+          setShowSuccess(true);
+          setTimeout(() => {
+            clearSession();
+            setShowSuccess(false);
+            navigate(`/`);
+          }, 4500);
         } else {
           setErrors((prev) => ({
             ...prev,
@@ -101,6 +107,27 @@ const Contribution = () => {
       setSubmitting(false);
     }
   };
+
+  if (showSuccess) {
+    return (
+      <div className={styles.successContainer}>
+        <div className={styles.successCard}>
+          <div className={styles.successIconWrapper}>
+            <CheckCircle2 size={64} color="#2ecc71" />
+          </div>
+          <h2>Thank You!</h2>
+          <p>
+            Your timeline for <strong>{tripMeta.location}</strong> has been
+            submitted successfully. We will reward you once we verify your
+            contribution
+          </p>
+          <p className={styles.subText}>
+            Your contributions help other travelers.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
@@ -134,7 +161,7 @@ const Contribution = () => {
             </label>
             <input
               ref={dateInputRef}
-              type="date" // Changed from 'month' to 'date' to match your previous code
+              type="date"
               value={tripMeta.date}
               onChange={(e) => updateMeta(tripMeta.location, e.target.value)}
               className={styles.dateInput}

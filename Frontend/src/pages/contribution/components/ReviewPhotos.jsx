@@ -33,19 +33,6 @@ const ReviewPhotos = ({
       return;
     }
 
-    for (let i = 0; i < files.length; i++) {
-      if (files[i].size > maxSize) {
-        setErrors((prev) => ({
-          ...prev,
-          photos: `Photo ${
-            files[i]?.name || ""
-          } is large. Maximum allowed size for each photo is ${maxSizeMb}MB.`,
-        }));
-        e.target.value = "";
-        return;
-      }
-    }
-
     setIsUploading(true);
     setErrors((prev) => ({ ...prev, photos: null }));
     const uploadData = new FormData();

@@ -1,13 +1,13 @@
 import styles from "./Profile.module.css";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import ProfileSidebar from "./components/Sidebar";
 import ProfileTabs from "./components/ProfileTabs";
 import { getUserProfile, updateUserProfile } from "@/api/auth";
 import EditProfileModal from "./components/EditProfile";
 import { useParams } from "react-router-dom";
 import PostFeed from "./components/PostFeed";
-
-const TABS = ["Posts", "Trip Posts", "Saved", "Contribution Details"];
+import UserContributions from "./components/UserContributions";
+import { useSelector } from "react-redux";
 
 const ProfilePage = () => {
   const [userData, setUserData] = useState(null);
@@ -16,6 +16,17 @@ const ProfilePage = () => {
   const [selectedTab, setSelectedTab] = useState("Posts");
 
   const { id } = useParams();
+  const { userProfile } = useSelector((state) => state.auth);
+
+  const isOwnProfile = userProfile._id === id;
+
+  const TABS = useMemo(() => {
+    const baseTabs = ["Posts", "Trip Posts"];
+    if (isOwnProfile) {
+      return [...baseTabs, "Saved", "Contribution Details"];
+    }
+    return baseTabs;
+  }, [isOwnProfile]);
 
   useEffect(() => {
     const getUser = async () => {
@@ -59,30 +70,23 @@ const ProfilePage = () => {
           <PostFeed
             posts={userData.posts.filter((post) => post.type === "normal")}
             user={userData}
-            onPostUpdate={handlePostUpdate} // <--- PASS IT HERE
+            onPostUpdate={handlePostUpdate}
           />
         );
 
       case "Trip Posts":
         const tripPosts = userData.posts.filter((post) => post.type === "trip");
         return tripPosts.length > 0 ? (
-          <PostFeed
-            posts={tripPosts}
-            onPostUpdate={handlePostUpdate} // <--- AND HERE
-          />
+          <PostFeed posts={tripPosts} onPostUpdate={handlePostUpdate} />
         ) : (
           <div className={styles.emptyState}>No Trip Posts yet.</div>
         );
 
       case "Saved":
-        return (
-          <div className={styles.emptyState}>Saved items coming soon...</div>
-        );
+        return <div className={styles.emptyState}>No Saved Posts yet...</div>;
 
       case "Contribution Details":
-        return (
-          <div className={styles.emptyState}>Contribution stats here...</div>
-        );
+        return <UserContributions />;
 
       default:
         return null;

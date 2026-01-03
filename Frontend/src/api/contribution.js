@@ -19,10 +19,9 @@ export const uploadImages = async (payload) => {
   return response.data;
 };
 
-// export const fetchDrafts = () => {
-//   api.get("/api/contribution/get-drafts", { withCredentials: true });
-// };
-
-// export const fetchSubmittedContributions = () => {
-//   api.get("/api/contribution/get-submitted", { withCredentials: true });
-// };
+export const getContributions = async () => {
+  const response = await api.get("/api/contribution/get", {
+    withCredentials: true,
+  });
+  return response.data;
+};

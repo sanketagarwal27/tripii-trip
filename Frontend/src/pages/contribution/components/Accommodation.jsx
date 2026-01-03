@@ -2,14 +2,7 @@ import React, { useState } from "react";
 import { useContribution } from "@/context/ContributionContext";
 import { useLocation, useNavigate } from "react-router-dom";
 import styles from "./Forms.module.css";
-import {
-  ArrowLeft,
-  MapPin,
-  Calendar,
-  Camera,
-  Star,
-  PlusCircle,
-} from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Star, PlusCircle } from "lucide-react";
 import ReviewPhotos from "./ReviewPhotos";
 
 const Accommodation = () => {

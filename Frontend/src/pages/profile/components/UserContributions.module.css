@@ -1,0 +1,185 @@
+.container {
+  width: 100%;
+  max-width: 100%;
+  font-family: 'Poppins', sans-serif;
+  color: #333;
+}
+
+/* --- HEADER (MATCHING POSTFEED) --- */
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.sectionHeader h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.icon {
+  color: #00b4d8; /* The specific blue color from PostFeed */
+}
+
+/* --- Table Wrapper --- */
+.tableWrapper {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  overflow-x: auto;
+  border: 1px solid #eee;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+}
+
+/* --- Table Head --- */
+.table thead tr {
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #eaeaea;
+  text-align: left;
+}
+
+.table th {
+  padding: 1.2rem 1rem;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #95a5a6;
+  font-weight: 600;
+}
+
+.thLeft { padding-left: 2rem; }
+.thRight { padding-right: 2rem; text-align: center; }
+
+/* --- Table Body --- */
+.row {
+  border-bottom: 1px solid #f1f1f1;
+  transition: background-color 0.2s ease;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.row:hover {
+  background-color: #fafbfd;
+}
+
+.table td {
+  padding: 1.2rem 1rem;
+  vertical-align: middle;
+}
+
+/* --- Columns Styling --- */
+.placeCell { padding-left: 2rem; }
+
+.placeContent {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.imgWrapper {
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #eee;
+  flex-shrink: 0;
+}
+
+.thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placeText {
+  display: flex;
+  flex-direction: column;
+}
+
+.placeName {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.95rem;
+}
+
+.placeLocation {
+  font-size: 0.8rem;
+  color: #7f8c8d;
+}
+
+.categoryCell {
+  display: flex;
+  flex-direction: column;
+}
+
+.mainType {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #34495e;
+}
+
+.subCategory {
+  font-size: 0.75rem;
+  color: #95a5a6;
+  background: #f0f2f5;
+  padding: 2px 6px;
+  border-radius: 4px;
+  width: fit-content;
+  margin-top: 4px;
+}
+
+.dateCell {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.ratingCell { min-width: 100px; }
+
+.stars {
+  color: #f1c40f;
+  font-size: 1rem;
+  margin-right: 6px;
+}
+
+.ratingNumber {
+  color: #7f8c8d;
+  font-size: 0.8rem;
+}
+
+.statusCell {
+  text-align: center;
+  padding-right: 2rem;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 0.3rem 0.8rem;
+  border-radius: 50px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  min-width: 80px;
+}
+
+/* Status Colors */
+.pending { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+.approved { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+.rejected { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+.loading, .emptyState {
+  text-align: center;
+  padding: 3rem;
+  color: #95a5a6;
+}

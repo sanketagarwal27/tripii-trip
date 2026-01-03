@@ -355,3 +355,60 @@
   .inputGroup { width: 100%; border-bottom: 1px solid #eee; }
   .layoutSplit { grid-template-columns: 1fr; }
 }
+
+.successContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80vh; /* Adjust based on your layout */
+  width: 100%;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.successCard {
+  background: white;
+  padding: 3rem;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  max-width: 450px;
+  width: 90%;
+  border: 1px solid #eee;
+}
+
+.successIconWrapper {
+  margin-bottom: 1.5rem;
+  animation: scaleUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.successCard h2 {
+  font-size: 2rem;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.successCard p {
+  font-size: 1.1rem;
+  color: #555;
+  margin-bottom: 0.5rem;
+}
+
+.successCard strong {
+  color: #3498db;
+}
+
+.subText {
+  font-size: 0.9rem !important;
+  color: #888 !important;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleUp {
+  from { transform: scale(0); }
+  to { transform: scale(1); }
+}
