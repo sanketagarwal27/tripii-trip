@@ -18,7 +18,7 @@ const ProfilePage = () => {
   const { id } = useParams();
   const { userProfile } = useSelector((state) => state.auth);
 
-  const isOwnProfile = userProfile._id === id;
+  const isOwnProfile = userProfile?._id === id;
 
   const TABS = useMemo(() => {
     const baseTabs = ["Posts", "Trip Posts"];
