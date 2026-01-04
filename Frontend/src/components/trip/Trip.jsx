@@ -5,6 +5,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { clearTripGallery, setActiveTrip } from "@/redux/tripSlice";
 import Itinerary from "@/components/trip/Itinerary";
 import TripGallery from "./TripGallery";
+import Wallet from "./wallet/Wallet";
 
 const TABS = [
   { key: "itinerary", label: "Plan / Itinerary" },
@@ -112,7 +113,7 @@ const Trip = () => {
       {/* ---------- PLACEHOLDER CONTENT (WIRED, NOT IMPLEMENTED) ---------- */}
       <div className="text-sm text-gray-600">
         {activeTab === "itinerary" && <Itinerary />}
-        {activeTab === "wallet" && "Wallet content goes here"}
+        {activeTab === "wallet" && <Wallet />}
         {activeTab === "members" && "Members content goes here"}
         {activeTab === "gallery" && <TripGallery tripId={tripId} />}
 

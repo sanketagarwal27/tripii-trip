@@ -25,6 +25,18 @@ import {
   unlikeTripPhoto,
   uploadTripPhotosBatch,
 } from "../controllers/trip/tripGallary.controller.js";
+import {
+  addExpense,
+  assignAccountant,
+  confirmSettlement,
+  deleteExpense,
+  generateSettlements,
+  getTripWallet,
+  getWalletExpenses,
+  removeAccountant,
+  updateExpense,
+  updateWalletSettings,
+} from "../controllers/trip/tripWallet.controller.js";
 
 const router = express.Router();
 
@@ -53,28 +65,30 @@ router.post(
   upload.array("photos", 20),
   uploadTripPhotosBatch
 );
-
-// 👤 My local gallery
 router.get("/trips/:tripId/gallery/local", getMyLocalGallery);
-
-// 🌍 Global trip gallery
 router.get("/trips/:tripId/gallery/global", getGlobalTripGallery);
-
-// 🚀 Push photos to global gallery
 router.patch("/trips/:tripId/gallery/push", pushPhotosToGlobal);
-
-// ❤️ Like / Unlike photo
 router.post("/trip-gallery/:photoId/like", likeTripPhoto);
-
 router.delete("/trip-gallery/:photoId/like", unlikeTripPhoto);
-
-// ⬇️ Download photo (permission-checked)
 router.get("/trip-gallery/:photoId/download", downloadTripPhoto);
-
-// 🔐 Toggle download permission (owner only)
 router.patch("/trip-gallery/:photoId/download-permission", togglePhotoDownload);
-
-// 🗑️ Delete photo
 router.delete("/trip-gallery/:photoId", deleteTripPhoto);
+
+// wallet
+
+router.get("/trips/:tripId/wallet", getTripWallet);
+router.patch("/trips/:tripId/wallet/settings", updateWalletSettings);
+router.post("/trips/:tripId/wallet/expenses", addExpense);
+router.patch("/wallet/expenses/:expenseId", updateExpense);
+router.delete("/wallet/expenses/:expenseId", deleteExpense);
+router.get("/trips/:tripId/wallet/expenses", getWalletExpenses);
+router.post("/trips/:tripId/wallet/settlements/generate", generateSettlements);
+// Confirm settlement (payer / receiver)
+router.post(
+  "/trips/:tripId/wallet/settlements/:index/:type",
+  confirmSettlement
+);
+router.post("/trips/:tripId/wallet/accountants", assignAccountant);
+router.delete("/trips/:tripId/wallet/accountants/:userId", removeAccountant);
 
 export default router;

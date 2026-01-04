@@ -44,4 +44,14 @@ export const EVENTS = {
   TRIP_PHOTO_UPLOADED: "trip:photo:uploaded", // local upload (single or batch)
   TRIP_PHOTO_PUSHED: "trip:photo:pushed", // local → global
   TRIP_PHOTO_DELETED: "trip:photo:deleted", // deleted from local/global
+
+  /* ================= TRIP WALLET ================= */
+  WALLET_EXPENSE_ADDED: "wallet:expense:added",
+  WALLET_EXPENSE_UPDATED: "wallet:expense:updated",
+  WALLET_EXPENSE_DELETED: "wallet:expense:deleted",
+
+  WALLET_SETTINGS_UPDATED: "wallet:settings:updated",
+
+  WALLET_SETTLEMENT_GENERATED: "wallet:settlement:generated",
+  WALLET_SETTLEMENT_UPDATED: "wallet:settlement:updated",
 };

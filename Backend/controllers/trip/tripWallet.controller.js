@@ -3,10 +3,15 @@ import { TripActivity } from "../../models/trip/tripActivity.model.js";
 import { Trip } from "../../models/trip/trip.model.js";
 import { TripWallet } from "../../models/trip/tripWallet.model.js";
 import { TripRole } from "../../models/trip/tripRole.model.js";
-import { ApiError, ApiResponse } from "../utils/apiResponse.js";
+
 import asyncHandler from "../../utils/asyncHandler.js";
 import { awardPoints } from "../../points/awardPoints.js";
 import { Expense } from "../../models/trip/expense.model.js";
+import { ApiResponse } from "../../utils/ApiResponse.js";
+import { ApiError } from "../../utils/ApiError.js";
+import { emitToTrip } from "../../socket/server.js";
+import { EVENTS } from "../../socket/events.js";
+import { sendNotification } from "../user/notification.controller.js";
 
 async function canUserAddExpense({ userId, trip, wallet }) {
   if (trip.status === "completed") return false;
@@ -106,6 +111,12 @@ export const updateWalletSettings = asyncHandler(async (req, res) => {
     { new: true }
   ).lean();
 
+  emitToTrip(tripId, EVENTS.WALLET_SETTINGS_UPDATED, {
+    tripId,
+    settings: wallet.settings,
+    budget: wallet.budget,
+  });
+
   return res
     .status(200)
     .json(new ApiResponse(200, wallet, "Wallet settings updated successfully"));
@@ -142,6 +153,11 @@ export const addExpense = asyncHandler(async (req, res) => {
   wallet.expenses.push(expense._id);
   wallet.totalSpend += expense.amount;
   await wallet.save();
+
+  emitToTrip(tripId, EVENTS.WALLET_EXPENSE_ADDED, {
+    tripId,
+    expense,
+  });
 
   await TripActivity.create({
     trip: tripId,
@@ -188,6 +204,11 @@ export const updateExpense = asyncHandler(async (req, res) => {
   wallet.totalSpend += expense.amount;
   await wallet.save();
 
+  emitToTrip(trip._id, EVENTS.WALLET_EXPENSE_UPDATED, {
+    tripId: trip._id,
+    expense,
+  });
+
   await TripActivity.create({
     trip: trip._id,
     type: "expense_updated", // or expense_deleted
@@ -231,6 +252,11 @@ export const deleteExpense = asyncHandler(async (req, res) => {
 
   await expense.deleteOne();
   await wallet.save();
+
+  emitToTrip(trip._id, EVENTS.WALLET_EXPENSE_DELETED, {
+    tripId: trip._id,
+    expenseId,
+  });
 
   await TripActivity.create({
     trip: trip._id,
@@ -325,6 +351,12 @@ export const generateSettlements = asyncHandler(async (req, res) => {
   };
 
   await trip.save();
+
+  emitToTrip(tripId, EVENTS.WALLET_SETTLEMENTS_GENERATED, {
+    tripId,
+    settlements,
+  });
+
   res.json(new ApiResponse(200, settlements));
 });
 
@@ -345,6 +377,19 @@ export const confirmSettlement = asyncHandler(async (req, res) => {
     if (settlement.from.toString() !== userId.toString())
       throw new ApiError(403, "Not payer");
     settlement.payerConfirmed = true;
+    await sendNotification({
+      recipient: settlement.to,
+      sender: userId,
+      type: "settlement_requested",
+      message: "marked a settlement payment as done",
+      trip: tripId,
+      wallet: trip.wallet,
+      settlement: settlement._id,
+      metadata: {
+        step: "payer_confirmed",
+        amount: settlement.amount,
+      },
+    });
   }
 
   if (type === "receiver") {
@@ -355,6 +400,19 @@ export const confirmSettlement = asyncHandler(async (req, res) => {
 
   if (settlement.payerConfirmed && settlement.receiverConfirmed) {
     settlement.settledAt = new Date();
+    await sendNotification({
+      recipient: settlement.from,
+      sender: userId,
+      type: "settlement_completed",
+      message: "confirmed your settlement payment",
+      trip: tripId,
+      wallet: trip.wallet,
+      settlement: settlement._id,
+      metadata: {
+        amount: settlement.amount,
+        settledAt: settlement.settledAt,
+      },
+    });
   }
 
   if (
@@ -378,6 +436,13 @@ export const confirmSettlement = asyncHandler(async (req, res) => {
   }
 
   await trip.save();
+
+  emitToTrip(tripId, EVENTS.WALLET_SETTLEMENT_CONFIRMED, {
+    tripId,
+    index,
+    settlement,
+  });
+
   res.json(new ApiResponse(200, settlement));
 });
 
@@ -448,6 +513,26 @@ export const assignAccountant = asyncHandler(async (req, res) => {
 
   await TripRole.insertMany(rolesToInsert);
 
+  for (const uid of validUserIds) {
+    await sendNotification({
+      recipient: uid,
+      sender: requesterId,
+      type: "system_message",
+      message: "assigned you as an accountant for the trip",
+      trip: tripId,
+      wallet: trip.wallet,
+      metadata: {
+        role: "Accountant",
+        action: "assigned",
+      },
+    });
+  }
+
+  emitToTrip(tripId, EVENTS.WALLET_ACCOUNTANT_ASSIGNED, {
+    tripId,
+    userIds: validUserIds,
+  });
+
   return res.json(
     new ApiResponse(200, null, "Accountants assigned successfully")
   );
@@ -460,6 +545,24 @@ export const removeAccountant = asyncHandler(async (req, res) => {
     trip: tripId,
     assignedTo: userId,
     roleName: "Accountant",
+  });
+
+  emitToTrip(tripId, EVENTS.WALLET_ACCOUNTANT_REMOVED, {
+    tripId,
+    userId,
+  });
+
+  await sendNotification({
+    recipient: userId,
+    sender: req.user._id,
+    type: "system_message",
+    message: "removed you as an accountant from the trip",
+    trip: tripId,
+    wallet: trip.wallet,
+    metadata: {
+      role: "Accountant",
+      action: "removed",
+    },
   });
 
   res.json(new ApiResponse(200, null, "Accountant removed"));

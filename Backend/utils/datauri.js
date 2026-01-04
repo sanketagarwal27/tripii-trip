@@ -19,7 +19,9 @@ const getDataUri = (input) => {
     if (input.mimetype) {
       const parts = input.mimetype.split("/");
       if (parts.length !== 2 || !parts[1]) {
-        throw new Error(`getDataUri: invalid mimetype format: ${input.mimetype}`);
+        throw new Error(
+          `getDataUri: invalid mimetype format: ${input.mimetype}`
+        );
       }
       // Handle complex mimetypes (e.g., "image/svg+xml" -> "svg")
       const ext = `.${parts[1].split("+")[0]}`;
