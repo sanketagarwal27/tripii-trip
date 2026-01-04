@@ -19,19 +19,28 @@ async function getRedditToken() {
 }
 
 async function searchReddit(placeName, token) {
-  const res = await axios.get("https://oauth.reddit.com/search", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "User-Agent": process.env.REDDIT_USER_AGENT,
-    },
-    params: {
-      q: `${placeName} travel`,
-      sort: "relevance",
-      limit: 25,
-    },
-  });
+  try {
+    const res = await axios.get("https://oauth.reddit.com/search", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "User-Agent": process.env.REDDIT_USER_AGENT,
+      },
+      params: {
+        q: `${placeName} travel`,
+        sort: "relevance",
+        limit: 25,
+      },
+    });
 
-  return res.data.data.children;
+    if (!res.data?.data?.children) {
+      throw new Error("Invalid response from Reddit search API");
+    }
+
+    return res.data.data.children;
+  } catch (error) {
+    console.error("Failed to search Reddit:", error.message);
+    throw error;
+  }
 }
 
 function extractInsights(posts) {
