@@ -154,8 +154,8 @@ const RoomSidebarItem = ({ room, navigateTo = "room" }) => {
               </div>
               <div>{trip?.location?.name || "Location"}</div>
               <div>
-                {new Date(trip.startDate).toLocaleDateString()} –{" "}
-                {new Date(trip.endDate).toLocaleDateString()}
+                {new Date(trip?.startDate).toLocaleDateString()} –{" "}
+                {new Date(trip?.endDate).toLocaleDateString()}
               </div>
             </div>
           ) : (

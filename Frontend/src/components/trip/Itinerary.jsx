@@ -21,7 +21,7 @@ import { removeTripPlan } from "@/redux/tripSlice";
 /* ---------------- UTILS ---------------- */
 const formatDayTitle = (dateStr, index) => {
   const d = new Date(dateStr);
-  return `Day ${index + 1} · ${d.toLocaleDateString("en-IN", {
+  return `Day ${index + 1} :- ${d.toLocaleDateString("en-IN", {
     day: "numeric",
     month: "short",
   })}`;

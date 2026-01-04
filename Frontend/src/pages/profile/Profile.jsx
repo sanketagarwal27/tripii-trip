@@ -29,6 +29,10 @@ const ProfilePage = () => {
   }, [isOwnProfile]);
 
   useEffect(() => {
+    if (!TABS.includes(selectedTab)) setSelectedTab("Posts");
+  }, [TABS, selectedTab]);
+
+  useEffect(() => {
     const getUser = async () => {
       try {
         const response = await getUserProfile(id);
@@ -65,7 +69,7 @@ const ProfilePage = () => {
 
   const renderTabContent = () => {
     switch (selectedTab) {
-      case "Posts":
+      case "Posts": {
         return (
           <PostFeed
             posts={userData.posts.filter((post) => post.type === "normal")}
@@ -73,21 +77,22 @@ const ProfilePage = () => {
             onPostUpdate={handlePostUpdate}
           />
         );
+      }
 
-      case "Trip Posts":
+      case "Trip Posts": {
         const tripPosts = userData.posts.filter((post) => post.type === "trip");
         return tripPosts.length > 0 ? (
           <PostFeed posts={tripPosts} onPostUpdate={handlePostUpdate} />
         ) : (
           <div className={styles.emptyState}>No Trip Posts yet.</div>
         );
-
-      case "Saved":
+      }
+      case "Saved": {
         return <div className={styles.emptyState}>No Saved Posts yet...</div>;
-
-      case "Contribution Details":
+      }
+      case "Contribution Details": {
         return <UserContributions />;
-
+      }
       default:
         return null;
     }

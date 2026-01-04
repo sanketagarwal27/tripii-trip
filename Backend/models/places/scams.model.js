@@ -14,6 +14,6 @@ const SafetySchema = new Schema(
   { timestamps: true }
 );
 
-SafetySchema.index({ updatedAt: 1 }, { expireAfterSeconds: 86400 });
+SafetySchema.index({ updatedAt: 1 }, { expireAfterSeconds: 24 * 60 * 60 });
 
 export const Safety = mongoose.model("Safety", SafetySchema);
