@@ -41,7 +41,7 @@ function extractInsights(posts) {
   const tips = [];
 
   posts.forEach((p) => {
-    const text = `${p.data.title} ${p.data.selftext}`.toLowerCase();
+    const text = `${p.data.title || ''} ${p.data.selftext || ''}`.toLowerCase();
 
     if (text.includes("beautiful") || text.includes("scenic")) {
       positives.push("Beautiful scenery");
