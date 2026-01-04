@@ -50,22 +50,47 @@ function extractInsights(posts) {
   const tips = [];
 
   posts.forEach((p) => {
-    const text = `${p.data.title || ''} ${p.data.selftext || ''}`.toLowerCase();
+    const text = `${p.data.title} ${p.data.selftext}`.toLowerCase();
+    
+    // Helper to check for negation context
+    const hasNegation = (keyword, text) => {
+      const negations = ['not', 'never', 'no', "don't", "isn't", "wasn't"];
+      const words = text.split(/\s+/);
+      const idx = words.indexOf(keyword);
+      if (idx > 0 && negations.includes(words[idx - 1])) {
+        return true;
+      }
+      return false;
+    };
 
-    if (text.includes("beautiful") || text.includes("scenic")) {
+    if ((text.includes("beautiful") || text.includes("scenic") || text.includes("stunning") || text.includes("breathtaking")) 
+        && !hasNegation("beautiful", text) && !hasNegation("scenic", text)) {
       positives.push("Beautiful scenery");
     }
-    if (text.includes("cheap") || text.includes("budget")) {
+    if ((text.includes("cheap") || text.includes("budget") || text.includes("affordable") || text.includes("inexpensive"))
+        && !hasNegation("cheap", text) && !hasNegation("budget", text)) {
       positives.push("Budget friendly");
+    }
+    if (text.includes("friendly") && text.includes("local")) {
+      positives.push("Friendly locals");
     }
     if (text.includes("crowd") || text.includes("overcrowded")) {
       negatives.push("Crowded during peak season");
     }
+    if (text.includes("expensive") || text.includes("overpriced")) {
+      negatives.push("Can be expensive");
+    }
     if (text.includes("scam")) {
       warnings.push("Tourist scams reported");
     }
+    if (text.includes("unsafe") || text.includes("pickpocket")) {
+      warnings.push("Safety concerns reported");
+    }
     if (text.includes("best time")) {
       tips.push("Choose travel season carefully");
+    }
+    if (text.includes("book") && (text.includes("advance") || text.includes("ahead"))) {
+      tips.push("Book in advance");
     }
   });
 
