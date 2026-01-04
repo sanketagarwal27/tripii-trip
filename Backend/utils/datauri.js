@@ -17,7 +17,12 @@ const getDataUri = (input) => {
 
     // Case 2: Sharp / manual buffer (new code)
     if (input.mimetype) {
-      const ext = `.${input.mimetype.split("/")[1]}`;
+      const parts = input.mimetype.split("/");
+      if (parts.length !== 2 || !parts[1]) {
+        throw new Error(`getDataUri: invalid mimetype format: ${input.mimetype}`);
+      }
+      // Handle complex mimetypes (e.g., "image/svg+xml" -> "svg")
+      const ext = `.${parts[1].split("+")[0]}`;
       return parser.format(ext, input.buffer);
     }
 
