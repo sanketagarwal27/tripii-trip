@@ -377,7 +377,7 @@ export const getReviews = asyncHandler(async (req, res) => {
       .json(
         new ApiResponse(
           200,
-          cachedPlace,
+          opinion,
           "Public opinions fetched successfully from DB."
         )
       );
@@ -386,9 +386,9 @@ export const getReviews = asyncHandler(async (req, res) => {
       `Data Stale or Cache Miss: Public Opinions for ${place}. Calling APIs...`
     );
     try {
-      const response = getRedditOpinions(place);
+      const response = await getRedditOpinions(place);
       if (response) {
-        opinion = await Reddit.findOneAndUpdate(
+       const updatedOpinion = await Reddit.findOneAndUpdate(
           { place },
           {
             ...response,
@@ -404,7 +404,7 @@ export const getReviews = asyncHandler(async (req, res) => {
           .json(
             new ApiResponse(
               200,
-              { ...opinion.toObject(), source: "reddit" },
+              { ...updatedOpinion.toObject(), source: "reddit" },
               "Fetched Public Opinions Successfully !"
             )
           );
