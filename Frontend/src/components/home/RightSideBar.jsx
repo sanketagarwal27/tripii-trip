@@ -203,7 +203,9 @@ const RightSideBar = () => {
                   }}
                 >
                   {/* Optional: Rating badge overlay */}
-                  <span className="rs-place-rating">★ {p.rating || "4.5"}</span>
+                  <span className="rs-place-rating">
+                    ★ {p.overview?.aiData?.overallRating || "4.5"}
+                  </span>
                 </div>
 
                 {/* Content Section */}

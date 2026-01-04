@@ -4,8 +4,10 @@ import AddExternalLink from "./AddExternalLinks";
 import { useSelector } from "react-redux";
 import { GiRamProfile } from "react-icons/gi";
 import AddMembers from "./AddMembers";
+import { useNavigate } from "react-router-dom";
 
 export default function RoomRightSidebar({ room: fallbackRoom }) {
+  const navigate = useNavigate();
   const isTrip = fallbackRoom?.roomtype === "Trip";
   const [showAddLink, setShowAddLink] = useState(false);
   const [showAddMembers, setShowAddMembers] = useState(false);
@@ -126,9 +128,7 @@ export default function RoomRightSidebar({ room: fallbackRoom }) {
           {room.linkedTrip && (
             <button
               className="rrs-btn"
-              onClick={() =>
-                (window.location.href = `/trip/${room.linkedTrip}`)
-              }
+              onClick={() => navigate(`/trips/trip/${room.linkedTrip}`)}
               style={{ backgroundColor: "orange" }}
             >
               <Plane size={16} /> Trip

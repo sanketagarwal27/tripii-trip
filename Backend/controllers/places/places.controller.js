@@ -14,22 +14,33 @@ import {
 } from "./overview.controller.js";
 import { getAiScams } from "./scams.controller.js";
 import { getHeroImageFromApi, getImagesFromApi } from "./images.controller.js";
+import { Reddit } from "../../models/places/reddit.model.js";
+import { getRedditOpinions } from "./reddit.controller.js";
 
 /* -------------------------------------------------
  * CACHE CHECK
  * ------------------------------------------------- */
-const presentInDb = async (place, field) => {
-  const six_hours = 6 * 24 * 3600;
-  const isStale = Date.now() - place.dataRefreshedAt > six_hours;
+const presentInDb = async (placeName, field) => {
   try {
-    const cachedPlace = await Place.findOne({ place });
-    if (cachedPlace && cachedPlace[field] && !isStale) {
+    const cachedPlace = await Place.findOne({ place: placeName });
+
+    if (!cachedPlace) {
+      return { isFound: false, data: null };
+    }
+
+    const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
+
+    const isStale =
+      Date.now() - new Date(cachedPlace.dataRefreshedAt).getTime() >
+      SIX_HOURS_MS;
+
+    if (cachedPlace[field] && !isStale) {
       cachedPlace.lastSearched = Date.now();
       await cachedPlace.save();
-      console.log(`✅ Cache hit: ${field} for ${place}`);
+
+      console.log(`✅ Cache hit: ${field} for ${placeName}`);
       return { isFound: true, data: cachedPlace };
-    }
-    return { isFound: false, data: null };
+    } else return { isFound: false, data: null };
   } catch (err) {
     console.error("DB error:", err);
     return { isFound: false, data: null };
@@ -344,5 +355,65 @@ export const getSuggestedPlaces = asyncHandler(async (req, res) => {
   } catch (error) {
     console.log("Error getting suggested Places: ", error);
     throw new ApiError(500, "Error getting Suggested Places !");
+  }
+});
+
+/* -------------------------------------------------
+ * GET REVIEWS FOR PLACES
+ * ------------------------------------------------- */
+export const getReviews = asyncHandler(async (req, res) => {
+  // Call your Reviews (from Contribution, Trips, etc...) also here only and merge the data.
+  const place = req.query.place;
+  if (!place) throw new ApiError(500, "Place Parameter not Found !");
+  const opinion = await Reddit.findOne({ place });
+  const expired =
+    !opinion ||
+    Date.now() - new Date(opinion.lastUpdated).getTime() >
+      7 * 24 * 60 * 60 * 1000;
+  if (!expired) {
+    console.log(`✅ Cache hit: Public Opinions for ${place}`);
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          opinion,
+          "Public opinions fetched successfully from DB."
+        )
+      );
+  } else {
+    console.log(
+      `Data Stale or Cache Miss: Public Opinions for ${place}. Calling APIs...`
+    );
+    try {
+      const response = await getRedditOpinions(place);
+      if (response) {
+       const updatedOpinion = await Reddit.findOneAndUpdate(
+          { place },
+          {
+            ...response,
+            lastUpdated: new Date(),
+          },
+          {
+            upsert: true,
+            new: true,
+          }
+        );
+        return res
+          .status(200)
+          .json(
+            new ApiResponse(
+              200,
+              { ...updatedOpinion.toObject(), source: "reddit" },
+              "Fetched Public Opinions Successfully !"
+            )
+          );
+      } else {
+        throw new ApiError(500, "Cannot find the reviews...");
+      }
+    } catch (error) {
+      console.log(error);
+      throw new ApiError(500, "Error fetching reviews !");
+    }
   }
 });

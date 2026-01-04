@@ -75,7 +75,8 @@ export async function getAiOverview(location, interests = "general tourism") {
         ],
         "hiddenGem": "Name of a specific cool spot.",
         "budgetRating": "Cheap, Moderate, or Expensive",
-        "touristPlaces": "Return a single comma-separated string of the top tourist places. Do NOT return an array. Example: 'Place A, Place B, Place C'"
+        "touristPlaces": "Return a single comma-separated string of the top tourist places. Do NOT return an array. Example: 'Place A, Place B, Place C'",
+        "overallRating": Overall Rating out of 5 to fixed 1 decimal
       }
     `;
     const response = await ai.models.generateContent({

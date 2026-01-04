@@ -1,21 +1,36 @@
 import DataUriParser from "datauri/parser.js";
 import path from "path";
 
-const getDataUri = (file) => {
+const parser = new DataUriParser();
+
+const getDataUri = (input) => {
   try {
-    if (!file.buffer) {
-      throw new Error("File buffer is undefined");
+    if (!input || !input.buffer) {
+      throw new Error("getDataUri: buffer is required");
     }
 
-    const parser = new DataUriParser();
-    const extName = path.extname(file.originalname).toString();
+    // Case 1: Multer file (old code)
+    if (input.originalname) {
+      const ext = path.extname(input.originalname);
+      return parser.format(ext, input.buffer);
+    }
 
-    const result = parser.format(extName, file.buffer);
+    // Case 2: Sharp / manual buffer (new code)
+    if (input.mimetype) {
+      const parts = input.mimetype.split("/");
+      if (parts.length !== 2 || !parts[1]) {
+        throw new Error(`getDataUri: invalid mimetype format: ${input.mimetype}`);
+      }
+      // Handle complex mimetypes (e.g., "image/svg+xml" -> "svg")
+      const ext = `.${parts[1].split("+")[0]}`;
+      return parser.format(ext, input.buffer);
+    }
 
-    return result;
-  } catch (error) {
-    console.error("getDataUri error:", error);
-    throw error;
+    // Fallback (last resort)
+    return parser.format(".jpg", input.buffer);
+  } catch (err) {
+    console.error("getDataUri error:", err.message);
+    throw err;
   }
 };
 

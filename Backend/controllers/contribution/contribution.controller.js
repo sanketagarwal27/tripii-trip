@@ -88,55 +88,47 @@ export const addContribution = asyncHandler(async (req, res) => {
 export const uploadImages = asyncHandler(async (req, res) => {
   const files = req.files;
 
+  if (!files || files.length === 0) {
+    throw new ApiError(400, "No files Uploaded!");
+  }
+
+  const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+  for (const file of files) {
+    if (!allowedTypes.includes(file.mimetype)) {
+      throw new ApiError(
+        400,
+        `Invalid file type: ${file.mimetype}. Only JPEG, PNG, and WebP allowed.`
+      );
+    }
+  }
+
   try {
-    if (!files || files.length === 0) {
-      throw new ApiError(400, "No files Uploaded !");
-    }
+    const uploadPromises = files.map(async (file) => {
+      const optimizedBuffer = await sharp(file.buffer)
+        .resize({
+          width: 1920,
+          withoutEnlargement: true,
+        })
+        .toFormat("jpeg", { quality: 80 })
+        .toBuffer();
 
-    // Validate File Types
-    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-
-    for (const file of files) {
-      if (!allowedTypes.includes(file.mimetype)) {
-        throw new ApiError(
-          400,
-          `Invalid file type: ${file.mimetype}. Only JPEG, PNG, and WebP allowed.`
-        );
-      }
-    }
-
-    // Compress and Upload
-    const uploadPromises = files.map((file) => {
-      return new Promise(async (resolve, reject) => {
-        try {
-          // This takes the user's buffer (which might be 10MB+)
-          // and creates a new, optimized buffer.
-          const optimizedBuffer = await sharp(file.buffer)
-            .resize({
-              width: 1920, // Resize to standard HD width
-              withoutEnlargement: true, // Don't stretch small images
-            })
-            .toFormat("jpeg", { quality: 80 }) // Compress to JPEG at 80% quality
-            .toBuffer();
-
-          // Upload the OPTIMIZED buffer to Cloudinary
-          const uploadStream = cloudinary.uploader.upload_stream(
-            {
-              folder: "place_reviews",
-              resource_type: "image",
-              format: "jpg", // Force extension to jpg since we converted it
-            },
-            (error, result) => {
-              if (error) reject(error);
-              else resolve(result.secure_url);
+      return new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: "place_reviews",
+            resource_type: "image",
+            format: "jpg",
+          },
+          (error, result) => {
+            if (error) {
+              reject(new Error("Cloudinary upload failed: " + error.message));
+            } else {
+              resolve(result.secure_url);
             }
-          );
+          }
+        );
 
-          // End the stream with the COMPRESSED data
-          uploadStream.end(optimizedBuffer);
-        } catch (error) {
-          reject(new Error("Image compression failed: " + error.message));
-        }
+        uploadStream.end(optimizedBuffer);
       });
     });
 
@@ -146,9 +138,9 @@ export const uploadImages = asyncHandler(async (req, res) => {
       .status(200)
       .json(new ApiResponse(200, imageUrls, "Images Uploaded Successfully"));
   } catch (err) {
-    console.error("Upload Error", err);
+    console.error("Upload Error:", err);
     if (err instanceof ApiError) throw err;
-    throw new ApiError(500, "Error in uploading files !");
+    throw new ApiError(500, "Error in uploading files: " + err.message);
   }
 });
 

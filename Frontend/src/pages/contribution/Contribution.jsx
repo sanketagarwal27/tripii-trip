@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./Contribution.module.css";
 import { useContribution } from "../../context/ContributionContext";
@@ -26,6 +26,15 @@ const Contribution = () => {
   const { tripMeta, updateMeta, timeline, removeFromTimeline, clearSession } =
     useContribution();
   const [showSuccess, setShowSuccess] = useState(false);
+  const successTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleSelection = (type) => {
     if (!tripMeta.location.trim()) {
@@ -85,7 +94,7 @@ const Contribution = () => {
         const response = await newContribution(timeline, tripMeta);
         if (response.success) {
           setShowSuccess(true);
-          setTimeout(() => {
+          successTimeoutRef.current = setTimeout(() => {
             clearSession();
             setShowSuccess(false);
             navigate(`/`);

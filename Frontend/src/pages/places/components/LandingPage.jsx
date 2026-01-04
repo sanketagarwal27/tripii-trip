@@ -120,7 +120,8 @@ const SearchBox = ({ onSearch }) => {
                     alt={place.place}
                   />
                   <div className={styles.ratingBadge}>
-                    <span>★</span> {place.rating || "4.5"}
+                    <span>★</span>{" "}
+                    {place.overview?.aiData?.overallRating || "4.5"}
                   </div>
                 </div>
 
