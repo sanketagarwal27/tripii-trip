@@ -34,6 +34,8 @@ import {
   getTripWallet,
   getWalletExpenses,
   removeAccountant,
+  setPersonalBudget,
+  setTripBudget,
   updateExpense,
   updateWalletSettings,
 } from "../controllers/trip/tripWallet.controller.js";
@@ -85,10 +87,12 @@ router.get("/trips/:tripId/wallet/expenses", getWalletExpenses);
 router.post("/trips/:tripId/wallet/settlements/generate", generateSettlements);
 // Confirm settlement (payer / receiver)
 router.post(
-  "/trips/:tripId/wallet/settlements/:index/:type",
+  "/trips/:tripId/wallet/settlements/:settlementId/confirm/:type",
   confirmSettlement
 );
 router.post("/trips/:tripId/wallet/accountants", assignAccountant);
 router.delete("/trips/:tripId/wallet/accountants/:userId", removeAccountant);
+router.post("/trips/:tripId/wallet/personal-budget", setPersonalBudget);
+router.patch("/trips/:tripId/wallet/budget", setTripBudget);
 
 export default router;

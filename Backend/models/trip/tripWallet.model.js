@@ -1,24 +1,64 @@
 import mongoose, { Schema } from "mongoose";
 
-const tripWalletSchema = new Schema({
-  trip: { type: Schema.Types.ObjectId, ref: "Trip", required: true },
+const tripWalletSchema = new Schema(
+  {
+    trip: {
+      type: Schema.Types.ObjectId,
+      ref: "Trip",
+      required: true,
+      unique: true,
+    },
 
-  manager: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    manager: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
 
-  expenses: [{ type: Schema.Types.ObjectId, ref: "Expense" }],
+    participants: [
+      {
+        user: {
+          type: Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
 
-  totalSpend: { type: Number, default: 0 },
+        personalBudget: {
+          type: Number,
+          default: 0, // user-defined
+        },
 
-  budget: { type: Number, default: 0 },
+        totalPaid: {
+          type: Number,
+          default: 0,
+        },
 
-  settings: {
-    expensePermission: {
-      type: String,
-      enum: ["all", "accountant_only"],
-      default: "all",
+        totalOwed: {
+          type: Number,
+          default: 0,
+        },
+
+        totalOwes: {
+          type: Number,
+          default: 0,
+        },
+      },
+    ],
+
+    totalSpend: { type: Number, default: 0 },
+
+    budget: { type: Number, default: 0 }, // group budget (optional)
+
+    settings: {
+      expensePermission: {
+        type: String,
+        enum: ["all", "accountant_only"],
+        default: "all",
+      },
     },
   },
-});
+  { timestamps: true }
+);
 
 tripWalletSchema.index({ trip: 1 });
 

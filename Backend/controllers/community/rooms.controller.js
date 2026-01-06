@@ -237,6 +237,20 @@ export const createRoom = asyncHandler(async (req, res) => {
       createdByType: "user",
     });
 
+    // ✅ CREATE WALLET (CRITICAL)
+    await TripWallet.create({
+      trip: trip._id,
+      manager: userId,
+      participants: roomMembers.map((m) => m.user),
+      budget: 0,
+      totalSpend: 0,
+      settlements: [],
+      settings: {
+        splitMode: "equal",
+        currency: "INR",
+      },
+    });
+
     room.linkedTrip = trip._id;
 
     await room.save();

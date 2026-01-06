@@ -1,31 +1,73 @@
 // src/components/trip/wallet/WalletContributions.jsx
-export default function WalletContributions({ expenses, totalSpend }) {
-  const map = {};
+import { useMemo } from "react";
 
-  expenses.forEach((e) => {
-    e.paidBy?.forEach((p) => {
-      map[p.user.username] = (map[p.user.username] || 0) + p.amount;
+const formatMoney = (v) => `₹${Number(v).toFixed(0)}`;
+
+export default function WalletContributions({
+  expenses = [],
+  participants = [],
+  totalSpend = 0,
+}) {
+  /* ---------------- BUILD USER MAP ---------------- */
+
+  const contributionMap = useMemo(() => {
+    const map = {};
+
+    // init all participants (important for zero spend users)
+    participants.forEach((p) => {
+      map[p._id] = {
+        userId: p._id,
+        username: p.username,
+        amount: 0,
+      };
     });
-  });
+
+    // aggregate payments
+    expenses.forEach((e) => {
+      e.paidBy?.forEach((p) => {
+        if (!map[p.user]) {
+          map[p.user] = {
+            userId: p.user,
+            username: "Unknown",
+            amount: 0,
+          };
+        }
+        map[p.user].amount += p.amount;
+      });
+    });
+
+    return Object.values(map);
+  }, [expenses, participants]);
+
+  /* ---------------- UI ---------------- */
 
   return (
-    <div className="bg-white dark:bg-gray-800/50 rounded-xl p-6">
-      <h3 className="font-bold mb-4">Member Contributions</h3>
+    <div className="bg-white dark:bg-gray-800/50 rounded-xl p-4">
+      <h3 className="text-sm font-semibold mb-3">Member Contributions</h3>
 
-      {Object.entries(map).map(([name, amount]) => {
+      {contributionMap.length === 0 && (
+        <p className="text-xs text-gray-500">No contributions yet</p>
+      )}
+
+      {contributionMap.map((u) => {
         const percent = totalSpend
-          ? Math.round((amount / totalSpend) * 100)
+          ? Math.min(Math.round((u.amount / totalSpend) * 100), 100)
           : 0;
 
         return (
-          <div key={name} className="mb-4">
-            <div className="flex justify-between mb-1">
-              <span>{name}</span>
-              <span className="text-sm text-gray-500">₹{amount}</span>
+          <div key={u.userId} className="mb-4">
+            {/* Name + Amount */}
+            <div className="flex justify-between text-xs mb-1">
+              <span className="font-medium text-gray-700 dark:text-gray-300">
+                {u.username}
+              </span>
+              <span className="text-gray-500">{formatMoney(u.amount)}</span>
             </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 h-2.5 rounded-full">
+
+            {/* Progress bar */}
+            <div className="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
               <div
-                className="bg-primary h-2.5 rounded-full"
+                className="bg-primary h-1.5 rounded-full transition-all"
                 style={{ width: `${percent}%` }}
               />
             </div>

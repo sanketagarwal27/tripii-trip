@@ -52,9 +52,9 @@ export const generateSettlements = (tripId) =>
   );
 
 // Confirm settlement
-export const confirmSettlement = (tripId, index, type) =>
+export const confirmSettlement = (tripId, settlementId, type) =>
   api.post(
-    `/api/trip/trips/${tripId}/wallet/settlements/${index}/${type}`,
+    `/api/trip/trips/${tripId}/wallet/settlements/${settlementId}/confirm/${type}`,
     {},
     { withCredentials: true }
   );
@@ -72,3 +72,17 @@ export const removeAccountant = (tripId, userId) =>
   api.delete(`/api/trip/trips/${tripId}/wallet/accountants/${userId}`, {
     withCredentials: true,
   });
+
+export const setPersonalBudget = (tripId, budget) =>
+  api.post(
+    `/api/trip/trips/${tripId}/wallet/personal-budget`,
+    { budget },
+    { withCredentials: true }
+  );
+
+export const setTripBudget = (tripId, budget) =>
+  api.patch(
+    `/api/trip/trips/${tripId}/wallet/budget`,
+    { budget },
+    { withCredentials: true }
+  );

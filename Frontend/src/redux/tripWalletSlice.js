@@ -14,17 +14,17 @@ const walletSlice = createSlice({
       const {
         tripId,
         wallet,
-        expenses = [],
-        settlements = [],
+        participants = [],
+        expenses,
+        settlements,
         permissions,
-      } = action.payload || {};
-
-      if (!tripId || !wallet) return;
+      } = action.payload;
 
       state.wallets[tripId] = {
         wallet,
-        expenses: Array.isArray(expenses) ? expenses : [],
-        settlements: Array.isArray(settlements) ? settlements : [],
+        participants, // ✅ now available everywhere
+        expenses: expenses || [],
+        settlements: settlements || [],
         permissions: permissions || {},
       };
     },
@@ -40,7 +40,16 @@ const walletSlice = createSlice({
 
     addWalletExpense: (state, action) => {
       const { tripId, expense } = action.payload || {};
-      if (!state.wallets[tripId] || !expense) return;
+      if (!tripId || !expense) return;
+
+      if (!state.wallets[tripId]) {
+        state.wallets[tripId] = {
+          wallet: { totalSpend: 0, budget: 0 },
+          expenses: [],
+          settlements: [],
+          permissions: {},
+        };
+      }
 
       state.wallets[tripId].expenses.unshift(expense);
       state.wallets[tripId].wallet.totalSpend += expense.amount || 0;
@@ -124,6 +133,19 @@ const walletSlice = createSlice({
         ...permissions,
       };
     },
+
+    updatePersonalBudget(state, action) {
+      const { tripId, userId, personalBudget } = action.payload;
+
+      const wallet = state.wallets[tripId];
+      if (!wallet) return;
+
+      const participant = wallet.participants.find((p) => p._id === userId);
+
+      if (participant) {
+        participant.personalBudget = personalBudget;
+      }
+    },
   },
 });
 
@@ -141,6 +163,7 @@ export const {
   updateSettlement,
 
   updateWalletPermissions,
+  updatePersonalBudget,
 } = walletSlice.actions;
 
 export default walletSlice.reducer;

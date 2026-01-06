@@ -390,7 +390,7 @@ const SocketProvider = ({ children }) => {
     });
 
     socket.on(EVENTS.WALLET_EXPENSE_UPDATED, ({ tripId, expense }) => {
-      if (!tripId) return;
+      if (tripId !== activeTripId) return;
 
       dispatch(
         updateWalletExpense({
