@@ -6,7 +6,7 @@ import { logoutRequest } from "@/api/auth";
 import { disconnectSocket } from "../../Socket.js";
 
 const Navbar = () => {
-  const { userProfile } = useSelector((store) => store.auth);
+  const { user, userProfile } = useSelector((store) => store.auth);
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
@@ -19,9 +19,17 @@ const Navbar = () => {
   const isPlaces = pathname.startsWith("/places");
   const isSunday = pathname.startsWith("/chatbot");
   const isContribution = pathname.startsWith("/contribute");
+  const isAdminPanel = pathname.startsWith("/admin");
+  const isProfile = pathname.startsWith("/profile");
   const isHome =
     pathname === "/" ||
-    (!isCommunity && !isTrips && !isPlaces && !isSunday && !isContribution);
+    (!isCommunity &&
+      !isTrips &&
+      !isPlaces &&
+      !isSunday &&
+      !isContribution &&
+      !isAdminPanel &&
+      !isProfile);
 
   return (
     <div className="navbar">
@@ -73,6 +81,16 @@ const Navbar = () => {
         >
           Contribute
         </button>
+
+        {user.role === "admin" && (
+          <button
+            className={isAdminPanel ? "nav-active" : ""}
+            onClick={() => navigate("/admin")}
+          >
+            {" "}
+            Admin Panel{" "}
+          </button>
+        )}
 
         <button
           onClick={() => {

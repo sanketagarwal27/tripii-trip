@@ -14,8 +14,6 @@ import {
 } from "./overview.controller.js";
 import { getAiScams } from "./scams.controller.js";
 import { getHeroImageFromApi, getImagesFromApi } from "./images.controller.js";
-import { Reddit } from "../../models/places/reddit.model.js";
-import { getRedditOpinions } from "./reddit.controller.js";
 
 /* -------------------------------------------------
  * CACHE CHECK
@@ -361,59 +359,3 @@ export const getSuggestedPlaces = asyncHandler(async (req, res) => {
 /* -------------------------------------------------
  * GET REVIEWS FOR PLACES
  * ------------------------------------------------- */
-export const getReviews = asyncHandler(async (req, res) => {
-  // Call your Reviews (from Contribution, Trips, etc...) also here only and merge the data.
-  const place = req.query.place;
-  if (!place) throw new ApiError(500, "Place Parameter not Found !");
-  const opinion = await Reddit.findOne({ place });
-  const expired =
-    !opinion ||
-    Date.now() - new Date(opinion.lastUpdated).getTime() >
-      7 * 24 * 60 * 60 * 1000;
-  if (!expired) {
-    console.log(`✅ Cache hit: Public Opinions for ${place}`);
-    return res
-      .status(200)
-      .json(
-        new ApiResponse(
-          200,
-          opinion,
-          "Public opinions fetched successfully from DB."
-        )
-      );
-  } else {
-    console.log(
-      `Data Stale or Cache Miss: Public Opinions for ${place}. Calling APIs...`
-    );
-    try {
-      const response = await getRedditOpinions(place);
-      if (response) {
-       const updatedOpinion = await Reddit.findOneAndUpdate(
-          { place },
-          {
-            ...response,
-            lastUpdated: new Date(),
-          },
-          {
-            upsert: true,
-            new: true,
-          }
-        );
-        return res
-          .status(200)
-          .json(
-            new ApiResponse(
-              200,
-              { ...updatedOpinion.toObject(), source: "reddit" },
-              "Fetched Public Opinions Successfully !"
-            )
-          );
-      } else {
-        throw new ApiError(500, "Cannot find the reviews...");
-      }
-    } catch (error) {
-      console.log(error);
-      throw new ApiError(500, "Error fetching reviews !");
-    }
-  }
-});

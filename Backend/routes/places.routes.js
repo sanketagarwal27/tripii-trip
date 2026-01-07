@@ -6,7 +6,6 @@ import {
   getOverview,
   getScams,
   getSuggestedPlaces,
-  getReviews,
 } from "../controllers/places/places.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
@@ -18,5 +17,4 @@ router.route("/get-photos").get(verifyJWT, getPhotos);
 router.route("/get-overview").get(verifyJWT, getOverview);
 router.route("/get-scams").get(verifyJWT, getScams);
 router.route("/get-suggested-places").get(verifyJWT, getSuggestedPlaces);
-router.route("/get-reviews").get(verifyJWT, getReviews);
 export default router;
