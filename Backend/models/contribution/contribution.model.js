@@ -13,6 +13,10 @@ const placeSchema = new Schema(
       enum: ["Pending", "Approved", "Rejected"],
       default: "Pending",
     },
+    points_awarded: {
+      type: Number,
+      default: 0,
+    },
     type: {
       type: String,
       required: true,

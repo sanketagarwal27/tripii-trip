@@ -14,6 +14,18 @@ const userSchema = new Schema(
       trim: true,
     },
 
+    role: {
+      type: String,
+      enum: ["user", "admin", "business"],
+      default: "user",
+    },
+
+    linkedBusiness: {
+      type: Schema.Types.ObjectId,
+      ref: "Property",
+      default: null,
+    },
+
     fullName: {
       type: String,
       required: false,
@@ -73,7 +85,7 @@ const userSchema = new Schema(
     ],
 
     refreshToken: { type: String },
-
+    tokenVersion: { type: Number, default: 0 },
     deviceTokens: [String],
 
     /* ============================================================
@@ -171,6 +183,12 @@ const userSchema = new Schema(
     pendingContributions: [
       { type: Schema.Types.ObjectId, ref: "Contribution" },
     ],
+    rejectedContributions: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Contribution",
+      },
+    ],
 
     /* ============================================================
        MILESTONES
@@ -232,6 +250,7 @@ userSchema.methods.generateAccessToken = function () {
       _id: this._id,
       username: this.username,
       email: this.email,
+      tokenVersion: this.tokenVersion,
     },
     process.env.ACCESS_TOKEN_SECRET,
     { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }

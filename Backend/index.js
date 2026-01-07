@@ -17,6 +17,7 @@ import placesRoute from "./routes/places.routes.js";
 import tripRoute from "./routes/trip.routes.js";
 import contributionRoute from "./routes/contribution.routes.js";
 import { initSocket } from "./socket/server.js";
+import adminRoutes from "./routes/admin.routes.js";
 
 dotenv.config({});
 
@@ -52,6 +53,7 @@ app.use("/api/chatbot", chatbotRoute);
 app.use("/api/places", placesRoute);
 app.use("/api/trip", tripRoute);
 app.use("/api/contribution", contributionRoute);
+app.use("/api/admin", adminRoutes);
 
 server.listen(PORT, () => {
   connectDB();

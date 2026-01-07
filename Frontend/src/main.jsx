@@ -31,6 +31,7 @@ import Room from "./components/community/rooms/Room";
 import ProfilePage from "./pages/profile/Profile";
 import Trips from "./components/trip/Trips";
 import Trip from "./components/trip/Trip";
+import AdminPanel from "./pages/admin/AdminPanel";
 
 // --- CONTRIBUTION IMPORTS ---
 import Contribution from "./pages/contribution/Contribution";
@@ -51,6 +52,7 @@ function NoAuth({ children }) {
 }
 
 function AppRouter() {
+  const user = useSelector((s) => s.auth.user);
   return (
     <BrowserRouter>
       <Routes>
@@ -118,6 +120,14 @@ function AppRouter() {
           />
           <Route path="/contribute/add-dining" element={<Dining />} />
           <Route path="/contribute/add-spot" element={<Spot />} />
+
+          {/* Admin Panel */}
+          <Route
+            path="/admin"
+            element={
+              user?.role === "admin" ? <AdminPanel /> : <Navigate to={"/"} />
+            }
+          />
         </Route>
       </Routes>
     </BrowserRouter>
