@@ -60,3 +60,5 @@ const tripPhotoSchema = new Schema(
 );
 
 export const TripPhoto = mongoose.model("TripPhoto", tripPhotoSchema);
+
+// trip wallet jaisa ye koi ek place nhi h , jitna photo hoga ye utna hoga (jis sab ka trip me trip id hoga , ye expense ke jaisa h , ye photo submit krte time bnta h , but wallet nhi bnta expense ke time , expense ke time bs expense bnta h.)

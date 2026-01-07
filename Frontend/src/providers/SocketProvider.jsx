@@ -34,6 +34,14 @@ import {
   updateTripPhotoVisibility,
   updateTripPlan,
 } from "@/redux/tripSlice.js";
+import {
+  addWalletExpense,
+  removeWalletExpense,
+  setSettlements,
+  updateSettlement,
+  updateWalletExpense,
+  updateWalletSettings,
+} from "@/redux/tripWalletSlice.js";
 
 const SocketProvider = ({ children }) => {
   const dispatch = useDispatch();
@@ -372,6 +380,79 @@ const SocketProvider = ({ children }) => {
     });
 
     // -----------------------
+    // TRIP / WALLET EVENTS
+    // -----------------------
+
+    socket.on(EVENTS.WALLET_EXPENSE_ADDED, ({ tripId, expense }) => {
+      if (!tripId || tripId !== activeTripId) return;
+
+      dispatch(addWalletExpense({ tripId, expense }));
+    });
+
+    socket.on(EVENTS.WALLET_EXPENSE_UPDATED, ({ tripId, expense }) => {
+      if (tripId !== activeTripId) return;
+
+      dispatch(
+        updateWalletExpense({
+          tripId,
+          expense,
+        })
+      );
+    });
+
+    socket.on(EVENTS.WALLET_EXPENSE_DELETED, ({ tripId, expenseId }) => {
+      if (!tripId) return;
+
+      dispatch(
+        removeWalletExpense({
+          tripId,
+          expenseId,
+        })
+      );
+    });
+
+    socket.on(
+      EVENTS.WALLET_SETTINGS_UPDATED,
+      ({ tripId, settings, budget }) => {
+        if (!tripId) return;
+
+        dispatch(
+          updateWalletSettings({
+            tripId,
+            settings,
+            budget,
+          })
+        );
+      }
+    );
+
+    socket.on(EVENTS.WALLET_SETTLEMENT_GENERATED, ({ tripId, settlements }) => {
+      if (!tripId) return;
+
+      dispatch(
+        setSettlements({
+          tripId,
+          settlements,
+        })
+      );
+    });
+
+    socket.on(
+      EVENTS.WALLET_SETTLEMENT_UPDATED,
+      ({ tripId, index, settlement }) => {
+        if (!tripId) return;
+
+        dispatch(
+          updateSettlement({
+            tripId,
+            index,
+            settlement,
+          })
+        );
+      }
+    );
+
+    // -----------------------
     // CLEANUP
     // -----------------------
     return () => {
@@ -412,6 +493,14 @@ const SocketProvider = ({ children }) => {
       socket.off(EVENTS.TRIP_PHOTO_UPLOADED);
       socket.off(EVENTS.TRIP_PHOTO_PUSHED);
       socket.off(EVENTS.TRIP_PHOTO_DELETED);
+
+      // Wallet
+      socket.off(EVENTS.WALLET_EXPENSE_ADDED);
+      socket.off(EVENTS.WALLET_EXPENSE_UPDATED);
+      socket.off(EVENTS.WALLET_EXPENSE_DELETED);
+      socket.off(EVENTS.WALLET_SETTINGS_UPDATED);
+      socket.off(EVENTS.WALLET_SETTLEMENT_GENERATED);
+      socket.off(EVENTS.WALLET_SETTLEMENT_UPDATED);
     };
   }, [user, dispatch, selectedCommunity, communityProfile, activeTripId]);
 

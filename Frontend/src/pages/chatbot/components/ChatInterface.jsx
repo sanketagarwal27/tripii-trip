@@ -293,9 +293,7 @@ export default function ChatInterface({ messages, isLoading }) {
         throw new Error("Invalid AI plans response");
       }
 
-      newPlans.forEach((plan) => {
-        dispatch(addTripPlan(plan));
-      });
+      dispatch(hydrateTripData({ tripPlans: newPlans }));
 
       setPlanForApply(null);
       navigate(`/trips/trip/${trip._id}`);

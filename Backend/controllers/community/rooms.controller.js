@@ -237,6 +237,20 @@ export const createRoom = asyncHandler(async (req, res) => {
       createdByType: "user",
     });
 
+    // ✅ CREATE WALLET (CRITICAL)
+    await TripWallet.create({
+      trip: trip._id,
+      manager: userId,
+      participants: roomMembers.map((m) => m.user),
+      budget: 0,
+      totalSpend: 0,
+      settlements: [],
+      settings: {
+        splitMode: "equal",
+        currency: "INR",
+      },
+    });
+
     room.linkedTrip = trip._id;
 
     await room.save();
@@ -446,14 +460,21 @@ export const getMyRoomsAcrossCommunities = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
   const rooms = await Room.aggregate([
+    /* ---------------- MATCH ---------------- */
     { $match: { "members.user": userId } },
+
+    /* ---------------- DERIVED FIELDS ---------------- */
     {
       $addFields: {
         isFinished: { $in: ["$status", ["finished", "cancelled"]] },
         memberCount: { $size: "$members" },
       },
     },
+
+    /* ---------------- SORT ---------------- */
     { $sort: { isFinished: 1, lastActivityAt: -1 } },
+
+    /* ---------------- PARENT COMMUNITY ---------------- */
     {
       $lookup: {
         from: "communities",
@@ -462,7 +483,30 @@ export const getMyRoomsAcrossCommunities = asyncHandler(async (req, res) => {
         as: "parentCommunity",
       },
     },
-    { $unwind: { path: "$parentCommunity", preserveNullAndEmptyArrays: true } },
+    {
+      $unwind: {
+        path: "$parentCommunity",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+
+    /* ---------------- 🔥 LINKED TRIP ---------------- */
+    {
+      $lookup: {
+        from: "trips",
+        localField: "linkedTrip",
+        foreignField: "_id",
+        as: "linkedTrip",
+      },
+    },
+    {
+      $unwind: {
+        path: "$linkedTrip",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+
+    /* ---------------- PROJECTION ---------------- */
     {
       $project: {
         name: 1,
@@ -470,12 +514,20 @@ export const getMyRoomsAcrossCommunities = asyncHandler(async (req, res) => {
         memberCount: 1,
         roombackgroundImage: 1,
         roomtype: 1,
-        linkedTrip: 1,
         lastActivityAt: 1,
         status: 1,
+
         parentCommunity: {
           _id: "$parentCommunity._id",
           name: "$parentCommunity.name",
+        },
+
+        linkedTrip: {
+          _id: "$linkedTrip._id",
+          title: "$linkedTrip.title",
+          startDate: "$linkedTrip.startDate",
+          endDate: "$linkedTrip.endDate",
+          location: "$linkedTrip.location",
         },
       },
     },

@@ -32,4 +32,6 @@ const tripRoleSchema = new Schema(
   { timestamps: true }
 );
 
+tripRoleSchema.index({ trip: 1, assignedTo: 1, roleName: 1 }, { unique: true });
+
 export const TripRole = mongoose.model("TripRole", tripRoleSchema);

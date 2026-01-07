@@ -122,9 +122,6 @@ export const createTrip = asyncHandler(async (req, res) => {
       await trip.save({ session });
     }
 
-    console.log("BODY:", req.body);
-    console.log("FILE:", req.file);
-
     /* ---------------- 3️⃣ CREATE WALLET ---------------- */
     const [wallet] = await TripWallet.create(
       [

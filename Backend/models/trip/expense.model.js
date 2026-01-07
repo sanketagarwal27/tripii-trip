@@ -52,5 +52,7 @@ const expenseSchema = new Schema(
   { timestamps: true }
 );
 expenseSchema.index({ wallet: 1, expenseDate: -1 });
+expenseSchema.index({ "paidBy.user": 1 });
+expenseSchema.index({ "splitAmong.user": 1 });
 
 export const Expense = mongoose.model("Expense", expenseSchema);

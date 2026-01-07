@@ -1,12 +1,18 @@
 // import { Expense } from "../models/expense.model.js";
 import { TripActivity } from "../../models/trip/tripActivity.model.js";
 import { Trip } from "../../models/trip/trip.model.js";
-import { TripWallet } from "../../models/trip/tripWallet.model.js";
 import { TripRole } from "../../models/trip/tripRole.model.js";
-import { ApiError, ApiResponse } from "../utils/apiResponse.js";
+
 import asyncHandler from "../../utils/asyncHandler.js";
 import { awardPoints } from "../../points/awardPoints.js";
 import { Expense } from "../../models/trip/expense.model.js";
+import { ApiResponse } from "../../utils/ApiResponse.js";
+import { ApiError } from "../../utils/ApiError.js";
+import { emitToTrip } from "../../socket/server.js";
+import { EVENTS } from "../../socket/events.js";
+import { sendNotification } from "../user/notification.controller.js";
+import { TripWallet } from "../../models/trip/tripWallet.model.js";
+import { User } from "../../models/user/user.model.js";
 
 async function canUserAddExpense({ userId, trip, wallet }) {
   if (trip.status === "completed") return false;
@@ -23,38 +29,86 @@ async function canUserAddExpense({ userId, trip, wallet }) {
   });
 }
 
+const syncWalletParticipantsWithTrip = async ({ trip, wallet }) => {
+  const walletUserIds = wallet.participants.map((p) => p.user.toString());
+
+  let changed = false;
+
+  for (const tripUserId of trip.participants) {
+    if (!walletUserIds.includes(tripUserId.toString())) {
+      wallet.participants.push({
+        user: tripUserId,
+        personalBudget: 0,
+        totalPaid: 0,
+        totalOwes: 0,
+        totalOwed: 0,
+      });
+      changed = true;
+    }
+  }
+
+  if (changed) {
+    await wallet.save();
+  }
+};
+
 export const getTripWallet = asyncHandler(async (req, res) => {
   const { tripId } = req.params;
   const userId = req.user._id;
 
-  const trip = await Trip.findById(tripId)
-    .select("participants wallet status createdBy")
-    .lean();
-
+  // 1️⃣ Fetch trip (source of truth)
+  const trip = await Trip.findById(tripId);
   if (!trip) throw new ApiError(404, "Trip not found");
 
-  const wallet = await TripWallet.findById(trip.wallet).lean();
-  if (!wallet) throw new ApiError(404, "Wallet not found");
+  // 🔐 Membership guard
+  if (!trip.participants.some((p) => p.toString() === userId.toString())) {
+    throw new ApiError(403, "Not a trip participant");
+  }
 
-  const canAddExpenseFlag = await canUserAddExpense({
-    userId,
-    trip,
-    wallet,
-  });
+  // 2️⃣ Fetch or create wallet
+  let wallet = await TripWallet.findOne({ trip: tripId });
 
+  if (!wallet) {
+    wallet = await TripWallet.create({
+      trip: tripId,
+      manager: trip.createdBy,
+      participants: [], // ⬅️ auto-filled below
+      budget: 0,
+      totalSpend: 0,
+      settings: { expensePermission: "all" },
+    });
+  }
+
+  // 3️⃣ 🔥 SELF-HEAL: enforce trip → wallet sync
+  await syncWalletParticipantsWithTrip({ trip, wallet });
+
+  // 4️⃣ Populate participant users
+  await wallet.populate("participants.user", "_id username profilePicture.url");
+
+  // 5️⃣ Response (single source, finance-safe)
   return res.status(200).json(
-    new ApiResponse(200, {
-      wallet: {
-        _id: wallet._id,
-        totalSpend: wallet.totalSpend,
-        budget: wallet.budget,
-        settings: wallet.settings,
+    new ApiResponse(
+      200,
+      {
+        wallet: {
+          _id: wallet._id,
+          manager: wallet.manager,
+          budget: wallet.budget,
+          totalSpend: wallet.totalSpend,
+          settings: wallet.settings,
+        },
+        participants: wallet.participants.map((p) => ({
+          _id: p.user._id,
+          username: p.user.username,
+          profilePicture: p.user.profilePicture,
+          personalBudget: p.personalBudget,
+          totalPaid: p.totalPaid,
+          totalOwes: p.totalOwes,
+          totalOwed: p.totalOwed,
+        })),
       },
-      participants: trip.participants,
-      permissions: {
-        canUserAddExpense: canAddExpenseFlag,
-      },
-    })
+      "Wallet fetched"
+    )
   );
 });
 
@@ -106,6 +160,12 @@ export const updateWalletSettings = asyncHandler(async (req, res) => {
     { new: true }
   ).lean();
 
+  emitToTrip(tripId, EVENTS.WALLET_SETTINGS_UPDATED, {
+    tripId,
+    settings: wallet.settings,
+    budget: wallet.budget,
+  });
+
   return res
     .status(200)
     .json(new ApiResponse(200, wallet, "Wallet settings updated successfully"));
@@ -115,34 +175,92 @@ export const addExpense = asyncHandler(async (req, res) => {
   const { tripId } = req.params;
   const userId = req.user._id;
 
+  /* ---------------- TRIP ---------------- */
   const trip = await Trip.findById(tripId);
+  if (!trip) throw new ApiError(404, "Trip not found");
 
   if (!trip.participants.some((p) => p.toString() === userId.toString())) {
     throw new ApiError(403, "Not a trip participant");
   }
 
-  if (!trip) throw new ApiError(404, "Trip not found");
-
+  /* ---------------- WALLET ---------------- */
   const wallet = await TripWallet.findOne({ trip: tripId });
   if (!wallet) throw new ApiError(404, "Wallet not found");
 
   const allowed = await canUserAddExpense({ userId, trip, wallet });
   if (!allowed) throw new ApiError(403, "Not allowed to add expense");
 
-  if (req.body.amount <= 0) {
+  /* ---------------- BASIC VALIDATION ---------------- */
+  const { amount, paidBy, splitAmong } = req.body;
+
+  if (!amount || amount <= 0) {
     throw new ApiError(400, "Expense amount must be greater than zero");
   }
 
+  if (!Array.isArray(paidBy) || paidBy.length === 0) {
+    throw new ApiError(400, "Paid by cannot be empty");
+  }
+
+  if (!Array.isArray(splitAmong) || splitAmong.length === 0) {
+    throw new ApiError(400, "Split among cannot be empty");
+  }
+
+  const sum = (arr) => arr.reduce((a, b) => a + Number(b.amount || 0), 0);
+
+  if (sum(paidBy) !== amount) {
+    throw new ApiError(400, "Paid total does not match expense amount");
+  }
+
+  if (sum(splitAmong) !== amount) {
+    throw new ApiError(400, "Split total does not match expense amount");
+  }
+
+  /* ---------------- NORMALIZE LOCATION ---------------- */
+  if (req.body.location && typeof req.body.location === "string") {
+    req.body.location = { name: req.body.location };
+  }
+
+  /* ---------------- SPLIT TYPE ---------------- */
+  if (!req.body.splitType) {
+    req.body.splitType = "custom";
+  }
+
+  /* ---------------- CREATE EXPENSE ---------------- */
   const expense = await Expense.create({
     ...req.body,
     wallet: wallet._id,
     addedBy: userId,
   });
 
-  wallet.expenses.push(expense._id);
+  /* ---------------- UPDATE WALLET PARTICIPANTS ---------------- */
+  expense.paidBy.forEach((p) => {
+    const participant = wallet.participants.find(
+      (x) => x.user.toString() === p.user.toString()
+    );
+    if (participant) {
+      participant.totalPaid += p.amount;
+    }
+  });
+
+  expense.splitAmong.forEach((s) => {
+    const participant = wallet.participants.find(
+      (x) => x.user.toString() === s.user.toString()
+    );
+    if (participant) {
+      participant.totalOwes += s.amount;
+    }
+  });
+
   wallet.totalSpend += expense.amount;
   await wallet.save();
 
+  /* ---------------- SOCKET EVENT ---------------- */
+  emitToTrip(tripId, EVENTS.WALLET_EXPENSE_ADDED, {
+    tripId,
+    expense,
+  });
+
+  /* ---------------- ACTIVITY ---------------- */
   await TripActivity.create({
     trip: tripId,
     type: "expense_added",
@@ -151,7 +269,7 @@ export const addExpense = asyncHandler(async (req, res) => {
     targetModel: "Expense",
   });
 
-  res.status(201).json(new ApiResponse(201, expense, "Expense added"));
+  return res.status(201).json(new ApiResponse(201, expense, "Expense added"));
 });
 
 export const updateExpense = asyncHandler(async (req, res) => {
@@ -187,6 +305,11 @@ export const updateExpense = asyncHandler(async (req, res) => {
 
   wallet.totalSpend += expense.amount;
   await wallet.save();
+
+  emitToTrip(trip._id, EVENTS.WALLET_EXPENSE_UPDATED, {
+    tripId: trip._id,
+    expense,
+  });
 
   await TripActivity.create({
     trip: trip._id,
@@ -232,6 +355,11 @@ export const deleteExpense = asyncHandler(async (req, res) => {
   await expense.deleteOne();
   await wallet.save();
 
+  emitToTrip(trip._id, EVENTS.WALLET_EXPENSE_DELETED, {
+    tripId: trip._id,
+    expenseId,
+  });
+
   await TripActivity.create({
     trip: trip._id,
     type: "expense_deleted", // or expense_deleted
@@ -270,7 +398,7 @@ export const generateSettlements = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Only trip creator can generate settlements");
   }
 
-  if (trip.summary?.settlements?.length) {
+  if (trip.summary?.settlements?.length > 0) {
     return res.json(new ApiResponse(200, trip.summary.settlements));
   }
 
@@ -279,25 +407,33 @@ export const generateSettlements = asyncHandler(async (req, res) => {
     populate: ["paidBy.user", "splitAmong.user"],
   });
 
+  if (!wallet) {
+    throw new ApiError(404, "Wallet not found");
+  }
+
   const balance = {};
 
   wallet.expenses.forEach((e) => {
     e.paidBy.forEach((p) => {
-      balance[p.user] = (balance[p.user] || 0) + p.amount;
+      const uid = p.user._id.toString();
+      balance[uid] = (balance[uid] || 0) + p.amount;
     });
+
     e.splitAmong.forEach((s) => {
-      balance[s.user] = (balance[s.user] || 0) - s.amount;
+      const uid = s.user._id.toString();
+      balance[uid] = (balance[uid] || 0) - s.amount;
     });
   });
 
-  const settlements = [];
   const debtors = [];
   const creditors = [];
 
-  Object.entries(balance).forEach(([u, amt]) => {
-    if (amt < 0) debtors.push({ u, amt: -amt });
-    else if (amt > 0) creditors.push({ u, amt });
+  Object.entries(balance).forEach(([userId, amt]) => {
+    if (amt < 0) debtors.push({ user: userId, amt: -amt });
+    else if (amt > 0) creditors.push({ user: userId, amt });
   });
+
+  const settlements = [];
 
   while (debtors.length && creditors.length) {
     const d = debtors[0];
@@ -305,35 +441,50 @@ export const generateSettlements = asyncHandler(async (req, res) => {
     const paid = Math.min(d.amt, c.amt);
 
     settlements.push({
-      from: d.u,
-      to: c.u,
+      from: d.user,
+      to: c.user,
       amount: paid,
-      dueAt: new Date(Date.now() + 7 * 86400000),
+      dueAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      payerConfirmed: false,
+      receiverConfirmed: false,
+      trustEvaluated: false,
     });
 
     d.amt -= paid;
     c.amt -= paid;
 
-    if (!d.amt) debtors.shift();
-    if (!c.amt) creditors.shift();
+    if (d.amt === 0) debtors.shift();
+    if (c.amt === 0) creditors.shift();
   }
 
   trip.summary = {
-    ...trip.summary,
+    ...(trip.summary || {}),
     totalSpent: wallet.totalSpend,
     settlements,
   };
 
   await trip.save();
-  res.json(new ApiResponse(200, settlements));
+
+  emitToTrip(tripId, EVENTS.WALLET_SETTLEMENTS_GENERATED, {
+    tripId,
+    settlements,
+  });
+
+  return res.json(new ApiResponse(200, settlements));
 });
 
 export const confirmSettlement = asyncHandler(async (req, res) => {
-  const { tripId, index, type } = req.params;
+  const { tripId, settlementId, type } = req.params;
   const userId = req.user._id;
 
   const trip = await Trip.findById(tripId);
-  const settlement = trip.summary.settlements[index];
+  if (!trip?.summary?.settlements?.length) {
+    throw new ApiError(404, "No settlements found");
+  }
+
+  const settlement = trip.summary.settlements.find(
+    (s) => s._id.toString() === settlementId
+  );
 
   if (!settlement) throw new ApiError(404, "Settlement not found");
 
@@ -342,43 +493,66 @@ export const confirmSettlement = asyncHandler(async (req, res) => {
   }
 
   if (type === "payer") {
-    if (settlement.from.toString() !== userId.toString())
+    if (settlement.from.toString() !== userId.toString()) {
       throw new ApiError(403, "Not payer");
+    }
     settlement.payerConfirmed = true;
   }
 
   if (type === "receiver") {
-    if (settlement.to.toString() !== userId.toString())
+    if (settlement.to.toString() !== userId.toString()) {
       throw new ApiError(403, "Not receiver");
+    }
     settlement.receiverConfirmed = true;
   }
 
+  // Finalize settlement
   if (settlement.payerConfirmed && settlement.receiverConfirmed) {
     settlement.settledAt = new Date();
-  }
 
-  if (
-    settlement.payerConfirmed &&
-    settlement.receiverConfirmed &&
-    !settlement.trustEvaluated
-  ) {
-    const onTime = settlement.settledAt <= settlement.dueAt;
+    const wallet = await TripWallet.findOne({ trip: tripId });
+    if (!wallet) throw new ApiError(404, "Wallet not found");
 
-    await awardPoints(
-      settlement.from,
-      onTime ? "settle_payment" : "late_settlement",
-      {
-        model: "Trip",
-        modelId: trip._id,
-        actorId: settlement.to, // the receiver confirming payment
-      }
+    const payer = wallet.participants.find(
+      (p) => p.user.toString() === settlement.from.toString()
+    );
+    const receiver = wallet.participants.find(
+      (p) => p.user.toString() === settlement.to.toString()
     );
 
-    settlement.trustEvaluated = true;
+    if (payer && receiver) {
+      payer.totalOwes = Math.max(0, payer.totalOwes - settlement.amount);
+      receiver.totalOwed = Math.max(0, receiver.totalOwed - settlement.amount);
+    }
+
+    await wallet.save();
+
+    if (!settlement.trustEvaluated) {
+      const onTime = settlement.settledAt <= settlement.dueAt;
+
+      await awardPoints(
+        settlement.from,
+        onTime ? "settle_payment" : "late_settlement",
+        {
+          model: "Trip",
+          modelId: trip._id,
+          actorId: settlement.to,
+        }
+      );
+
+      settlement.trustEvaluated = true;
+    }
   }
 
   await trip.save();
-  res.json(new ApiResponse(200, settlement));
+
+  emitToTrip(tripId, EVENTS.WALLET_SETTLEMENT_CONFIRMED, {
+    tripId,
+    settlementId,
+    settlement,
+  });
+
+  return res.json(new ApiResponse(200, settlement));
 });
 
 export const assignAccountant = asyncHandler(async (req, res) => {
@@ -448,6 +622,26 @@ export const assignAccountant = asyncHandler(async (req, res) => {
 
   await TripRole.insertMany(rolesToInsert);
 
+  for (const uid of validUserIds) {
+    await sendNotification({
+      recipient: uid,
+      sender: requesterId,
+      type: "system_message",
+      message: "assigned you as an accountant for the trip",
+      trip: tripId,
+      wallet: trip.wallet,
+      metadata: {
+        role: "Accountant",
+        action: "assigned",
+      },
+    });
+  }
+
+  emitToTrip(tripId, EVENTS.WALLET_ACCOUNTANT_ASSIGNED, {
+    tripId,
+    userIds: validUserIds,
+  });
+
   return res.json(
     new ApiResponse(200, null, "Accountants assigned successfully")
   );
@@ -462,5 +656,114 @@ export const removeAccountant = asyncHandler(async (req, res) => {
     roleName: "Accountant",
   });
 
+  emitToTrip(tripId, EVENTS.WALLET_ACCOUNTANT_REMOVED, {
+    tripId,
+    userId,
+  });
+
+  await sendNotification({
+    recipient: userId,
+    sender: req.user._id,
+    type: "system_message",
+    message: "removed you as an accountant from the trip",
+    trip: tripId,
+    wallet: trip.wallet,
+    metadata: {
+      role: "Accountant",
+      action: "removed",
+    },
+  });
+
   res.json(new ApiResponse(200, null, "Accountant removed"));
+});
+
+export const setPersonalBudget = asyncHandler(async (req, res) => {
+  const { tripId } = req.params;
+  const userId = req.user._id;
+  const { budget } = req.body;
+
+  if (budget === undefined || budget < 0) {
+    throw new ApiError(400, "Invalid budget value");
+  }
+
+  const wallet = await TripWallet.findOne({ trip: tripId });
+  if (!wallet) throw new ApiError(404, "Wallet not found");
+
+  // 🔥 AUTO-MIGRATION FOR OLD WALLETS
+  if (!wallet.participants || wallet.participants.length === 0) {
+    const trip = await Trip.findById(tripId).select("participants");
+    if (!trip) throw new ApiError(404, "Trip not found");
+
+    wallet.participants = trip.participants.map((uid) => ({
+      user: uid,
+      personalBudget: 0,
+      totalPaid: 0,
+      totalOwed: 0,
+      totalOwes: 0,
+    }));
+
+    await wallet.save();
+  }
+
+  const participant = wallet.participants.find(
+    (p) => p.user.toString() === userId.toString()
+  );
+
+  if (!participant) {
+    throw new ApiError(403, "Not a trip participant");
+  }
+
+  participant.personalBudget = budget;
+  await wallet.save();
+
+  emitToTrip(tripId, EVENTS.WALLET_PERSONAL_BUDGET_UPDATED, {
+    userId,
+    budget,
+  });
+
+  console.log("budget:", budget);
+
+  return res.json(new ApiResponse(200, { budget }, "Personal budget updated"));
+});
+
+export const setTripBudget = asyncHandler(async (req, res) => {
+  const { tripId } = req.params;
+  const userId = req.user._id;
+  const { budget } = req.body;
+
+  if (budget === undefined || budget < 0) {
+    throw new ApiError(400, "Invalid trip budget");
+  }
+
+  const trip = await Trip.findById(tripId).lean();
+  if (!trip) throw new ApiError(404, "Trip not found");
+
+  let allowed = trip.createdBy.toString() === userId.toString();
+
+  if (!allowed) {
+    const isCaptain = await TripRole.exists({
+      trip: tripId,
+      assignedTo: userId,
+      roleName: "Captain",
+      status: "active",
+    });
+    allowed = !!isCaptain;
+  }
+
+  if (!allowed) {
+    throw new ApiError(403, "Not authorized to set trip budget");
+  }
+
+  await TripWallet.findOneAndUpdate(
+    { trip: tripId },
+    { $set: { budget } },
+    { new: true }
+  ).lean();
+
+  emitToTrip(tripId, EVENTS.WALLET_TRIP_BUDGET_UPDATED, {
+    tripId,
+    budget,
+  });
+
+  return res.json(new ApiResponse(200, { budget }, "Trip budget updated"));
 });

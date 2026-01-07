@@ -1,8 +1,8 @@
 .container {
   width: 100%;
   max-width: 100%;
-  font-family: 'Poppins', sans-serif;
-  color: #333;
+  font-family: "Poppins", sans-serif;
+  color: #000000;
 }
 
 /* --- HEADER (MATCHING POSTFEED) --- */
@@ -18,7 +18,7 @@
 .sectionHeader h2 {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1a1a1a;
+  color: #000000;
   margin: 0;
 }
 
@@ -53,12 +53,17 @@
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #95a5a6;
+  color: #000000;
   font-weight: 600;
 }
 
-.thLeft { padding-left: 2rem; }
-.thRight { padding-right: 2rem; text-align: center; }
+.thLeft {
+  padding-left: 2rem;
+}
+.thRight {
+  padding-right: 2rem;
+  text-align: center;
+}
 
 /* --- Table Body --- */
 .row {
@@ -80,7 +85,9 @@
 }
 
 /* --- Columns Styling --- */
-.placeCell { padding-left: 2rem; }
+.placeCell {
+  padding-left: 2rem;
+}
 
 .placeContent {
   display: flex;
@@ -145,7 +152,9 @@
   color: #555;
 }
 
-.ratingCell { min-width: 100px; }
+.ratingCell {
+  min-width: 100px;
+}
 
 .stars {
   color: #f1c40f;
@@ -174,11 +183,24 @@
 }
 
 /* Status Colors */
-.pending { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
-.approved { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-.rejected { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+.pending {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+}
+.approved {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+.rejected {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
 
-.loading, .emptyState {
+.loading,
+.emptyState {
   text-align: center;
   padding: 3rem;
   color: #95a5a6;
