@@ -127,7 +127,7 @@ const tripSlice = createSlice({
       state.tripActivities = {};
       state.tripChecklists = {};
       state.tripClosures = {};
-      state.tripPlaces = {};
+      if (!state.tripPlaces) state.tripPlaces = {};
       state.tripRoles = {};
       state.tripWallets = {};
 
@@ -154,7 +154,27 @@ const tripSlice = createSlice({
       mapByTrip(state.tripChecklists, tripChecklists);
       mapByTrip(state.tripClosures, tripClosures);
 
-      mapByTrip(state.tripPlaces, tripPlaces);
+      /* ================= TRIP PLACES ================= */
+      state.tripPlaces = {};
+
+      tripPlaces.forEach((place) => {
+        const tripId =
+          typeof place.trip === "object" ? place.trip._id : place.trip;
+
+        if (!state.tripPlaces[tripId]) {
+          state.tripPlaces[tripId] = [];
+        }
+
+        state.tripPlaces[tripId].push(place);
+      });
+
+      /* ✅ Stable ordering (oldest → newest) */
+      Object.keys(state.tripPlaces).forEach((tripId) => {
+        state.tripPlaces[tripId].sort(
+          (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+        );
+      });
+
       mapByTrip(state.tripRoles, tripRoles);
 
       tripWallets.forEach((wallet) => {
@@ -323,16 +343,13 @@ const tripSlice = createSlice({
     /**
      * ✅ Removes photo from Redux state
      */
-    removeTripPhoto(state, action) {
+    removeTripPhoto: (state, action) => {
       const { tripId, photoId } = action.payload;
-
       if (!state.tripPhotos[tripId]) return;
-
       state.tripPhotos[tripId] = state.tripPhotos[tripId].filter(
         (p) => p._id !== photoId
       );
     },
-
     /**
      * ✅ Updates photo visibility (for push to global)
      */
@@ -355,6 +372,33 @@ const tripSlice = createSlice({
 
       state.tripPhotos[tripId] = state.tripPhotos[tripId].map((p) =>
         p._id === photoId ? { ...p, ...updates } : p
+      );
+    },
+
+    // for trip places
+    addTripPlace(state, action) {
+      const place = action.payload;
+      const tripId =
+        typeof place.trip === "object" ? place.trip._id : place.trip;
+
+      if (!state.tripPlaces[tripId]) {
+        state.tripPlaces[tripId] = [];
+      }
+
+      const exists = state.tripPlaces[tripId].some((p) => p._id === place._id);
+
+      if (!exists) {
+        state.tripPlaces[tripId].push(place);
+      }
+    },
+
+    removeTripPlace(state, action) {
+      const { tripId, placeId } = action.payload;
+
+      if (!state.tripPlaces[tripId]) return;
+
+      state.tripPlaces[tripId] = state.tripPlaces[tripId].filter(
+        (p) => p._id !== placeId
       );
     },
   },
@@ -384,6 +428,8 @@ export const {
   removeTripPhoto,
   updateTripPhotoVisibility,
   updateTripPhoto,
+  addTripPlace,
+  removeTripPlace,
 } = tripSlice.actions;
 
 export default tripSlice.reducer;

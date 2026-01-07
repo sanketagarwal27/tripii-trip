@@ -49,6 +49,8 @@ const Places = () => {
         fetchSafety(query),
       ]);
 
+      // Process news to remove duplicates and unwanted entries
+
       if (newsResult?.data?.articles) {
         const articleMap = new Map();
         newsResult.data.articles.forEach((article) => {

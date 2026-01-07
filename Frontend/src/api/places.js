@@ -56,3 +56,13 @@ export const getSuggestedPlaces = async () => {
   });
   return response.data;
 };
+
+// export const getPeopleReview = async (place) => {
+//   const response = await api.get("/api/places/get-people-view", {
+//     params: {
+//       place,
+//     },
+//     withCredentials: true,
+//   });
+//   return response.data;
+// };

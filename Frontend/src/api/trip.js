@@ -204,3 +204,19 @@ export const uploadTripPhotosXHR = (tripId, formData, onProgress) =>
 
     xhr.send(formData);
   });
+
+export const addTripPlace = (tripId, formData) =>
+  api.post(`/api/trip/trips/${tripId}/places`, formData, {
+    withCredentials: true,
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+
+export const deleteTripPlace = (tripId, placeId) =>
+  api.delete(`/api/trip/trips/${tripId}/places/${placeId}`, {
+    withCredentials: true,
+  });
+
+export const getPublicTripPreview = (tripId) =>
+  api.get(`/api/trip/public/${tripId}`, {
+    withCredentials: true,
+  });

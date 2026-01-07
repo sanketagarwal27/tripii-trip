@@ -9,6 +9,7 @@ const tripRoleSchema = new Schema(
       enum: [
         "Captain",
         "Cameraman",
+        "Manager",
         "Cook",
         "Navigator",
         "Accountant",

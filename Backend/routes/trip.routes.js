@@ -5,6 +5,7 @@ import { upload } from "../middlewares/multer.middleware.js";
 import {
   createTrip,
   getAllUserTripData,
+  getPublicTripPreview,
 } from "../controllers/trip/trip.controller.js";
 import {
   addAiTripPlans,
@@ -39,6 +40,10 @@ import {
   updateExpense,
   updateWalletSettings,
 } from "../controllers/trip/tripWallet.controller.js";
+import {
+  addTripPlace,
+  deleteTripPlace,
+} from "../controllers/trip/tripFamousPlace.controller.js";
 
 const router = express.Router();
 
@@ -94,5 +99,12 @@ router.post("/trips/:tripId/wallet/accountants", assignAccountant);
 router.delete("/trips/:tripId/wallet/accountants/:userId", removeAccountant);
 router.post("/trips/:tripId/wallet/personal-budget", setPersonalBudget);
 router.patch("/trips/:tripId/wallet/budget", setTripBudget);
+
+// ➕ Add famous place (Captain / Planner)
+router.post("/trips/:tripId/places", upload.single("image"), addTripPlace);
+
+// 🗑 Delete famous place (Captain / Planner)
+router.delete("/trips/:tripId/places/:placeId", deleteTripPlace);
+router.get("/public/:tripId", getPublicTripPreview);
 
 export default router;

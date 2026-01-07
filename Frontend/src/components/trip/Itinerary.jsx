@@ -36,15 +36,25 @@ const timeToMinutes = (time) => {
 /* ======================================================
    ITINERARY
 ====================================================== */
-const Itinerary = () => {
+const Itinerary = ({ publicPlans }) => {
   const EMPTY_ARRAY = [];
+  const EMPTY_OBJECT = null;
   const dispatch = useDispatch();
+
   const activeTripId = useSelector((s) => s.trip.activeTripId);
-  const tripPlans = useSelector(
-    (s) => s.trip.tripPlans[activeTripId] ?? EMPTY_ARRAY
+
+  const reduxPlans = useSelector(
+    (s) => s.trip.tripPlans[activeTripId] || EMPTY_ARRAY
   );
-  const currentUserId = useSelector((s) => s.auth.user?._id);
-  const activeTrip = useSelector((s) => s.trip.trips.byId[activeTripId]);
+
+  const tripPlans = publicPlans ?? reduxPlans;
+
+  const currentUserId = useSelector((s) => s.auth.user?._id || EMPTY_OBJECT);
+
+  const activeTrip = useSelector(
+    (s) => s.trip.trips.byId[activeTripId] || EMPTY_OBJECT
+  );
+
   const navigate = useNavigate();
 
   const [shuffleDate, setShuffleDate] = useState(null);
