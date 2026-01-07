@@ -477,9 +477,17 @@ export const confirmSettlement = asyncHandler(async (req, res) => {
   const { tripId, settlementId, type } = req.params;
   const userId = req.user._id;
 
+  if (!["payer", "receiver"].includes(type)) {
+    throw new ApiError(400, "Invalid confirmation type");
+  }
+
   const trip = await Trip.findById(tripId);
-  if (!trip?.summary?.settlements?.length) {
+  if (!trip || !trip.summary?.settlements?.length) {
     throw new ApiError(404, "No settlements found");
+  }
+
+  if (["cancelled"].includes(trip.status)) {
+    throw new ApiError(403, "Trip is cancelled");
   }
 
   const settlement = trip.summary.settlements.find(
@@ -492,24 +500,61 @@ export const confirmSettlement = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Settlement already finalized");
   }
 
+  /* ----------------------------------------------------
+     1. CONFIRMATION STEP (IDEMPOTENT)
+  ---------------------------------------------------- */
   if (type === "payer") {
     if (settlement.from.toString() !== userId.toString()) {
-      throw new ApiError(403, "Not payer");
+      throw new ApiError(403, "Only payer can confirm payment");
     }
-    settlement.payerConfirmed = true;
+
+    if (!settlement.payerConfirmed) {
+      settlement.payerConfirmed = true;
+
+      await sendNotification({
+        recipient: settlement.to,
+        sender: userId,
+        type: "settlement_requested",
+        message: "marked a settlement payment as done",
+        trip: tripId,
+        wallet: trip.wallet,
+        settlement: settlement._id,
+        metadata: {
+          step: "payer_confirmed",
+          amount: settlement.amount,
+        },
+      });
+    }
   }
 
   if (type === "receiver") {
     if (settlement.to.toString() !== userId.toString()) {
-      throw new ApiError(403, "Not receiver");
+      throw new ApiError(403, "Only receiver can confirm payment");
     }
-    settlement.receiverConfirmed = true;
+
+    if (!settlement.receiverConfirmed) {
+      settlement.receiverConfirmed = true;
+    }
   }
 
-  // Finalize settlement
-  if (settlement.payerConfirmed && settlement.receiverConfirmed) {
-    settlement.settledAt = new Date();
+  /* ----------------------------------------------------
+     2. FINALIZATION (RUNS ONCE)
+  ---------------------------------------------------- */
+  let finalizedNow = false;
 
+  if (
+    settlement.payerConfirmed &&
+    settlement.receiverConfirmed &&
+    !settlement.settledAt
+  ) {
+    settlement.settledAt = new Date();
+    finalizedNow = true;
+  }
+
+  /* ----------------------------------------------------
+     3. WALLET UPDATE (ONLY ON FINALIZATION)
+  ---------------------------------------------------- */
+  if (finalizedNow) {
     const wallet = await TripWallet.findOne({ trip: tripId });
     if (!wallet) throw new ApiError(404, "Wallet not found");
 
@@ -520,32 +565,54 @@ export const confirmSettlement = asyncHandler(async (req, res) => {
       (p) => p.user.toString() === settlement.to.toString()
     );
 
-    if (payer && receiver) {
-      payer.totalOwes = Math.max(0, payer.totalOwes - settlement.amount);
-      receiver.totalOwed = Math.max(0, receiver.totalOwed - settlement.amount);
+    if (!payer || !receiver) {
+      throw new ApiError(400, "Wallet participants mismatch");
     }
+
+    payer.totalOwes = Math.max(0, payer.totalOwes - settlement.amount);
+    receiver.totalOwed = Math.max(0, receiver.totalOwed - settlement.amount);
 
     await wallet.save();
 
-    if (!settlement.trustEvaluated) {
-      const onTime = settlement.settledAt <= settlement.dueAt;
+    await sendNotification({
+      recipient: settlement.from,
+      sender: userId,
+      type: "settlement_completed",
+      message: "confirmed your settlement payment",
+      trip: tripId,
+      wallet: trip.wallet,
+      settlement: settlement._id,
+      metadata: {
+        amount: settlement.amount,
+        settledAt: settlement.settledAt,
+      },
+    });
+  }
 
-      await awardPoints(
-        settlement.from,
-        onTime ? "settle_payment" : "late_settlement",
-        {
-          model: "Trip",
-          modelId: trip._id,
-          actorId: settlement.to,
-        }
-      );
+  /* ----------------------------------------------------
+     4. TRUST / XP EVALUATION (ONLY ONCE)
+  ---------------------------------------------------- */
+  if (finalizedNow && !settlement.trustEvaluated) {
+    const onTime = settlement.settledAt <= settlement.dueAt;
 
-      settlement.trustEvaluated = true;
-    }
+    await awardPoints(
+      settlement.from,
+      onTime ? "settle_payment" : "late_settlement",
+      {
+        model: "Trip",
+        modelId: trip._id,
+        actorId: settlement.to,
+      }
+    );
+
+    settlement.trustEvaluated = true;
   }
 
   await trip.save();
 
+  /* ----------------------------------------------------
+     5. SOCKET EVENT
+  ---------------------------------------------------- */
   emitToTrip(tripId, EVENTS.WALLET_SETTLEMENT_CONFIRMED, {
     tripId,
     settlementId,

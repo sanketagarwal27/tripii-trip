@@ -9,13 +9,16 @@ const getDataUri = (input) => {
       throw new Error("getDataUri: buffer is required");
     }
 
-    // Case 1: Multer file (old code)
+    // Case 1: Multer file (original upload)
     if (input.originalname) {
       const ext = path.extname(input.originalname);
+      if (!ext) {
+        throw new Error("getDataUri: cannot determine file extension");
+      }
       return parser.format(ext, input.buffer);
     }
 
-    // Case 2: Sharp / manual buffer (new code)
+    // Case 2: Sharp / manually constructed buffer
     if (input.mimetype) {
       const parts = input.mimetype.split("/");
       if (parts.length !== 2 || !parts[1]) {
@@ -23,12 +26,13 @@ const getDataUri = (input) => {
           `getDataUri: invalid mimetype format: ${input.mimetype}`
         );
       }
-      // Handle complex mimetypes (e.g., "image/svg+xml" -> "svg")
+
+      // Handle cases like image/svg+xml → .svg
       const ext = `.${parts[1].split("+")[0]}`;
       return parser.format(ext, input.buffer);
     }
 
-    // Fallback (last resort)
+    // Fallback (should almost never happen)
     return parser.format(".jpg", input.buffer);
   } catch (err) {
     console.error("getDataUri error:", err.message);
