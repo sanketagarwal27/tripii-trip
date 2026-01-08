@@ -85,7 +85,6 @@ const RightSideBar = () => {
   };
 
   const xp = userProfile.xpPoints || 0;
-  const bonus = userProfile.bonusPoints || 0;
   const trust = userProfile.trustScore || 0;
   const contrib = userProfile.contributions?.length || 0;
   const trips = userProfile.trips?.length || 0;
@@ -126,10 +125,7 @@ const RightSideBar = () => {
             <span>XP</span>
             <b>{xp}</b>
           </div>
-          <div className="rs-row">
-            <span>Bonus</span>
-            <b>{bonus}</b>
-          </div>
+
           <div className="rs-row">
             <span>Trust</span>
             <b>{trust}</b>

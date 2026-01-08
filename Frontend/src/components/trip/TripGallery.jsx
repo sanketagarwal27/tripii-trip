@@ -1,4 +1,4 @@
-import { likeTripPhoto, unlikeTripPhoto } from "@/api/trip";
+import { deleteTripPhoto, likeTripPhoto, unlikeTripPhoto } from "@/api/trip";
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -9,6 +9,7 @@ import {
 } from "@/api/trip";
 import {
   addTripPhotos,
+  removeTripPhoto,
   updateTripPhoto,
   updateTripPhotoVisibility,
 } from "@/redux/tripSlice";
@@ -19,7 +20,7 @@ import {
   setProgress,
   startUpload,
 } from "@/redux/uploadSlice";
-import { Download } from "lucide-react";
+import { Download, Trash2 } from "lucide-react";
 
 export default function TripGallery({ tripId }) {
   const dispatch = useDispatch();
@@ -36,6 +37,12 @@ export default function TripGallery({ tripId }) {
   const [viewerPhoto, setViewerPhoto] = useState(null);
 
   const allPhotos = useSelector((s) => s.trip.tripPhotos[tripId]);
+
+  const activeTrip = useSelector((s) =>
+    tripId ? s.trip.trips.byId[tripId] : null
+  );
+
+  const tripOwnerId = activeTrip?.createdBy?._id;
 
   const photos = useMemo(() => {
     if (!Array.isArray(allPhotos)) return [];
@@ -223,6 +230,29 @@ export default function TripGallery({ tripId }) {
     };
   }, [previews]);
 
+  //For deleting a photo
+
+  const handleDeletePhoto = async (photoId, e) => {
+    e.stopPropagation();
+
+    const ok = window.confirm("Delete this photo permanently?");
+    if (!ok) return;
+
+    // Optimistic update
+    dispatch(removeTripPhoto({ tripId, photoId }));
+
+    try {
+      await deleteTripPhoto(photoId);
+    } catch (err) {
+      alert(err?.response?.data?.message || "Delete failed.");
+      // window.location.reload();
+    }
+  };
+
+  if (!activeTrip) {
+    return <div className="text-center py-12 text-gray-500">Loading trip…</div>;
+  }
+
   /* ---------------- UI ---------------- */
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
@@ -298,6 +328,11 @@ export default function TripGallery({ tripId }) {
         >
           {photos.map((photo) => {
             const isMyPhoto = photo.uploadedBy?._id === myUserId;
+            const isTripOwner = tripOwnerId === myUserId;
+            const canDelete =
+              photo.visibility === "local"
+                ? isMyPhoto
+                : isMyPhoto || isTripOwner;
 
             return (
               <div
@@ -404,6 +439,16 @@ export default function TripGallery({ tripId }) {
                       📍 {photo.location.name}
                     </p>
                   </div>
+                )}
+
+                {canDelete && (
+                  <button
+                    onClick={(e) => handleDeletePhoto(photo._id, e)}
+                    className="bg-white/90 hover:bg-red-50 px-3 py-1.5 rounded shadow text-red-600"
+                    title="Delete photo"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 )}
               </div>
             );

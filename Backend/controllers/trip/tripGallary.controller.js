@@ -60,7 +60,11 @@ export const uploadTripPhotosBatch = asyncHandler(async (req, res) => {
   const trip = await Trip.findById(tripId);
   if (!trip) throw new ApiError(404, "Trip not found");
 
-  if (!trip.participants.includes(userId) && !trip.createdBy.equals(userId)) {
+  const isActiveParticipant = trip.participants.some(
+    (p) => p.user.toString() === userId.toString() && p.status === "active"
+  );
+
+  if (!isActiveParticipant && !trip.createdBy.equals(userId)) {
     throw new ApiError(403, "Not authorized to upload photos");
   }
 
@@ -343,8 +347,8 @@ export const deleteTripPhoto = asyncHandler(async (req, res) => {
 
   /* ---------------- SOCKET EVENT ---------------- */
   emitToTrip(photo.trip, EVENTS.TRIP_PHOTO_DELETED, {
+    tripId: photo.trip,
     photoId,
-    deletedBy: userId,
   });
 
   return res

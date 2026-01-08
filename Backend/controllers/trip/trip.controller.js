@@ -109,7 +109,15 @@ export const createTrip = asyncHandler(async (req, res) => {
           location,
           visibility,
           createdBy: userId,
-          participants: [userId],
+          participants: [
+            {
+              user: userId, // ✅ FIX: Proper subdocument structure
+              joinedVia: "invite",
+              status: "active",
+              canRejoin: true,
+              joinedAt: new Date(),
+            },
+          ],
         },
       ],
       { session }
@@ -123,12 +131,21 @@ export const createTrip = asyncHandler(async (req, res) => {
     }
 
     /* ---------------- 3️⃣ CREATE WALLET ---------------- */
+    /* ---------------- 3️⃣ CREATE WALLET ---------------- */
     const [wallet] = await TripWallet.create(
       [
         {
           trip: trip._id,
           manager: userId,
-          participants: [userId],
+          participants: [
+            {
+              user: userId,
+              personalBudget: 0,
+              totalPaid: 0,
+              totalOwed: 0,
+              totalOwes: 0,
+            },
+          ],
         },
       ],
       { session }
@@ -228,104 +245,138 @@ export const getAllUserTripData = asyncHandler(async (req, res) => {
 
   const page = Math.max(parseInt(req.query.page) || 1, 1);
   const limit = Math.min(parseInt(req.query.limit) || 15, 30);
-  const search = req.query.search?.trim();
 
-  // 1️⃣ Fetch user's trip IDs
+  /* ------------------------------
+   * 1️⃣ User membership
+   * ------------------------------ */
   const user = await User.findById(userId).select("trips").lean();
-  const userTripIds = user?.trips || [];
+  const userTripIds = (user?.trips || []).map((id) => id.toString());
 
-  if (!userTripIds.length) {
-    return res.status(200).json({
-      success: true,
-      page,
-      totalTrips: 0,
-      hasMore: false,
-      data: {
-        trips: [],
-        expenses: [],
-        tripPlans: [],
-        tripActivities: [],
-        tripChecklists: [],
-        tripClosures: [],
-        tripPlaces: [],
-        tripRoles: [],
-        tripWallets: [],
-      },
-    });
-  }
-
-  // 2️⃣ Build trip query
-  const tripQuery = {
+  /* ------------------------------
+   * 2️⃣ Fetch trips (MEMBER ONLY)
+   * ------------------------------ */
+  const trips = await Trip.find({
     _id: { $in: userTripIds },
-  };
-
-  // 3️⃣ If searching, search ALL trips (not just current page)
-  if (search) {
-    tripQuery.$or = [
-      { title: { $regex: search, $options: "i" } },
-      { description: { $regex: search, $options: "i" } },
-      { "location.city": { $regex: search, $options: "i" } },
-      { "location.state": { $regex: search, $options: "i" } },
-      { "location.country": { $regex: search, $options: "i" } },
-    ];
-  }
-
-  // 4️⃣ Count total matching trips
-  const totalTrips = await Trip.countDocuments(tripQuery);
-
-  // 5️⃣ Fetch paginated trips
-  const trips = await Trip.find(tripQuery)
+  })
     .populate("createdBy", "username")
+    .populate("participants.user", "username profilePicture.url")
     .sort({ createdAt: -1 })
     .skip((page - 1) * limit)
     .limit(limit)
     .lean();
 
-  const pageTripIds = trips.map((t) => t._id);
+  /* ------------------------------
+   * 3️⃣ Member trip IDs
+   * ------------------------------ */
+  const memberTripIds = trips.map((trip) => trip._id);
 
-  // 6️⃣ Fetch related data ONLY for current page trips
+  /* ------------------------------
+   * 4️⃣ Fetch MEMBER data (FULL)
+   * ------------------------------ */
   const [
     expenses,
-    tripPlans,
     tripActivities,
     tripChecklists,
     tripClosures,
-    tripPlaces,
     tripRoles,
     tripWallets,
   ] = await Promise.all([
-    Expense.find({ trip: { $in: pageTripIds } }).lean(),
-    TripPlan.find({ trip: { $in: pageTripIds } })
-      .populate("createdBy", "username")
-      .lean(),
-    TripActivity.find({ trip: { $in: pageTripIds } })
-      .sort({ createdAt: -1 })
-      .limit(200)
-      .lean(),
-    TripChecklist.find({ trip: { $in: pageTripIds } }).lean(),
-    TripClosure.find({ trip: { $in: pageTripIds } }).lean(),
-    TripPlace.find({ trip: { $in: pageTripIds } }).lean(),
-    TripRole.find({ trip: { $in: pageTripIds } }).lean(),
-    TripWallet.find({ trip: { $in: pageTripIds } }).lean(),
+    Expense.find({ trip: { $in: memberTripIds } }).lean(),
+    TripActivity.find({ trip: { $in: memberTripIds } }).lean(),
+    TripChecklist.find({ trip: { $in: memberTripIds } }).lean(),
+    TripClosure.find({ trip: { $in: memberTripIds } }).lean(),
+    TripRole.find({ trip: { $in: memberTripIds } }).lean(),
+    TripWallet.find({ trip: { $in: memberTripIds } }).lean(),
   ]);
 
-  // 7️⃣ Respond
-  res.status(200).json({
+  /* ------------------------------
+   * 5️⃣ Fetch SHARED data (FOR MEMBERS)
+   * ------------------------------ */
+  const [tripPlans, tripPlaces] = await Promise.all([
+    TripPlan.find({
+      trip: { $in: memberTripIds },
+    })
+      .populate("createdBy", "username")
+      .lean(),
+
+    TripPlace.find({
+      trip: { $in: memberTripIds },
+    }).lean(),
+  ]);
+
+  /* ------------------------------
+   * 6️⃣ Response
+   * ------------------------------ */
+  return res.status(200).json({
     success: true,
     page,
-    totalTrips,
-    hasMore: page * limit < totalTrips,
+    hasMore: trips.length === limit,
     serverTime: Date.now(),
     data: {
       trips,
-      expenses,
+
+      // ✅ Visible to MEMBERS
       tripPlans,
+      tripPlaces,
+
+      // 🔐 MEMBERS ONLY
+      expenses,
       tripActivities,
       tripChecklists,
       tripClosures,
-      tripPlaces,
       tripRoles,
       tripWallets,
     },
   });
+});
+
+export const getPublicTripPreview = asyncHandler(async (req, res) => {
+  const { tripId } = req.params;
+
+  /* ------------------ 1️⃣ FETCH PUBLIC TRIP ------------------ */
+  const trip = await Trip.findOne({
+    _id: tripId,
+    visibility: "public",
+  })
+    .populate("createdBy", "username profilePicture")
+    .lean();
+
+  if (!trip) {
+    throw new ApiError(404, "Public trip not found or is private");
+  }
+
+  /* ------------------ 2️⃣ FETCH SAFE SHARED DATA ------------------ */
+  const [tripPlans, tripPlaces] = await Promise.all([
+    TripPlan.find({ trip: tripId })
+      .populate("createdBy", "username")
+      .sort({ date: 1, sequence: 1 })
+      .lean(),
+
+    TripPlace.find({ trip: tripId }).lean(),
+  ]);
+
+  /* ------------------ 3️⃣ RETURN PREVIEW RESPONSE ------------------ */
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        trip: {
+          _id: trip._id,
+          title: trip.title,
+          description: trip.description,
+          type: trip.type,
+          startDate: trip.startDate,
+          endDate: trip.endDate,
+          location: trip.location,
+          coverPhoto: trip.coverPhoto,
+          createdBy: trip.createdBy,
+          visibility: trip.visibility,
+          status: trip.status,
+        },
+        tripPlans,
+        tripPlaces,
+      },
+      "Public trip preview fetched"
+    )
+  );
 });

@@ -65,27 +65,11 @@ body {
 .navbar-middle {
   display: flex;
   align-items: center;
-  gap: 32px;
-
-  font-size: 15px;
+  gap: 15px;
   font-weight: 600;
 
   color: #333;
-}
-
-.navbar-middle button {
-  height: 100%;
-  padding: 4px 2px;
-  background: none;
-  border: none;
-  cursor: pointer;
-
-  transition: color 0.2s ease, border-bottom 0.2s ease;
-}
-
-.navbar-middle button:hover {
-  color: #000;
-  border-bottom: 3px solid black;
+  max-width: 70%;
 }
 
 /* --------------------- RIGHT SIDE --------------------- */
@@ -97,7 +81,7 @@ body {
 
 .navbar-middle button {
   padding: 6px 12px;
-  font-size: 14px;
+  font-size: 16px;
   border-radius: 6px;
   transition: all 0.2s ease;
 }

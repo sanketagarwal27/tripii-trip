@@ -40,8 +40,22 @@ const expenseSchema = new Schema(
 
     category: {
       type: String,
-      enum: ["food", "travel", "stay", "shopping", "other"],
-      default: "other",
+      enum: [
+        "transport",
+        "stay",
+        "food",
+        "activities",
+        "local_services",
+        "shopping",
+        "fees_and_taxes",
+        "health_and_safety",
+        "connectivity_and_utilities",
+        "tips_and_donations",
+        "penalties_and_losses",
+        "wallet_and_transfers",
+        "miscellaneous",
+      ],
+      default: "miscellaneous",
     },
 
     notes: String,

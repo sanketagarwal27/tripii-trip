@@ -18,6 +18,11 @@ const tripActivitySchema = new Schema(
         "settlement_payer_confirmed",
         "settlement_receiver_confirmed",
         "settlement_completed",
+        "trip_published_in_community",
+        "member_joined",
+        "member_left",
+        "role_assigned",
+        "role_completed",
       ],
     },
 

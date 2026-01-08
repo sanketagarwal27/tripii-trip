@@ -368,12 +368,12 @@ const SocketProvider = ({ children }) => {
       );
     });
 
-    socket.on(EVENTS.TRIP_PHOTO_DELETED, ({ photoId }) => {
-      if (!activeTripId || !galleryLoaded) return;
+    socket.on(EVENTS.TRIP_PHOTO_DELETED, ({ tripId, photoId }) => {
+      if (!tripId) return;
 
       dispatch(
         removeTripPhoto({
-          tripId: activeTripId,
+          tripId,
           photoId,
         })
       );

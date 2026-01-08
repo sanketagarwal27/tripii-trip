@@ -7,6 +7,7 @@ import {
   getScams,
   getSuggestedPlaces,
 } from "../controllers/places/places.controller.js";
+// import { getPlaceSummary } from "../controllers/places/getPlaceSummary.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const router = Router();
@@ -17,4 +18,8 @@ router.route("/get-photos").get(verifyJWT, getPhotos);
 router.route("/get-overview").get(verifyJWT, getOverview);
 router.route("/get-scams").get(verifyJWT, getScams);
 router.route("/get-suggested-places").get(verifyJWT, getSuggestedPlaces);
+
+// 👥 PEOPLE VIEW (AI-derived consensus)
+// router.route("/get-people-view").get(verifyJWT, getPlaceSummary);
+
 export default router;

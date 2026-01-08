@@ -134,7 +134,7 @@ const getWeatherData = async (place) => {
       return null;
     }
     const weatherData = await getWeather(coords.lat, coords.lon);
-    weatherData.summary = `Expect a high of ${weatherData.high} and low of ${weatherData.low} currently`;
+    weatherData.summary = `Expect a high of ${weatherData?.high} and low of ${weatherData.low} currently`;
     if (weatherData) {
       await Place.findOneAndUpdate(
         { place },
@@ -237,7 +237,7 @@ export const getOverview = asyncHandler(async (req, res) => {
           ai: aiData,
           weather: {
             summary: `Expect a high of ${weatherData.high}°C and low of ${weatherData.low}°C currently`,
-            high: weatherData.high,
+            high: weatherData?.high,
             low: weatherData.low,
             conditionCode: weatherData.code,
           },

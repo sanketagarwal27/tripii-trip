@@ -42,7 +42,7 @@ const TripCard = ({ trip, showAllButtons = false }) => {
         "Wallet",
         "Members",
         "Gallery",
-        "Famous Places",
+        "Destinations",
         "History",
         "Settings",
       ]

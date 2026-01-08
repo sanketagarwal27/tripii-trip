@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { addExpense } from "@/api/wallet";
 import { addWalletExpense } from "@/redux/tripWalletSlice";
@@ -22,6 +22,89 @@ const splitEqualSafely = (total, userIds) => {
   }));
 };
 
+/* ---------------- SUBCATEGORY MAP ---------------- */
+
+const SUBCATEGORY_MAP = {
+  food: [
+    "Breakfast",
+    "Lunch",
+    "Dinner",
+    "Snacks",
+    "Street Food",
+    "Cafe",
+    "Bar",
+    "Alcohol",
+    "Water",
+    "Groceries",
+    "Room Service",
+  ],
+  transport: [
+    "Flight",
+    "Train",
+    "Bus",
+    "Metro",
+    "Cab / Taxi",
+    "Auto Rickshaw",
+    "Bike Rental",
+    "Car Rental",
+    "Fuel",
+    "Toll",
+    "Parking",
+    "Ferry",
+    "Local Transport",
+    "Porter / Luggage",
+  ],
+  stay: [
+    "Hotel",
+    "Hostel",
+    "Homestay",
+    "Airbnb",
+    "Guesthouse",
+    "Resort",
+    "Camping",
+    "Room Upgrade",
+    "Extra Bed",
+    "Early Check-in",
+    "Late Check-out",
+    "Security Deposit",
+  ],
+  activities: [
+    "Entry Ticket",
+    "Sightseeing",
+    "Adventure Activity",
+    "Museum",
+    "Theme Park",
+    "Trekking",
+    "Scuba Diving",
+    "Skiing",
+    "Boating",
+    "Cultural Event",
+    "Festival Pass",
+    "Workshop",
+  ],
+  shopping: [
+    "Souvenirs",
+    "Clothes",
+    "Gifts",
+    "Local Products",
+    "Accessories",
+    "Duty Free",
+    "Snack Packs",
+  ],
+  miscellaneous: [],
+};
+
+/* ---------------- CATEGORY OPTIONS ---------------- */
+
+const CATEGORY_OPTIONS = [
+  { value: "food", label: "🍔 Food & Drinks" },
+  { value: "transport", label: "🚗 Transport" },
+  { value: "stay", label: "🏨 Stay" },
+  { value: "activities", label: "🎡 Activities" },
+  { value: "shopping", label: "🛍 Shopping" },
+  { value: "miscellaneous", label: "📦 Miscellaneous" },
+];
+
 /* =================================================== */
 
 export default function AddExpenseModal({ tripId, onClose }) {
@@ -33,18 +116,34 @@ export default function AddExpenseModal({ tripId, onClose }) {
 
   /* ---------------- STATE ---------------- */
 
-  const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState("other");
+  const [category, setCategory] = useState("food");
+  const [descriptionMode, setDescriptionMode] = useState("dropdown"); // dropdown or manual
+  const [subCategory, setSubCategory] = useState("");
+  const [manualDescription, setManualDescription] = useState("");
   const [location, setLocation] = useState("");
 
-  const [splitMode, setSplitMode] = useState("equal"); // equal | custom
-  const [payers, setPayers] = useState({}); // { userId: amount }
-  const [splitters, setSplitters] = useState({}); // { userId: amount }
+  const [splitMode, setSplitMode] = useState("equal");
+  const [payers, setPayers] = useState({});
+  const [splitters, setSplitters] = useState({});
+
+  /* ---------------- EFFECTS ---------------- */
+
+  useEffect(() => {
+    // Reset subcategory when category changes
+    setSubCategory("");
+    if (descriptionMode === "dropdown") {
+      setDescriptionMode("dropdown");
+    }
+  }, [category]);
 
   /* ---------------- DERIVED ---------------- */
 
   const selectedSplitterIds = Object.keys(splitters);
+  const subCategoryOptions = SUBCATEGORY_MAP[category] || [];
+
+  const description =
+    descriptionMode === "dropdown" ? subCategory : manualDescription;
 
   const equalPreview = useMemo(() => {
     if (!amount || !selectedSplitterIds.length) return "0.00";
@@ -124,8 +223,11 @@ export default function AddExpenseModal({ tripId, onClose }) {
       payload.location = { name: location };
     }
 
-    const res = await addExpense(tripId, payload);
+    if (descriptionMode === "dropdown" && subCategory) {
+      payload.subCategory = subCategory;
+    }
 
+    const res = await addExpense(tripId, payload);
     onClose();
   };
 
@@ -147,43 +249,97 @@ export default function AddExpenseModal({ tripId, onClose }) {
 
         {/* BODY */}
         <div className="flex-1 overflow-y-auto p-5 space-y-5">
-          {/* DESCRIPTION */}
-          <input
-            placeholder="What was this for?"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full p-3 rounded-xl border text-sm font-medium"
-          />
+          {/* CATEGORY - MOVED TO TOP */}
+          <div>
+            <p className="text-sm font-semibold mb-2">Category</p>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full p-3 rounded-xl border text-sm"
+            >
+              {CATEGORY_OPTIONS.map((cat) => (
+                <option key={cat.value} value={cat.value}>
+                  {cat.label}
+                </option>
+              ))}
+            </select>
+          </div>
 
           {/* AMOUNT */}
-          <input
-            type="number"
-            placeholder="₹ Amount"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="w-full p-3 rounded-xl border text-md font-semibold text-center"
-          />
+          <div>
+            <p className="text-sm font-semibold mb-2">Amount</p>
+            <input
+              type="number"
+              placeholder="₹ 0.00"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="w-full p-3 rounded-xl border text-md font-semibold text-center"
+            />
+          </div>
 
-          {/* CATEGORY */}
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="w-full p-3 rounded-xl border text-sm"
-          >
-            <option value="food">🍔 Food</option>
-            <option value="travel">🚕 Travel</option>
-            <option value="stay">🏨 Stay</option>
-            <option value="shopping">🛍 Shopping</option>
-            <option value="other">📦 Other</option>
-          </select>
+          {/* DESCRIPTION */}
+          <div>
+            <p className="text-sm font-semibold mb-2">What is this for?</p>
+
+            {/* Description Mode Toggle */}
+            <div className="flex gap-2 mb-3">
+              <button
+                onClick={() => setDescriptionMode("dropdown")}
+                className={`px-3 py-1.5 rounded-lg text-xs ${
+                  descriptionMode === "dropdown"
+                    ? "bg-primary text-white"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+                }`}
+              >
+                Choose from list
+              </button>
+              <button
+                onClick={() => setDescriptionMode("manual")}
+                className={`px-3 py-1.5 rounded-lg text-xs ${
+                  descriptionMode === "manual"
+                    ? "bg-primary text-white"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+                }`}
+              >
+                Type manually
+              </button>
+            </div>
+
+            {/* Description Input */}
+            {descriptionMode === "dropdown" ? (
+              <select
+                value={subCategory}
+                onChange={(e) => setSubCategory(e.target.value)}
+                className="w-full p-3 rounded-xl border text-sm"
+              >
+                <option value="">Select a specific type...</option>
+                {subCategoryOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                placeholder="Enter description..."
+                value={manualDescription}
+                onChange={(e) => setManualDescription(e.target.value)}
+                className="w-full p-3 rounded-xl border text-sm font-medium"
+              />
+            )}
+          </div>
 
           {/* LOCATION */}
-          <input
-            placeholder="Location (optional)"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="w-full p-3 rounded-xl border text-sm"
-          />
+          <div>
+            <p className="text-sm font-semibold mb-2">Location (optional)</p>
+            <input
+              placeholder="Where did this expense occur?"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="w-full p-3 rounded-xl border text-sm"
+            />
+          </div>
 
           {/* PAID BY */}
           <div>
@@ -232,10 +388,12 @@ export default function AddExpenseModal({ tripId, onClose }) {
                   key={m}
                   onClick={() => setSplitMode(m)}
                   className={`px-3 py-1 rounded-full text-xs ${
-                    splitMode === m ? "bg-primary text-white" : "bg-gray-200"
+                    splitMode === m
+                      ? "bg-primary text-white"
+                      : "bg-gray-200 dark:bg-gray-700"
                   }`}
                 >
-                  {m}
+                  {m === "equal" ? "Equal Split" : "Custom Split"}
                 </button>
               ))}
             </div>
@@ -253,12 +411,13 @@ export default function AddExpenseModal({ tripId, onClose }) {
                       type="checkbox"
                       checked={checked}
                       onChange={() => toggleSplitter(p._id)}
+                      className="rounded"
                     />
                     {p.username}
                   </label>
 
                   {checked && splitMode === "equal" && (
-                    <span className="text-xs text-gray-400">
+                    <span className="text-sm text-gray-600 dark:text-gray-300">
                       ₹{equalPreview}
                     </span>
                   )}
@@ -283,6 +442,20 @@ export default function AddExpenseModal({ tripId, onClose }) {
             <p className="text-xs mt-1">
               Split total: ₹{fromPaise(totalSplitPaise)}
             </p>
+            <p
+              className={`text-xs mt-1 ${
+                totalPaidPaise === totalSplitPaise
+                  ? "text-green-600"
+                  : "text-red-600"
+              }`}
+            >
+              Balance: ₹{fromPaise(Math.abs(totalPaidPaise - totalSplitPaise))}
+              {totalPaidPaise > totalSplitPaise
+                ? " overpaid"
+                : totalPaidPaise < totalSplitPaise
+                ? " underpaid"
+                : " ✓ balanced"}
+            </p>
           </div>
         </div>
 
@@ -290,7 +463,7 @@ export default function AddExpenseModal({ tripId, onClose }) {
         <div className="p-4 border-t flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 py-3 rounded-xl bg-gray-100 font-semibold"
+            className="flex-1 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 font-semibold text-gray-700 dark:text-gray-300"
           >
             Cancel
           </button>
@@ -298,7 +471,9 @@ export default function AddExpenseModal({ tripId, onClose }) {
             disabled={!canSubmit}
             onClick={submit}
             className={`flex-1 py-3 rounded-xl font-bold ${
-              canSubmit ? "bg-primary" : "bg-gray-300 cursor-not-allowed"
+              canSubmit
+                ? "bg-primary hover:bg-primary/90 text-white"
+                : "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
             }`}
           >
             Add Expense

@@ -21,7 +21,47 @@ const tripSchema = new Schema(
     isClosed: { type: Boolean, default: false },
     closedAt: Date,
 
-    participants: [{ type: Schema.Types.ObjectId, ref: "User" }],
+    participants: [
+      {
+        user: {
+          type: Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+
+        joinedAt: {
+          type: Date,
+          default: Date.now,
+        },
+
+        joinedVia: {
+          type: String,
+          enum: ["invite", "room", "link"],
+          default: "invite",
+        },
+
+        status: {
+          type: String,
+          enum: ["active", "left", "removed"],
+          default: "active",
+        },
+
+        leftAt: Date,
+        removedAt: Date,
+
+        removedBy: {
+          type: Schema.Types.ObjectId,
+          ref: "User",
+        },
+
+        canRejoin: {
+          type: Boolean,
+          default: true,
+        },
+
+        _id: false,
+      },
+    ],
 
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },

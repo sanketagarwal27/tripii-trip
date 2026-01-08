@@ -64,30 +64,6 @@ const canManageItinerary = async ({ tripId, userId }) => {
   return !!plannerRole;
 };
 
-// export const getTripItinerary = asyncHandler(async (req, res) => {
-//   const { tripId } = req.params;
-//   const userId = req.user._id;
-
-//   if (!mongoose.Types.ObjectId.isValid(tripId)) {
-//     throw new ApiError(400, "Invalid trip id");
-//   }
-
-//   const trip = await Trip.findById(tripId);
-//   if (!trip) throw new ApiError(404, "Trip not found");
-
-//   if (!trip.participants.includes(userId) && !trip.createdBy.equals(userId)) {
-//     throw new ApiError(403, "Not authorized to view itinerary");
-//   }
-
-//   const plans = await TripPlan.find({ trip: tripId })
-//     .sort({ date: 1, sequence: 1 })
-//     .populate("createdBy", "username profilePicture.url");
-
-//   return res
-//     .status(200)
-//     .json(new ApiResponse(200, { plans }, "Itinerary fetched successfully"));
-// });
-
 export const createTripPlan = asyncHandler(async (req, res) => {
   const { tripId } = req.params;
   const userId = req.user._id;

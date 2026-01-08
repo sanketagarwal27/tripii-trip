@@ -60,8 +60,7 @@ export default function Wallet() {
 
   const { wallet, expenses = [], settlements = [] } = walletState;
 
-  console.log("Wallet mounted, tripId:", tripId);
-  console.log("Wallet Redux:", walletState);
+  console.log("💰 Wallet data:", expenses);
 
   return (
     <div className="relative">

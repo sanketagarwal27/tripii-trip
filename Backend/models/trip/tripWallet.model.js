@@ -60,6 +60,4 @@ const tripWalletSchema = new Schema(
   { timestamps: true }
 );
 
-tripWalletSchema.index({ trip: 1 });
-
 export const TripWallet = mongoose.model("TripWallet", tripWalletSchema);

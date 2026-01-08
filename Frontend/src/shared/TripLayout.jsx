@@ -2,6 +2,7 @@
 import TripSidebarContainer from "@/components/trip/TripSidebarContainer";
 import { Outlet, useMatch } from "react-router-dom";
 import { useState, useEffect } from "react";
+import useGetMyTrips from "@/hooks/useGetMyTrips";
 
 const TripLayout = () => {
   const [mode, setMode] = useState(2); // default Trip sidebar
@@ -18,6 +19,8 @@ const TripLayout = () => {
       setMode(2);
     }
   }, [isTripOpen]);
+
+  useGetMyTrips();
 
   return (
     <div className="flex w-full h-screen overflow-hidden">
