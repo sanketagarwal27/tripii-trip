@@ -36,6 +36,10 @@ const searchedPlacesSchema = new Schema(
       type: Date,
       default: Date.now,
     },
+    searchCount: {
+      type: Number,
+      default: 1,
+    },
   },
   { timestamps: true }
 );

@@ -161,7 +161,8 @@ const UserManagement = () => {
           // Toggle local state based on result
           setSelectedUser((prev) => ({
             ...prev,
-            status: prev.status === "banned" ? "active" : "banned",
+            accountStatus:
+              prev.accountStatus === "banned" ? "active" : "banned",
           }));
           break;
 
@@ -368,7 +369,7 @@ const UserManagement = () => {
                     </p>
                   </div>
                   <div className="ml-auto">
-                    <Badge status={user.status} />
+                    <Badge status={user.accountStatus} />
                   </div>
                 </div>
               ))}
@@ -414,7 +415,7 @@ const UserManagement = () => {
                 <p className="text-gray-500 mb-4">@{selectedUser.username}</p>
 
                 <div className="flex gap-2 mb-6">
-                  <Badge status={selectedUser.status} />
+                  <Badge status={selectedUser.accountStatus} />
                   <Badge role={selectedUser.role} />
                 </div>
 
@@ -498,7 +499,7 @@ const UserManagement = () => {
                       Status
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {selectedUser.status !== "banned" ? (
+                      {selectedUser.accountStatus !== "banned" ? (
                         <ActionCard
                           icon={<Ban className="text-red-600" />}
                           title="Ban User"

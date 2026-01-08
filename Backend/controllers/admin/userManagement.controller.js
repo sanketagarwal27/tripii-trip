@@ -113,8 +113,21 @@ export const toggleUserBan = asyncHandler(async (req, res) => {
   }
 
   // Toggle ban
-  if (user.accountStatus !== "banned") user.accountStatus = "banned";
-  else user.accountStatus = "active";
+  if (user.accountStatus !== "banned") {
+    user.accountStatus = "banned";
+    await sendEmail({
+      email: user.email,
+      subject: "Account Suspension Notice",
+      message: `<p>Dear @${user.username},</p><p>Your account has been suspended due to violations of our community guidelines. If you believe this is a mistake, please contact our support team.</p>`,
+    });
+  } else {
+    user.accountStatus = "active";
+    await sendEmail({
+      email: user.email,
+      subject: "Account Reactivation Notice",
+      message: `<p>Dear @${user.username},</p><p>Your account has been reactivated. Please ensure to adhere to our community guidelines to avoid future suspensions. We are sorry for any inconvenience.</p>`,
+    });
+  }
 
   user.tokenVersion += 1;
 
@@ -160,7 +173,11 @@ export const permanentDeleteUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Cannot delete an admin user");
   }
 
-  await User.findByIdAndDelete(req.params.userId);
+  await sendEmail({
+    email: user.email,
+    subject: "Account Deletion Confirmation",
+    message: `<p>Dear @${user.username},</p><p>Your account has been permanently deleted from our system for several violations.</p>`,
+  });
   res
     .status(200)
     .json(

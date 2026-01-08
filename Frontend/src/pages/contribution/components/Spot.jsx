@@ -96,11 +96,11 @@ const Spot = () => {
                 onChange={handleChange}
                 className={styles.select}
               >
-                <option value="Historical">Historical / Monument</option>
-                <option value="Nature">Nature / Park</option>
-                <option value="Gallery">Museum / Gallery</option>
+                {/* <option value="Historical">Historical / Monument</option> */}
+                <option value="Nature">National Park</option>
+                {/* <option value="Gallery">Museum / Gallery</option> */}
                 <option value="Activity">Adventure / Activity</option>
-                <option value="Viewpoint">Viewpoint</option>
+                {/* <option value="Viewpoint">Viewpoint</option> */}
               </select>
             </div>
             <div className={styles.inputGroup}>

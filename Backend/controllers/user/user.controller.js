@@ -83,6 +83,10 @@ export const login = asyncHandler(async (req, res) => {
 
   if (!user) throw new ApiError(400, "User not found");
 
+  if (user.accountStatus === "banned") {
+    throw new ApiError(403, "Access denied. Your account has been suspended.");
+  }
+
   if (!user.emailVerified && process.env.DISABLE_OTP !== "true") {
     throw new ApiError(403, "Verify your email first");
   }

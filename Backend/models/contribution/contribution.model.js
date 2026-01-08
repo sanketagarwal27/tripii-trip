@@ -28,10 +28,9 @@ const placeSchema = new Schema(
     contactNumber: String, //POC contact
     contactPerson: String, //POC
 
-    // GeoJSON for Safety features later
     coordinates: {
-      type: { type: String, default: "Point" },
-      coordinates: [Number], // [long, lat]
+      latitude: { type: Number, default: 0 },
+      longitude: { type: Number, default: 0 },
     },
 
     dateOfVisit: { type: Date },

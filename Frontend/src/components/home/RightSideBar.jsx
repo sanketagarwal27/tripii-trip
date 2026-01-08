@@ -4,7 +4,8 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { getSuggestedUsers, followOrUnfollow } from "@/api/users";
 import { setSuggestedUser, setUserProfile } from "@/redux/authslice";
-import { getSuggestedPlaces } from "@/api/places"; // Your API import
+import { getSuggestedPlaces } from "@/api/places";
+import { LEVEL_STYLES } from "@/utils/levels.js";
 
 const RightSideBar = () => {
   const dispatch = useDispatch();
@@ -38,10 +39,9 @@ const RightSideBar = () => {
   const { userProfile, suggestedUser } = useSelector((s) => s.auth);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
-  if (!userProfile) return null;
-
   // --- FETCH USERS ---
   useEffect(() => {
+    if (!userProfile) return; // Guard clause inside hook logic if needed or before
     const loadUsers = async () => {
       try {
         setLoadingUsers(true);
@@ -61,7 +61,13 @@ const RightSideBar = () => {
     };
 
     loadUsers();
-  }, [dispatch]); // added dependency to keep sync
+  }, [dispatch, userProfile?.following]); // Added userProfile.following dependency for proper re-renders
+
+  if (!userProfile) return null; // Moved after hooks to prevent hook errors
+
+  // --- STYLE LOGIC ---
+  // Get current level style for border color
+  const currentLevelStyle = LEVEL_STYLES[userProfile.level] || LEVEL_STYLES[1];
 
   const toggleFollow = async (id) => {
     try {
@@ -85,6 +91,7 @@ const RightSideBar = () => {
   };
 
   const xp = userProfile.xpPoints || 0;
+  // const bonus = userProfile.bonusPoints || 0; // Unused
   const trust = userProfile.trustScore || 0;
   const contrib = userProfile.contributions?.length || 0;
   const trips = userProfile.trips?.length || 0;
@@ -92,7 +99,7 @@ const RightSideBar = () => {
 
   const nextXP = userProfile.nextLevelXP || 100;
   const currXP = userProfile.levelProgress || 0;
-  const progress = Math.min((currXP / nextXP) * 100, 100);
+  // const progress = Math.min((currXP / nextXP) * 100, 100); // Unused
 
   const filteredSuggested = suggestedUser?.filter(
     (u) => u._id !== userProfile._id
@@ -110,6 +117,13 @@ const RightSideBar = () => {
                 backgroundImage: `url(${
                   userProfile.profilePicture?.url || "/travel.jpg"
                 })`,
+                // --- NEW: Dynamic Border Color ---
+                border: `3px solid ${currentLevelStyle.color}`,
+                // Optional: Add glow for high levels
+                boxShadow:
+                  userProfile.level >= 7
+                    ? `0 0 10px ${currentLevelStyle.color}40`
+                    : "none",
               }}
             ></div>
           </Link>
@@ -138,20 +152,25 @@ const RightSideBar = () => {
           <div className="rs-level-box">
             <div className="rs-row">
               <span>Level</span>
-              <b>
-                Lv {userProfile.level} (Sub {userProfile.subLevel || 0})
+              <b style={{ color: currentLevelStyle.color }}>
+                {/* Ensure label exists safely */}
+                {LEVEL_STYLES[userProfile.level]?.label} Lv {userProfile.level}
               </b>
             </div>
 
             <div className="rs-progress">
               <div
                 className="rs-progress-fill"
-                style={{ width: `${progress}%` }}
+                style={{
+                  width: `${currXP}%`,
+                  // Make progress bar match level color
+                  backgroundColor: currentLevelStyle.color,
+                }}
               ></div>
             </div>
 
             <p className="rs-xp">
-              {currXP}/{nextXP} XP
+              {currXP}%, {nextXP} Xp more
             </p>
           </div>
 

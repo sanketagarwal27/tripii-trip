@@ -1,22 +1,31 @@
-import React, { useState } from "react";
+import React from "react";
 import styles from "./Sidebar.module.css";
 import { useDispatch, useSelector } from "react-redux";
 import { setUserProfile } from "@/redux/authslice";
 import { followOrUnfollow } from "@/api/users";
+import { LEVEL_STYLES } from "@/utils/levels.js";
 import toast from "react-hot-toast";
 
 const ProfileSidebar = ({ user, onEditClick }) => {
   const dispatch = useDispatch();
-
-  // 1. Get Logged-in User
   const { userProfile } = useSelector((state) => state.auth);
 
-  // 2. ROBUST 'isFollowing' CHECK
-  // This fixes the issue where the button resets on refresh.
-  // It checks if the ID exists, whether the list contains Strings OR Objects.
+  // --- LEVEL STYLING LOGIC ---
+  const currentLevelStyle = LEVEL_STYLES[user.level] || LEVEL_STYLES[1];
+
+  // Safe check for Next Level (Prevents crash if user is max level)
+  const nextLevelStyle = LEVEL_STYLES[user.level + 1];
+  const isMaxLevel = !nextLevelStyle;
+
+  // Determine specific text color (Prefer 'text' prop, fallback to 'color')
+  const textColor =
+    currentLevelStyle.text === "#FFFFFF"
+      ? currentLevelStyle.color
+      : currentLevelStyle.text || currentLevelStyle.color;
+
+  // Robust 'isFollowing' Check
   const isFollowingUser = () => {
     if (!userProfile?.following) return false;
-
     return userProfile.following.some((item) => {
       const itemId = typeof item === "object" ? item._id : item;
       return itemId === user._id;
@@ -25,12 +34,12 @@ const ProfileSidebar = ({ user, onEditClick }) => {
 
   const amIFollowing = isFollowingUser();
 
-  // --- SAFETY HELPER (Prevents Crash & Ensures Saving) ---
+  // Safety Helper
   const createSafeUserForRedux = (dirtyUser) => {
     if (!dirtyUser) return null;
     return {
       ...dirtyUser,
-      posts: [], // Remove circular reference
+      posts: [],
       followers: Array.isArray(dirtyUser.followers)
         ? dirtyUser.followers.map((f) => (typeof f === "object" ? f._id : f))
         : [],
@@ -44,32 +53,22 @@ const ProfileSidebar = ({ user, onEditClick }) => {
     if (!userProfile) return toast.error("Please login");
 
     try {
-      // --- 1. Optimistic UI Update ---
-      // We manually update the Redux state so the button changes INSTANTLY
       let optimisticFollowing;
-
       if (amIFollowing) {
-        // Unfollow: Filter out the ID (handle both objects and strings)
         optimisticFollowing = userProfile.following.filter((item) => {
           const itemId = typeof item === "object" ? item._id : item;
           return itemId !== user._id;
         });
       } else {
-        // Follow: Add the ID
         optimisticFollowing = [...(userProfile.following || []), user._id];
       }
 
       dispatch(
-        setUserProfile({
-          ...userProfile,
-          following: optimisticFollowing,
-        })
+        setUserProfile({ ...userProfile, following: optimisticFollowing })
       );
 
-      // --- 2. API Call ---
       const res = await followOrUnfollow(user._id);
 
-      // --- 3. Sync with Server (Safe Mode) ---
       if (res?.data?.data?.updatedUser) {
         const safeUser = createSafeUserForRedux(res.data.data.updatedUser);
         dispatch(setUserProfile(safeUser));
@@ -77,7 +76,6 @@ const ProfileSidebar = ({ user, onEditClick }) => {
     } catch (err) {
       console.error(err);
       toast.error("Action failed");
-      // Optional: Reload page or fetch profile again to revert on error
     }
   };
 
@@ -90,21 +88,56 @@ const ProfileSidebar = ({ user, onEditClick }) => {
 
   return (
     <aside className={styles.sidebar}>
+      {/* 1. Avatar with Dynamic Border Color */}
       <div className={styles.avatarContainer}>
         <img
           src={user.profilePicture?.url || "/default-avatar.png"}
           alt={user.username}
           className={styles.avatar}
+          style={{
+            // Use .color for structural elements (Border)
+            borderColor: currentLevelStyle.color,
+            boxShadow:
+              user.level >= 7
+                ? `0 0 15px ${currentLevelStyle.color}40`
+                : "none",
+          }}
         />
       </div>
 
       <h2 className={styles.name}>
         {user.fullName ? user.fullName : user.username}
       </h2>
+
       <h3 className={styles.username}>@{user.username}</h3>
+
+      {/* 2. Level Name Display */}
+      <div className={styles.levelBadge}>
+        {/* Icon is standard */}
+        <span style={{ marginRight: "6px", fontSize: "1.2em" }}>
+          {currentLevelStyle.icon}
+        </span>
+
+        {/* The Text Span gets the Gradient */}
+        <span
+          style={{
+            color: textColor, // Fallback
+            ...(currentLevelStyle.bgGradient && {
+              backgroundImage: currentLevelStyle.bgGradient,
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              color: "transparent",
+              display: "inline-block", // Important for gradients to render correctly
+            }),
+          }}
+        >
+          {currentLevelStyle.label}
+        </span>
+      </div>
+
       <p className={styles.title}>{user.bio}</p>
 
-      {/* BUTTON LOGIC */}
       {isOwnProfile ? (
         <button className={styles.editButton} onClick={onEditClick}>
           {EditButtonText}
@@ -139,7 +172,6 @@ const ProfileSidebar = ({ user, onEditClick }) => {
         </div>
       </div>
 
-      {/* Game Stats */}
       <div className={styles.gameStatsGrid}>
         <div className={styles.gameStat}>
           <h4>XP Points</h4>
@@ -155,36 +187,36 @@ const ProfileSidebar = ({ user, onEditClick }) => {
         </div>
         <div className={styles.gameStat}>
           <h4>Level</h4>
-          <p>{user.level}</p>
+          <p style={{ color: currentLevelStyle.color }}>{user.level}</p>
         </div>
       </div>
 
+      {/* 3. Level Info & Progress Bar */}
       <div className={styles.levelInfo}>
         <div className={styles.levelHeader}>
-          <span>Next Level:</span>
           <span>
-            {user.nextLevelXP
-              ? ((user.levelProgress * 100) / user.nextLevelXP).toFixed(2)
-              : 0}
-            %
+            {isMaxLevel
+              ? "Max Level Reached"
+              : `Next Level: ${nextLevelStyle?.label}`}
           </span>
+          {!isMaxLevel && <span>{user.levelProgress}%</span>}
         </div>
-        <span className={styles.levelSub}>{user.nextLevel}</span>
-        <div className={styles.progressBarBg}>
-          <div
-            className={styles.progressBarFill}
-            style={{
-              width: `${
-                user.nextLevelXP
-                  ? ((user.levelProgress * 100) / user.nextLevelXP).toFixed(2)
-                  : 0
-              }%`,
-            }}
-          ></div>
-        </div>
-        <p className={styles.xpText}>
-          {user.nextLevelXP - user.levelProgress} XP to next level
-        </p>
+
+        {!isMaxLevel && (
+          <>
+            <span className={styles.levelSub}>{user.nextLevel}</span>
+            <div className={styles.progressBarBg}>
+              <div
+                className={styles.progressBarFill}
+                style={{
+                  width: `${user.levelProgress}%`,
+                  backgroundColor: currentLevelStyle.color,
+                }}
+              ></div>
+            </div>
+            <p className={styles.xpText}>{user.nextLevelXP} XP to next level</p>
+          </>
+        )}
       </div>
     </aside>
   );

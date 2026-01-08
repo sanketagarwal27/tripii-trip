@@ -35,9 +35,12 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
       throw new ApiError(401, "User not found - Invalid access token");
     }
 
-    // --- NEW: CHECK BAN STATUS ---
-    if (user.isBanned) {
-      // 403 Forbidden is appropriate for valid credentials but unauthorized action
+    if (user.accountStatus === "banned") {
+      const options = {
+        httpOnly: true,
+        secure: true,
+      };
+      res.clearCookie("accessToken", options);
       throw new ApiError(
         403,
         "Access denied. Your account has been suspended."

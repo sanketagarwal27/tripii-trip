@@ -26,6 +26,7 @@ const presentInDb = async (placeName, field) => {
       return { isFound: false, data: null };
     }
 
+    cachedPlace.searchCount += 1;
     const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
 
     const isStale =
@@ -324,7 +325,7 @@ export const getScams = asyncHandler(async (req, res) => {
 export const getSuggestedPlaces = asyncHandler(async (req, res) => {
   try {
     const places = await Place.find()
-      .sort({ updatedAt: -1 })
+      .sort({ searchCount: -1 })
       .limit(15)
       .select("-newsData -lat -lon -weatherData")
       .lean();

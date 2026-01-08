@@ -39,6 +39,7 @@ import Accommodation from "./pages/contribution/components/Accommodation";
 import Dining from "./pages/contribution/components/Dining";
 import Spot from "./pages/contribution/components/Spot";
 import { ContributionProvider } from "./context/ContributionContext";
+import { Toaster } from "react-hot-toast";
 
 // Auth Logic
 function RequireAuth({ children }) {
@@ -142,6 +143,7 @@ createRoot(document.getElementById("root")).render(
         <SocketProvider>
           <ContributionProvider>
             <AppRouter />
+            <Toaster position="bottom-center" reverseOrder={false} />
           </ContributionProvider>
         </SocketProvider>
       </PersistGate>
