@@ -109,7 +109,15 @@ export const createTrip = asyncHandler(async (req, res) => {
           location,
           visibility,
           createdBy: userId,
-          participants: [userId],
+          participants: [
+            {
+              user: userId, // ✅ FIX: Proper subdocument structure
+              joinedVia: "invite",
+              status: "active",
+              canRejoin: true,
+              joinedAt: new Date(),
+            },
+          ],
         },
       ],
       { session }
@@ -330,11 +338,11 @@ export const getPublicTripPreview = asyncHandler(async (req, res) => {
     _id: tripId,
     visibility: "public",
   })
-    .populate("createdBy", "username")
+    .populate("createdBy", "username profilePicture")
     .lean();
 
   if (!trip) {
-    throw new ApiError(404, "Public trip not found");
+    throw new ApiError(404, "Public trip not found or is private");
   }
 
   /* ------------------ 2️⃣ FETCH SAFE SHARED DATA ------------------ */
@@ -360,13 +368,11 @@ export const getPublicTripPreview = asyncHandler(async (req, res) => {
           startDate: trip.startDate,
           endDate: trip.endDate,
           location: trip.location,
-          coverPhoto: trip.coverPhoto, // ✅ visible
+          coverPhoto: trip.coverPhoto,
           createdBy: trip.createdBy,
           visibility: trip.visibility,
           status: trip.status,
         },
-
-        // ✅ SAFE, READ-ONLY DATA
         tripPlans,
         tripPlaces,
       },

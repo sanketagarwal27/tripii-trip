@@ -12,6 +12,7 @@ import { emitToTrip } from "../../socket/server.js";
 import { EVENTS } from "../../socket/events.js";
 import { sendNotification } from "../user/notification.controller.js";
 import { TripWallet } from "../../models/trip/tripWallet.model.js";
+import mongoose from "mongoose";
 import { User } from "../../models/user/user.model.js";
 
 async function canUserAddExpense({ userId, trip, wallet }) {
@@ -29,15 +30,69 @@ async function canUserAddExpense({ userId, trip, wallet }) {
   });
 }
 
+// Helper function to extract user ID from participant subdocument
+// controllers/trip/tripWallet.controller.js
+
+const resolveParticipantUserId = (participant) => {
+  if (!participant) return null;
+
+  // NEW FORMAT with POPULATED user: { user: { _id, username }, status: "active" }
+  if (participant.user?._id) {
+    return participant.user._id.toString();
+  }
+
+  // NEW FORMAT: { user: ObjectId, status: "active", ... }
+  if (participant.user) {
+    return participant.user.toString();
+  }
+
+  // OLD FORMAT: Just the ObjectId directly
+  if (participant instanceof mongoose.Types.ObjectId) {
+    return participant.toString();
+  }
+
+  // OLD FORMAT: If it has _id directly (shouldn't happen, but safe)
+  if (participant._id && !participant.user) {
+    return participant._id.toString();
+  }
+
+  return null;
+};
+
+const isUserTripParticipant = ({ trip, userId }) => {
+  // Check if user is the creator
+  if (trip.createdBy.toString() === userId.toString()) {
+    return true;
+  }
+
+  // Check participants array
+  return trip.participants.some((p) => {
+    // NEW FORMAT: Check status
+    if (p.status && p.status !== "active") {
+      return false;
+    }
+
+    const pid = resolveParticipantUserId(p);
+    return pid && pid === userId.toString();
+  });
+};
+
 const syncWalletParticipantsWithTrip = async ({ trip, wallet }) => {
   const walletUserIds = wallet.participants.map((p) => p.user.toString());
-
   let changed = false;
 
-  for (const tripUserId of trip.participants) {
-    if (!walletUserIds.includes(tripUserId.toString())) {
+  for (const p of trip.participants) {
+    // NEW FORMAT: Skip non-active participants
+    if (p.status && p.status !== "active") {
+      continue;
+    }
+
+    const uid = resolveParticipantUserId(p);
+    if (!uid) continue;
+
+    if (!walletUserIds.includes(uid)) {
       wallet.participants.push({
-        user: tripUserId,
+        user: uid,
         personalBudget: 0,
         totalPaid: 0,
         totalOwes: 0,
@@ -56,12 +111,51 @@ export const getTripWallet = asyncHandler(async (req, res) => {
   const { tripId } = req.params;
   const userId = req.user._id;
 
-  // 1️⃣ Fetch trip (source of truth)
-  const trip = await Trip.findById(tripId);
-  if (!trip) throw new ApiError(404, "Trip not found");
+  console.log("\n" + "=".repeat(50));
+  console.log("🔍 WALLET ACCESS DEBUG");
+  console.log("=".repeat(50));
+  console.log("📍 Trip ID:", tripId);
+  console.log("👤 User ID:", userId.toString());
 
-  // 🔐 Membership guard
-  if (!trip.participants.some((p) => p.toString() === userId.toString())) {
+  // 1️⃣ Fetch trip WITH POPULATED PARTICIPANTS
+  const trip = await Trip.findById(tripId).populate(
+    "participants.user",
+    "_id username"
+  );
+
+  if (!trip) {
+    console.log("❌ Trip not found");
+    throw new ApiError(404, "Trip not found");
+  }
+
+  console.log("✅ Trip found:", trip.title);
+  console.log("👑 Creator ID:", trip.createdBy.toString());
+
+  // Check if user is participant
+  const isCreator = trip.createdBy.toString() === userId.toString();
+
+  const isParticipant = trip.participants.some((p) => {
+    // ✅ FIX: Handle populated user object
+    const participantUserId = p.user?._id?.toString() || p.user?.toString();
+    const isActive = p.status === "active";
+    const matches = participantUserId === userId.toString();
+
+    console.log(
+      `   Checking: ${participantUserId} === ${userId.toString()} ? ${matches} (status: ${
+        p.status
+      })`
+    );
+
+    return isActive && matches;
+  });
+
+  console.log("\n🔐 Access Check:");
+  console.log("   Is Creator:", isCreator);
+  console.log("   Is Participant:", isParticipant);
+  console.log("   Has Access:", isCreator || isParticipant);
+  console.log("=".repeat(50) + "\n");
+
+  if (!isCreator && !isParticipant) {
     throw new ApiError(403, "Not a trip participant");
   }
 
@@ -69,23 +163,38 @@ export const getTripWallet = asyncHandler(async (req, res) => {
   let wallet = await TripWallet.findOne({ trip: tripId });
 
   if (!wallet) {
+    console.log("🆕 Creating new wallet for trip");
+
+    // Create wallet with ALL active participants
+    const activeParticipants = trip.participants
+      .filter((p) => p.status === "active")
+      .map((p) => ({
+        user: p.user?._id || p.user, // Handle both populated and unpopulated
+        personalBudget: 0,
+        totalPaid: 0,
+        totalOwes: 0,
+        totalOwed: 0,
+      }));
+
     wallet = await TripWallet.create({
       trip: tripId,
       manager: trip.createdBy,
-      participants: [], // ⬅️ auto-filled below
+      participants: activeParticipants,
       budget: 0,
       totalSpend: 0,
       settings: { expensePermission: "all" },
     });
   }
 
-  // 3️⃣ 🔥 SELF-HEAL: enforce trip → wallet sync
+  // 3️⃣ Sync wallet participants with active trip participants
   await syncWalletParticipantsWithTrip({ trip, wallet });
 
-  // 4️⃣ Populate participant users
-  await wallet.populate("participants.user", "_id username profilePicture.url");
+  // 4️⃣ Reload wallet with populated users
+  wallet = await TripWallet.findById(wallet._id)
+    .populate("participants.user", "_id username profilePicture.url")
+    .lean();
 
-  // 5️⃣ Response (single source, finance-safe)
+  // 5️⃣ Response
   return res.status(200).json(
     new ApiResponse(
       200,
@@ -117,7 +226,7 @@ export const updateWalletSettings = asyncHandler(async (req, res) => {
   const userId = req.user._id;
   const { expensePermission, budget } = req.body;
 
-  const trip = await Trip.findById(tripId).lean();
+  const trip = await Trip.findById(tripId);
   if (!trip) throw new ApiError(404, "Trip not found");
 
   /* ---------- AUTHORIZATION ---------- */
@@ -176,10 +285,11 @@ export const addExpense = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
   /* ---------------- TRIP ---------------- */
-  const trip = await Trip.findById(tripId);
+  const trip = await Trip.findById(tripId); // Remove .lean()
   if (!trip) throw new ApiError(404, "Trip not found");
 
-  if (!trip.participants.some((p) => p.toString() === userId.toString())) {
+  // Use consistent participant check
+  if (!isUserTripParticipant({ trip, userId })) {
     throw new ApiError(403, "Not a trip participant");
   }
 
@@ -373,15 +483,14 @@ export const deleteExpense = asyncHandler(async (req, res) => {
 
 export const getWalletExpenses = asyncHandler(async (req, res) => {
   const { tripId } = req.params;
-  const { page = 1, limit = 10 } = req.query;
+  const { page = 1 } = req.query;
 
   const wallet = await TripWallet.findOne({ trip: tripId });
   if (!wallet) throw new ApiError(404, "Wallet not found");
 
-  const expenses = await Expense.find({ wallet: wallet._id })
-    .sort({ expenseDate: -1 })
-    .skip((page - 1) * limit)
-    .limit(Number(limit));
+  const expenses = await Expense.find({ wallet: wallet._id }).sort({
+    expenseDate: -1,
+  });
 
   res.json(new ApiResponse(200, expenses));
 });
@@ -631,7 +740,7 @@ export const assignAccountant = asyncHandler(async (req, res) => {
     throw new ApiError(400, "userIds array is required");
   }
 
-  const trip = await Trip.findById(tripId).select("participants createdBy");
+  const trip = await Trip.findById(tripId);
   if (!trip) throw new ApiError(404, "Trip not found");
 
   /* ---------- AUTHORIZATION ---------- */
@@ -651,11 +760,20 @@ export const assignAccountant = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Not authorized to assign accountant");
   }
 
-  /* ---------- FILTER ONLY TRIP PARTICIPANTS ---------- */
-  const participantSet = new Set(trip.participants.map((p) => p.toString()));
+  /* ---------- HANDLE BOTH OLD AND NEW FORMAT ---------- */
+  const participantIds = trip.participants
+    .map((p) => {
+      // NEW FORMAT: { user, status }
+      if (p.user) {
+        return p.status === "active" ? p.user.toString() : null;
+      }
+      // OLD FORMAT: plain ObjectId
+      return p.toString();
+    })
+    .filter(Boolean);
 
   const validUserIds = userIds.filter((uid) =>
-    participantSet.has(uid.toString())
+    participantIds.includes(uid.toString())
   );
 
   if (validUserIds.length === 0) {
@@ -802,7 +920,7 @@ export const setTripBudget = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid trip budget");
   }
 
-  const trip = await Trip.findById(tripId).lean();
+  const trip = await Trip.findById(tripId);
   if (!trip) throw new ApiError(404, "Trip not found");
 
   let allowed = trip.createdBy.toString() === userId.toString();

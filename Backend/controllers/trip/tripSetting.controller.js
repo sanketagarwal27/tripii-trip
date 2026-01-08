@@ -2,7 +2,6 @@ import cloudinary from "cloudinary";
 import { optimizeImageBuffer } from "../../utils/sharpImage.js";
 import getDataUri from "../../utils/datauri.js";
 import { TripRole } from "../../models/trip/tripRole.model.js";
-import { Notification } from "../../models/notification.model.js";
 import asyncHandler from "../../utils/asyncHandler.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
@@ -11,7 +10,6 @@ import { Trip } from "../../models/trip/trip.model.js";
 import { Community } from "../../models/community/community.model.js";
 import { CommunityMembership } from "../../models/community/communityMembership.model.js";
 import { Room } from "../../models/community/room.model.js";
-import { User } from "../../models/user.model.js";
 import { TripActivity } from "../../models/trip/tripActivity.model.js";
 import { Activity } from "../../models/community/activity.model.js";
 import {
@@ -19,6 +17,8 @@ import {
   emitToTrip,
   emitToUser,
 } from "../../socket/server.js";
+import { Notification } from "../../models/user/notification.model.js";
+import { User } from "../../models/user/user.model.js";
 
 const isTripAdmin = (trip, userId) =>
   trip.createdBy.toString() === userId.toString();

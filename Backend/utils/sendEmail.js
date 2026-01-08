@@ -22,7 +22,7 @@ const sendEmail = async (options) => {
   );
 
   const info = await transporter.sendMail({
-    from: `"TripiiTrip Support" <hecker1601@gmail.com>`,
+    from: `"TripiiTrip Support" <priyadarshihimanshu6@gmail.com>`,
     to: options.email,
     subject: options.subject,
     html: mailContent,

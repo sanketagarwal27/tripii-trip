@@ -4,12 +4,22 @@ import { useSelector } from "react-redux";
 
 /* ---------------- CATEGORY ICON MAP ---------------- */
 
+/* ---------------- CATEGORY ICON MAP ---------------- */
+
 const CATEGORY_ICON = {
-  food: "restaurant",
-  travel: "flight",
-  stay: "hotel",
-  shopping: "shopping_bag",
-  other: "payments",
+  transport: "directions_bus", // flights, cab, train, fuel
+  stay: "hotel", // hotel, hostel, homestay
+  food: "restaurant", // food & drinks
+  activities: "local_activity", // tickets, adventures
+  local_services: "support_agent", // guides, drivers, locals
+  shopping: "shopping_bag", // shopping & souvenirs
+  fees_and_taxes: "receipt_long", // platform fee, tax
+  health_and_safety: "medical_services", // medical, insurance
+  connectivity_and_utilities: "wifi", // sim, data, laundry
+  tips_and_donations: "volunteer_activism", // tips, donations
+  penalties_and_losses: "gavel", // fines, cancellations
+  wallet_and_transfers: "account_balance_wallet", // settlements
+  miscellaneous: "payments", // controlled fallback
 };
 
 /* ---------------- HELPERS ---------------- */
@@ -92,7 +102,8 @@ export default function WalletExpenseRow({ expense, participants = [] }) {
     return paid - owed;
   }, [expense, user._id]);
 
-  const icon = CATEGORY_ICON[expense.category] || CATEGORY_ICON.other;
+  const icon = CATEGORY_ICON[expense.category] || CATEGORY_ICON.miscellaneous;
+
   const settlements = useMemo(() => calculateSettlements(expense), [expense]);
 
   const splitAmongNames = expense.splitAmong

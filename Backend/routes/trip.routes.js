@@ -54,15 +54,16 @@ import {
 } from "../controllers/trip/tripFamousPlace.controller.js";
 
 // ================= TRIP SETTINGS =================
+
 import {
-  toggleTripVisibility,
   addTripMember,
-  removeTripMember,
-  leaveTrip,
   assignTripRole,
-  updateTripCover,
+  leaveTrip,
   publishTripToCommunity,
-} from "../controllers/trip/tripSettings.controller.js";
+  removeTripMember,
+  toggleTripVisibility,
+  updateTripCover,
+} from "../controllers/trip/tripSetting.controller.js";
 
 const router = express.Router();
 

@@ -60,6 +60,8 @@ export default function Wallet() {
 
   const { wallet, expenses = [], settlements = [] } = walletState;
 
+  console.log("💰 Wallet data:", expenses);
+
   return (
     <div className="relative">
       {/* Action buttons */}
