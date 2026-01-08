@@ -31,8 +31,6 @@ async function canUserAddExpense({ userId, trip, wallet }) {
 }
 
 // Helper function to extract user ID from participant subdocument
-// controllers/trip/tripWallet.controller.js
-
 const resolveParticipantUserId = (participant) => {
   if (!participant) return null;
 
@@ -135,7 +133,6 @@ export const getTripWallet = asyncHandler(async (req, res) => {
   const isCreator = trip.createdBy.toString() === userId.toString();
 
   const isParticipant = trip.participants.some((p) => {
-    // ✅ FIX: Handle populated user object
     const participantUserId = p.user?._id?.toString() || p.user?.toString();
     const isActive = p.status === "active";
     const matches = participantUserId === userId.toString();
@@ -165,11 +162,10 @@ export const getTripWallet = asyncHandler(async (req, res) => {
   if (!wallet) {
     console.log("🆕 Creating new wallet for trip");
 
-    // Create wallet with ALL active participants
     const activeParticipants = trip.participants
       .filter((p) => p.status === "active")
       .map((p) => ({
-        user: p.user?._id || p.user, // Handle both populated and unpopulated
+        user: p.user?._id || p.user,
         personalBudget: 0,
         totalPaid: 0,
         totalOwes: 0,
@@ -285,10 +281,9 @@ export const addExpense = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
   /* ---------------- TRIP ---------------- */
-  const trip = await Trip.findById(tripId); // Remove .lean()
+  const trip = await Trip.findById(tripId);
   if (!trip) throw new ApiError(404, "Trip not found");
 
-  // Use consistent participant check
   if (!isUserTripParticipant({ trip, userId })) {
     throw new ApiError(403, "Not a trip participant");
   }
@@ -342,7 +337,9 @@ export const addExpense = asyncHandler(async (req, res) => {
     addedBy: userId,
   });
 
-  /* ---------------- UPDATE WALLET PARTICIPANTS ---------------- */
+  /* ---------------- UPDATE WALLET PARTICIPANTS (CORRECTED) ---------------- */
+
+  // 1️⃣ Update totalPaid for payers
   expense.paidBy.forEach((p) => {
     const participant = wallet.participants.find(
       (x) => x.user.toString() === p.user.toString()
@@ -352,6 +349,7 @@ export const addExpense = asyncHandler(async (req, res) => {
     }
   });
 
+  // 2️⃣ Update totalOwes for splitters
   expense.splitAmong.forEach((s) => {
     const participant = wallet.participants.find(
       (x) => x.user.toString() === s.user.toString()
@@ -359,6 +357,28 @@ export const addExpense = asyncHandler(async (req, res) => {
     if (participant) {
       participant.totalOwes += s.amount;
     }
+  });
+
+  // 3️⃣ ✅ NEW: Update totalOwed for payers (money owed TO them)
+  expense.paidBy.forEach((payer) => {
+    const payerParticipant = wallet.participants.find(
+      (x) => x.user.toString() === payer.user.toString()
+    );
+    if (!payerParticipant) return;
+
+    // Calculate how much this payer is owed
+    expense.splitAmong.forEach((splitter) => {
+      // Skip if payer is also the splitter (they don't owe themselves)
+      if (payer.user.toString() === splitter.user.toString()) {
+        return;
+      }
+
+      // Proportional amount owed based on payer's contribution
+      const payerProportion = payer.amount / expense.amount;
+      const owedAmount = splitter.amount * payerProportion;
+
+      payerParticipant.totalOwed += owedAmount;
+    });
   });
 
   wallet.totalSpend += expense.amount;
@@ -408,10 +428,96 @@ export const updateExpense = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Not allowed to update expense");
   }
 
+  /* ---------------- REVERSE OLD EXPENSE EFFECTS ---------------- */
+
+  // 1️⃣ Reverse totalPaid
+  expense.paidBy.forEach((p) => {
+    const participant = wallet.participants.find(
+      (x) => x.user.toString() === p.user.toString()
+    );
+    if (participant) {
+      participant.totalPaid = Math.max(0, participant.totalPaid - p.amount);
+    }
+  });
+
+  // 2️⃣ Reverse totalOwes
+  expense.splitAmong.forEach((s) => {
+    const participant = wallet.participants.find(
+      (x) => x.user.toString() === s.user.toString()
+    );
+    if (participant) {
+      participant.totalOwes = Math.max(0, participant.totalOwes - s.amount);
+    }
+  });
+
+  // 3️⃣ Reverse totalOwed
+  expense.paidBy.forEach((payer) => {
+    const payerParticipant = wallet.participants.find(
+      (x) => x.user.toString() === payer.user.toString()
+    );
+    if (!payerParticipant) return;
+
+    expense.splitAmong.forEach((splitter) => {
+      if (payer.user.toString() === splitter.user.toString()) {
+        return;
+      }
+
+      const payerProportion = payer.amount / expense.amount;
+      const owedAmount = splitter.amount * payerProportion;
+
+      payerParticipant.totalOwed = Math.max(
+        0,
+        payerParticipant.totalOwed - owedAmount
+      );
+    });
+  });
+
   wallet.totalSpend = Math.max(0, wallet.totalSpend - expense.amount);
 
+  /* ---------------- APPLY NEW EXPENSE DATA ---------------- */
   Object.assign(expense, req.body);
   await expense.save();
+
+  /* ---------------- APPLY NEW EXPENSE EFFECTS ---------------- */
+
+  // 1️⃣ Add new totalPaid
+  expense.paidBy.forEach((p) => {
+    const participant = wallet.participants.find(
+      (x) => x.user.toString() === p.user.toString()
+    );
+    if (participant) {
+      participant.totalPaid += p.amount;
+    }
+  });
+
+  // 2️⃣ Add new totalOwes
+  expense.splitAmong.forEach((s) => {
+    const participant = wallet.participants.find(
+      (x) => x.user.toString() === s.user.toString()
+    );
+    if (participant) {
+      participant.totalOwes += s.amount;
+    }
+  });
+
+  // 3️⃣ Add new totalOwed
+  expense.paidBy.forEach((payer) => {
+    const payerParticipant = wallet.participants.find(
+      (x) => x.user.toString() === payer.user.toString()
+    );
+    if (!payerParticipant) return;
+
+    expense.splitAmong.forEach((splitter) => {
+      if (payer.user.toString() === splitter.user.toString()) {
+        return;
+      }
+
+      const payerProportion = payer.amount / expense.amount;
+      const owedAmount = splitter.amount * payerProportion;
+
+      payerParticipant.totalOwed += owedAmount;
+    });
+  });
 
   wallet.totalSpend += expense.amount;
   await wallet.save();
@@ -423,7 +529,7 @@ export const updateExpense = asyncHandler(async (req, res) => {
 
   await TripActivity.create({
     trip: trip._id,
-    type: "expense_updated", // or expense_deleted
+    type: "expense_updated",
     actor: userId,
     targetId: expense._id,
     targetModel: "Expense",
@@ -458,9 +564,53 @@ export const deleteExpense = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Not allowed");
   }
 
+  /* ---------------- REVERSE EXPENSE EFFECTS (CORRECTED) ---------------- */
+
+  // 1️⃣ Reverse totalPaid
+  expense.paidBy.forEach((p) => {
+    const participant = wallet.participants.find(
+      (x) => x.user.toString() === p.user.toString()
+    );
+    if (participant) {
+      participant.totalPaid = Math.max(0, participant.totalPaid - p.amount);
+    }
+  });
+
+  // 2️⃣ Reverse totalOwes
+  expense.splitAmong.forEach((s) => {
+    const participant = wallet.participants.find(
+      (x) => x.user.toString() === s.user.toString()
+    );
+    if (participant) {
+      participant.totalOwes = Math.max(0, participant.totalOwes - s.amount);
+    }
+  });
+
+  // 3️⃣ ✅ NEW: Reverse totalOwed
+  expense.paidBy.forEach((payer) => {
+    const payerParticipant = wallet.participants.find(
+      (x) => x.user.toString() === payer.user.toString()
+    );
+    if (!payerParticipant) return;
+
+    expense.splitAmong.forEach((splitter) => {
+      if (payer.user.toString() === splitter.user.toString()) {
+        return;
+      }
+
+      const payerProportion = payer.amount / expense.amount;
+      const owedAmount = splitter.amount * payerProportion;
+
+      payerParticipant.totalOwed = Math.max(
+        0,
+        payerParticipant.totalOwed - owedAmount
+      );
+    });
+  });
+
   wallet.totalSpend = Math.max(0, wallet.totalSpend - expense.amount);
 
-  wallet.expenses.pull(expense._id);
+  wallet.expenses?.pull(expense._id);
 
   await expense.deleteOne();
   await wallet.save();
@@ -472,7 +622,7 @@ export const deleteExpense = asyncHandler(async (req, res) => {
 
   await TripActivity.create({
     trip: trip._id,
-    type: "expense_deleted", // or expense_deleted
+    type: "expense_deleted",
     actor: userId,
     targetId: expense._id,
     targetModel: "Expense",
@@ -520,6 +670,7 @@ export const generateSettlements = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Wallet not found");
   }
 
+  // ✅ SETTLEMENT ALGORITHM (Already correct - produces minimum transactions)
   const balance = {};
 
   wallet.expenses.forEach((e) => {
@@ -763,11 +914,9 @@ export const assignAccountant = asyncHandler(async (req, res) => {
   /* ---------- HANDLE BOTH OLD AND NEW FORMAT ---------- */
   const participantIds = trip.participants
     .map((p) => {
-      // NEW FORMAT: { user, status }
       if (p.user) {
         return p.status === "active" ? p.user.toString() : null;
       }
-      // OLD FORMAT: plain ObjectId
       return p.toString();
     })
     .filter(Boolean);
@@ -834,6 +983,9 @@ export const assignAccountant = asyncHandler(async (req, res) => {
 
 export const removeAccountant = asyncHandler(async (req, res) => {
   const { tripId, userId } = req.params;
+
+  const trip = await Trip.findById(tripId);
+  if (!trip) throw new ApiError(404, "Trip not found");
 
   await TripRole.deleteOne({
     trip: tripId,

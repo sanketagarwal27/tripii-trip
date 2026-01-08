@@ -422,3 +422,34 @@ export const removeTripMember = asyncHandler(async (req, res) => {
 
   res.json(new ApiResponse(200, null, "Member removed"));
 });
+
+export const getTripCapabilities = asyncHandler(async (req, res) => {
+  const { tripId } = req.params;
+  const userId = req.user._id;
+
+  const trip = await Trip.findById(tripId);
+  if (!trip) throw new ApiError(404, "Trip not found");
+
+  const isAdmin = trip.createdBy.equals(userId);
+  const isManager = await isTripManager(tripId, userId);
+  const participant = getParticipant(trip, userId);
+
+  const isReadOnly = ["completed", "cancelled"].includes(trip.status);
+
+  res.json(
+    new ApiResponse(200, {
+      role: isAdmin ? "admin" : isManager ? "manager" : "member",
+      isParticipant: !!participant,
+      capabilities: {
+        canEditSettings: isAdmin && !isReadOnly,
+        canAddMembers: (isAdmin || isManager) && trip.status === "planning",
+        canRemoveMembers: (isAdmin || isManager) && trip.status === "planning",
+        canAssignRoles: (isAdmin || isManager) && trip.status === "planning",
+        canLeaveTrip: !isAdmin && trip.status === "planning",
+        canChangeCover: isAdmin && !isReadOnly,
+        canPublish: isAdmin && !isReadOnly,
+        canChangeVisibility: isAdmin && !isReadOnly,
+      },
+    })
+  );
+});

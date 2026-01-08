@@ -58,6 +58,7 @@ import {
 import {
   addTripMember,
   assignTripRole,
+  getTripCapabilities,
   leaveTrip,
   publishTripToCommunity,
   removeTripMember,
@@ -150,5 +151,7 @@ router.patch(
 );
 
 router.post("/trips/:tripId/publish/:communityId", publishTripToCommunity);
+
+router.get("/trips/:tripId/capabilities", getTripCapabilities);
 
 export default router;

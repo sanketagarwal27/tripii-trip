@@ -15,7 +15,7 @@ const TABS = [
   { key: "wallet", label: "Wallet" },
   { key: "members", label: "Members" },
   { key: "gallery", label: "Gallery" },
-  { key: "places", label: "Famous Places" },
+  { key: "places", label: "Destinations" },
   { key: "history", label: "History" },
   { key: "settings", label: "Settings" },
 ];

@@ -119,7 +119,7 @@ export default function TripPlaces({ tripId, publicPlaces }) {
     <div className="space-y-4">
       {/* HEADER */}
       <div className="flex justify-between items-center">
-        <h3 className="text-sm font-semibold">Famous Places</h3>
+        <h3 className="text-sm font-semibold">Destinations</h3>
 
         {canManage && (
           <button
