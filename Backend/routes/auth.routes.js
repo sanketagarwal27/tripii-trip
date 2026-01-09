@@ -17,6 +17,8 @@ import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
+router.options("/login", (req, res) => res.sendStatus(204));
+
 /* -------------------------------------------------------
    AUTH ROUTES — EXISTING (UNCHANGED)
 ---------------------------------------------------------*/

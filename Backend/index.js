@@ -19,31 +19,30 @@ import contributionRoute from "./routes/contribution.routes.js";
 import { initSocket } from "./socket/server.js";
 import adminRoutes from "./routes/admin.routes.js";
 
-dotenv.config({});
+dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
 
-initSocket(server);
+/* ✅ CORS MUST BE FIRST */
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "https://tripii-trip-black.vercel.app"],
+    credentials: true,
+  })
+);
 
-const PORT = process.env.PORT || 8000;
+/* ✅ THEN other middleware */
 app.use(express.json());
 app.use(cookieParser());
 app.use(urlencoded({ extended: true }));
 
-const corsOption = {
-  origin: [
-    "http://localhost:5173", // local dev
-    "https://tripii-trip-black.vercel.app/", // production
-  ],
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-};
+initSocket(server);
 
-app.use(cors(corsOption));
+const PORT = process.env.PORT || 8000;
+
 app.get("/", (req, res) => {
-  return res.status(200).json({
+  res.status(200).json({
     message: "I'm coming from backend",
     success: true,
   });
