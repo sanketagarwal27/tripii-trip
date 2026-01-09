@@ -21,6 +21,7 @@ const Navbar = () => {
   const isContribution = pathname.startsWith("/contribute");
   const isAdminPanel = pathname.startsWith("/admin");
   const isProfile = pathname.startsWith("/profile");
+  const isMarketplace = pathname.startsWith("/marketplace");
   const isHome =
     pathname === "/" ||
     (!isCommunity &&
@@ -29,7 +30,8 @@ const Navbar = () => {
       !isSunday &&
       !isContribution &&
       !isAdminPanel &&
-      !isProfile);
+      !isProfile &&
+      !isMarketplace);
 
   return (
     <div className="navbar">
@@ -76,6 +78,13 @@ const Navbar = () => {
         </button>
 
         <button
+          className={isMarketplace ? "nav-active" : ""}
+          onClick={() => navigate("/marketplace")}
+        >
+          MarketPlace
+        </button>
+
+        <button
           className={isContribution ? "nav-active" : ""}
           onClick={() => navigate("/contribute")}
         >
@@ -96,6 +105,7 @@ const Navbar = () => {
           onClick={() => {
             logoutRequest();
             disconnectSocket();
+            navigate("/auth");
           }}
         >
           Logout
