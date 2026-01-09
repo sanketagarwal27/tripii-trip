@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:8000/api/chatbot";
+const API_BASE = `${import.meta.env.VITE_BACKEND_URL}/api/chatbot`;
 
 export const fetchChatHistory = async () => {
   const res = await fetch(`${API_BASE}/history`, {

@@ -1,6 +1,6 @@
 // TripSidebarContainer.jsx
 import TripSidebar from "./TripSidebar";
-import LeftSidebar from "../home/LeftSideBar";
+import LeftSidebar from "../home/LeftSidebar";
 import clsx from "clsx";
 import { ArrowLeftRight } from "lucide-react";
 
