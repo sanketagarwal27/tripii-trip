@@ -1,6 +1,6 @@
 // shared/MiniCommunityLayout.jsx
 import { Outlet } from "react-router-dom";
-import LeftSidebar from "@/components/home/LeftSideBar";
+import LeftSidebar from "@/components/home/LeftSideBar.jsx";
 
 const MiniCommunityLayout = () => {
   return (

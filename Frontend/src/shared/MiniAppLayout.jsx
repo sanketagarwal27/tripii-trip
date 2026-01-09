@@ -1,4 +1,4 @@
-import LeftSidebar from "@/components/home/LeftSideBar";
+import LeftSidebar from "@/components/home/LeftSideBar.jsx";
 import RightSidebar from "@/components/home/RightSideBar";
 import useGetAllPost from "@/hooks/useGetAllPost";
 import { Outlet } from "react-router-dom";
