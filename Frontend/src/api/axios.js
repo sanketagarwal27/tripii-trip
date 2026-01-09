@@ -5,7 +5,7 @@ import { logoutUser } from "@/redux/authslice";
 import toast from "react-hot-toast";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE || "http://localhost:8000",
+  baseURL: import.meta.env.VITE_BACKEND_URL || "http://localhost:8000",
   withCredentials: true,
 });
 
