@@ -46,23 +46,32 @@ export const googleLogin = asyncHandler(async (req, res) => {
       "-password -refreshToken"
     );
 
+    // ✅ FIXED: Removed domain, added maxAge, consistent with login()
     res
       .cookie("accessToken", accessToken, {
         httpOnly: true,
         secure: true,
         sameSite: "none",
-        path: "/",
-        domain: "tripii-trip.onrender.com", // 🔥 REQUIRED
+        maxAge: 24 * 60 * 60 * 1000, // 1 day
       })
       .cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: true,
         sameSite: "none",
-        path: "/",
-        domain: "tripii-trip.onrender.com", // 🔥 REQUIRED
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       })
       .status(200)
-      .json(new ApiResponse(200, { user: profile }, "Login successful"));
+      .json(
+        new ApiResponse(
+          200,
+          {
+            user: profile,
+            accessToken, // ✅ Return in body
+            refreshToken, // ✅ Return in body
+          },
+          "Login successful"
+        )
+      );
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Google login failed" });

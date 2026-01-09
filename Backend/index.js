@@ -24,13 +24,19 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
-/* ✅ CORS MUST BE FIRST */
+/* ✅ CORS MUST BE FIRST - ENHANCED */
 app.use(
   cors({
     origin: ["http://localhost:5173", "https://tripii-trip-black.vercel.app"],
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    exposedHeaders: ["set-cookie"],
   })
 );
+
+// ✅ Handle preflight requests globally
+app.options("*", cors());
 
 /* ✅ THEN other middleware */
 app.use(express.json());
