@@ -1,4 +1,4 @@
-import LeftSidebar from "@/components/home/LeftSidebar.jsx";
+import LeftSidebar from "@/components/home/LeftSidebar";
 import { Outlet } from "react-router-dom";
 
 const MiniSundayLayout = () => {
