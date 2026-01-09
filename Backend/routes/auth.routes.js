@@ -1,6 +1,8 @@
 import express from "express";
-import { googleLogin } from "../controllers/user/auth.controller.js";
+import cors from "cors";
+import multer from "multer";
 
+import { googleLogin } from "../controllers/user/auth.controller.js";
 import {
   register,
   login,
@@ -17,10 +19,18 @@ import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-/* -------------------------------------------------------
-   AUTH ROUTES — EXISTING (UNCHANGED)
----------------------------------------------------------*/
-router.post("/google", googleLogin); // FIXED
+/* ================= ROUTER-LEVEL CORS ================= */
+
+router.use(
+  cors({
+    origin: true, // reflect request origin
+    credentials: true, // allow cookies
+  })
+);
+
+/* ================= AUTH ROUTES ================= */
+
+router.post("/google", googleLogin);
 
 router.post("/send-otp", (req, res) => res.send("Disabled in MVP"));
 router.post("/verify-otp", (req, res) => res.send("Disabled in MVP"));
@@ -29,24 +39,15 @@ router.post("/register", register);
 router.post("/login", login);
 router.post("/logout", verifyJWT, logout);
 
-/* -------------------------------------------------------
-   NEW USER SOCIAL ROUTES (ADDED)
----------------------------------------------------------*/
+/* ================= SOCIAL ROUTES ================= */
 
-// ✓ follow / unfollow
 router.post("/follow/:userId", verifyJWT, followOrUnfollow);
-
-// ✓ suggested users
 router.get("/suggested-users", verifyJWT, getSuggestedUser);
-
-// ✓ search users with pagination
 router.get("/search", verifyJWT, searchUsersWithPagination);
-
-// ✓ get profile (public + private logic)
 router.get("/profile/:_id", verifyJWT, getProfile);
 
-// ✓ edit profile (requires multer for profile image)
-import multer from "multer";
+/* ================= PROFILE ================= */
+
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.put(
