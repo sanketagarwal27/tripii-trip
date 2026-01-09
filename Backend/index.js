@@ -34,7 +34,7 @@ app.use(urlencoded({ extended: true }));
 const corsOption = {
   origin: [
     "http://localhost:5173", // local dev
-    "https://tripii-trip-black.vercel.app", // production
+    "https://tripii-trip-black.vercel.app/", // production
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -42,7 +42,6 @@ const corsOption = {
 };
 
 app.use(cors(corsOption));
-app.options("*", cors(corsOption));
 app.get("/", (req, res) => {
   return res.status(200).json({
     message: "I'm coming from backend",
