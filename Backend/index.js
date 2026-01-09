@@ -61,10 +61,6 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   })
 );
-
-// Explicitly handle preflight requests for all routes
-app.options("*", cors());
-
 /* ================= ROUTES ================= */
 
 app.get("/", (req, res) => {

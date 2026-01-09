@@ -11,15 +11,29 @@ const api = axios.create({
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      if (error.response.status === 403) {
-        toast.error("Access denied. Your account has been suspended.");
-      } else {
-        toast.error("Session expired. Please login again.");
-      }
-      store.dispatch(logoutUser());
+  async (error) => {
+    const status = error.response?.status;
+    const url = error.config?.url;
+
+    // 🔒 Ignore auth routes (login / google / refresh)
+    if (url?.includes("/api/auth")) {
+      return Promise.reject(error);
     }
+
+    // 🚫 Forbidden → real access issue
+    if (status === 403) {
+      toast.error("Access denied. Your account has been suspended.");
+      store.dispatch(logoutUser());
+      return Promise.reject(error);
+    }
+
+    // ⏳ Unauthorized → session expired
+    if (status === 401) {
+      toast.error("Session expired. Please login again.");
+      store.dispatch(logoutUser());
+      return Promise.reject(error);
+    }
+
     return Promise.reject(error);
   }
 );
