@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 import { Trip } from "../../models/trip/trip.model.js";
 import { TripWallet } from "../../models/trip/tripWallet.model.js";
-import { TripChecklist } from "../../models/trip/tripChecklist.model.js";
 import { TripActivity } from "../../models/trip/tripActivity.model.js";
 import { User } from "../../models/user/user.model.js";
 import { Notification } from "../../models/user/notification.model.js";
@@ -19,6 +18,7 @@ import { emitToUser } from "../../socket/server.js";
 import cloudinary from "../../utils/cloudinary.js";
 import getDataUri from "../../utils/datauri.js";
 import { optimizeImageBuffer } from "../../utils/sharpImage.js";
+import { TripChecklist } from "../../models/trip/tripChecklist.model.js";
 
 /* ============================================================
    🔥 HELPER: UPLOAD TRIP COVER IMAGE
