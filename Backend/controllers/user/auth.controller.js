@@ -52,12 +52,14 @@ export const googleLogin = asyncHandler(async (req, res) => {
         secure: true,
         sameSite: "none",
         path: "/",
+        domain: ".onrender.com", // 🔥 ADD THIS
       })
       .cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: true,
         sameSite: "none",
         path: "/",
+        domain: ".onrender.com", // 🔥 ADD THIS
       })
       .status(200)
       .json(
