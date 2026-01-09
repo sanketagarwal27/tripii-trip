@@ -1,6 +1,7 @@
 import api from "./axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE || "http://localhost:8000";
+const API_BASE_URL =
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
 
 export const createTrip = (formData) =>
   api.post("/api/trip/createTrip", formData, {
