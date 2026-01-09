@@ -34,7 +34,7 @@ app.use(urlencoded({ extended: true }));
 const corsOption = {
   origin: [
     "http://localhost:5173", // local dev
-    "https://tripii-trip-black.vercel.app", // production
+    "https://tripii-trip-black.vercel.app/", // production
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
