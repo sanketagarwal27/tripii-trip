@@ -53,42 +53,11 @@ export default function AuthPage() {
     document.body.appendChild(script);
   }, []);
 
-  /* -------------------------------------------------------
-      GOOGLE LOGIN HANDLER - 🔥 UPDATED WITH LOCALSTORAGE
-  ---------------------------------------------------------*/
-  async function handleGoogleResponse(response) {
-    try {
-      setLoading(true);
-
-      const res = await googleLoginRequest(response.credential);
-      console.log("Google Login success:", res);
-      const { user, accessToken, refreshToken } = res.data.data;
-
-      // 🔥 Store userId in localStorage for socket connection
-      localStorage.setItem("userId", user._id);
-      console.log("✅ Stored userId in localStorage:", user._id);
-
-      dispatch(
-        setAuthUser({
-          user,
-          accessToken,
-          refreshToken,
-        })
-      );
-
-      // redirect to homepage
-      navigate("/");
-    } catch (err) {
-      console.error("Google Login Error:", err.response?.data || err);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   const onChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
   /* ------------------------ SIGN IN - 🔥 UPDATED ------------------------ */
+  // ✅ UPDATED: handleSignIn function
   const handleSignIn = async (e) => {
     e.preventDefault();
     try {
@@ -102,21 +71,67 @@ export default function AuthPage() {
       const res = await loginRequest(payload);
       console.log("Login success:", res.data);
 
-      // 🔥 Store userId in localStorage for socket connection
       const { user, accessToken, refreshToken } = res.data.data;
+
+      // ✅ Store in localStorage
       localStorage.setItem("userId", user._id);
-      console.log("✅ Stored userId in localStorage:", user._id);
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
 
-      dispatch(setAuthUser(res.data.data));
+      console.log("✅ Stored tokens in localStorage");
 
-      // redirect
+      // ✅ Dispatch to Redux
+      dispatch(setAuthUser({ user, accessToken, refreshToken }));
+
+      // Redirect
       navigate("/");
     } catch (err) {
       console.error("Login error:", err.response?.data || err);
+      toast.error(err.response?.data?.message || "Login failed");
     } finally {
       setLoading(false);
     }
   };
+
+  // ✅ UPDATED: handleGoogleResponse function
+  async function handleGoogleResponse(response) {
+    try {
+      setLoading(true);
+
+      const res = await googleLoginRequest(response.credential);
+      console.log("Google Login success:", res);
+
+      const { user, accessToken, refreshToken } = res.data.data;
+
+      // ✅ Store in localStorage
+      localStorage.setItem("userId", user._id);
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
+
+      console.log("✅ Stored tokens in localStorage:", {
+        userId: user._id,
+        hasAccessToken: !!accessToken,
+        hasRefreshToken: !!refreshToken,
+      });
+
+      // ✅ Dispatch to Redux
+      dispatch(
+        setAuthUser({
+          user,
+          accessToken,
+          refreshToken,
+        })
+      );
+
+      // Redirect to homepage
+      navigate("/");
+    } catch (err) {
+      console.error("Google Login Error:", err.response?.data || err);
+      toast.error(err.response?.data?.message || "Google login failed");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   /* ------------------------ SIGN UP ------------------------ */
   const handleSignUp = async (e) => {

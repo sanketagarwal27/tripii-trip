@@ -19,6 +19,17 @@ const authSlice = createSlice({
       state.user = user || null;
       state.accessToken = accessToken || null;
       state.refreshToken = refreshToken || null;
+
+      // ✅ Sync to localStorage
+      if (accessToken) {
+        localStorage.setItem("accessToken", accessToken);
+      }
+      if (refreshToken) {
+        localStorage.setItem("refreshToken", refreshToken);
+      }
+      if (user?._id) {
+        localStorage.setItem("userId", user._id);
+      }
     },
 
     updateUserStats: (state, action) => {
@@ -49,7 +60,11 @@ const authSlice = createSlice({
       state.suggestedUser = [];
       state.userProfile = null;
       state.selectedUser = null;
+
+      // ✅ Clear all auth-related localStorage
       localStorage.removeItem("userId");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
     },
   },
 });
