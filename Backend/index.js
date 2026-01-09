@@ -32,11 +32,15 @@ app.use(cookieParser());
 app.use(urlencoded({ extended: true }));
 
 const corsOption = {
-  origin: true,
+  origin: [
+    "http://localhost:5173", // local dev
+    "https://your-frontend.vercel.app", // production
+  ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
 };
+
 app.use(cors(corsOption));
 app.get("/", (req, res) => {
   return res.status(200).json({
@@ -54,6 +58,10 @@ app.use("/api/places", placesRoute);
 app.use("/api/trip", tripRoute);
 app.use("/api/contribution", contributionRoute);
 app.use("/api/admin", adminRoutes);
+
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
 
 server.listen(PORT, () => {
   connectDB();
