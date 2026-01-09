@@ -49,13 +49,15 @@ export const googleLogin = asyncHandler(async (req, res) => {
     res
       .cookie("accessToken", accessToken, {
         httpOnly: true,
-        secure: false,
+        secure: true,
         sameSite: "none",
+        path: "/",
       })
       .cookie("refreshToken", refreshToken, {
         httpOnly: true,
-        secure: false,
+        secure: true,
         sameSite: "none",
+        path: "/",
       })
       .status(200)
       .json(
