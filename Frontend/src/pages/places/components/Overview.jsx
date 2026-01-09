@@ -1,4 +1,4 @@
-import styles from "./overview.module.css";
+import styles from "./Overview.module.css";
 
 const Overview = ({ data, setActiveTab }) => {
   if (!data) return <div>Loading...</div>;
