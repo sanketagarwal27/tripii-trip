@@ -1,5 +1,4 @@
 import express from "express";
-import cors from "cors";
 import multer from "multer";
 
 import { googleLogin } from "../controllers/user/auth.controller.js";
@@ -18,15 +17,6 @@ import {
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
-
-/* ================= ROUTER-LEVEL CORS ================= */
-
-router.use(
-  cors({
-    origin: true, // reflect request origin
-    credentials: true, // allow cookies
-  })
-);
 
 /* ================= AUTH ROUTES ================= */
 

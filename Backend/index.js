@@ -37,28 +37,14 @@ app.use(urlencoded({ extended: true }));
 
 /* ================= CORS ================= */
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://tripii-trip-black.vercel.app",
-];
-
-const corsOptions = {
-  origin(origin, callback) {
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin) || origin.endsWith(".vercel.app")) {
-      return callback(null, true);
-    }
-
-    return callback(new Error("Not allowed by CORS"));
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-};
-
-// ✅ THIS IS ENOUGH IN EXPRESS 5
-app.use(cors(corsOptions));
+app.use(
+  cors({
+    origin: true, // reflect request origin automatically
+    credentials: true, // allow cookies
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 /* ================= ROUTES ================= */
 
