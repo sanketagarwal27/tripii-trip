@@ -18,7 +18,7 @@ import { emitToUser } from "../../socket/server.js";
 import cloudinary from "../../utils/cloudinary.js";
 import getDataUri from "../../utils/datauri.js";
 import { optimizeImageBuffer } from "../../utils/sharpImage.js";
-import { TripChecklist } from "../../models/trip/tripChecklist.model.js";
+import { TripChecklist } from "../../models/trip/tripCheckList.model.js";
 
 /* ============================================================
    🔥 HELPER: UPLOAD TRIP COVER IMAGE
