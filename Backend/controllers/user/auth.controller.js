@@ -52,27 +52,17 @@ export const googleLogin = asyncHandler(async (req, res) => {
         secure: true,
         sameSite: "none",
         path: "/",
-        domain: ".onrender.com", // 🔥 ADD THIS
+        domain: "tripii-trip.onrender.com", // 🔥 REQUIRED
       })
       .cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: true,
         sameSite: "none",
         path: "/",
-        domain: ".onrender.com", // 🔥 ADD THIS
+        domain: "tripii-trip.onrender.com", // 🔥 REQUIRED
       })
       .status(200)
-      .json(
-        new ApiResponse(
-          200,
-          {
-            user: profile, // ✅ NOW DEFINED
-            accessToken,
-            refreshToken,
-          },
-          "Login successful"
-        )
-      );
+      .json(new ApiResponse(200, { user: profile }, "Login successful"));
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Google login failed" });
