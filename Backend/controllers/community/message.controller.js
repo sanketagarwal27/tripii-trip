@@ -18,7 +18,7 @@ import {
 } from "../../socket/server.js";
 import { rollbackPointsForModel } from "../../points/rollbackPoints.js";
 import { awardPoints } from "../../points/awardPoints.js";
-import { CommComment } from "../../models/community/CommCommunity.model.js";
+import { CommComment } from "../../models/community/commCommunity.model.js";
 import { Notification } from "../../models/user/notification.model.js";
 import { Activity } from "../../models/community/activity.model.js";
 import { User } from "../../models/user/user.model.js";
