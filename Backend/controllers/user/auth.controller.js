@@ -50,12 +50,12 @@ export const googleLogin = asyncHandler(async (req, res) => {
       .cookie("accessToken", accessToken, {
         httpOnly: true,
         secure: false,
-        sameSite: "lax",
+        sameSite: "none",
       })
       .cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: false,
-        sameSite: "lax",
+        sameSite: "none",
       })
       .status(200)
       .json(
