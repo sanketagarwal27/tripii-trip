@@ -17,8 +17,6 @@ import tripRoute from "./routes/trip.routes.js";
 import contributionRoute from "./routes/contribution.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 
-import { initSocket } from "./socket/server.js";
-
 dotenv.config();
 
 const app = express();
@@ -27,45 +25,32 @@ const server = http.createServer(app);
 // 🔥 REQUIRED for Render + cookies
 app.set("trust proxy", 1);
 
-initSocket(server);
+/* ✅ CORS MUST BE FIRST - ENHANCED */
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "https://tripii-trip-black.vercel.app"],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    exposedHeaders: ["set-cookie"],
+  })
+);
 
-const PORT = process.env.PORT || 8000;
+// ✅ Handle preflight requests globally
+app.options("*", cors());
 
+/* ✅ THEN other middleware */
 app.use(express.json());
 app.use(cookieParser());
 app.use(urlencoded({ extended: true }));
 
-/* ================= CORS ================= */
+initSocket(server);
 
-/* ================= CORS ================= */
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://tripii-trip-black.vercel.app", // Add your exact Vercel domain here
-  "https://tripii-trip.onrender.com",
-];
-
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) === -1) {
-        const msg =
-          "The CORS policy for this site does not allow access from the specified Origin.";
-        return callback(new Error(msg), false);
-      }
-      return callback(null, true);
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-  })
-);
-/* ================= ROUTES ================= */
+const PORT = process.env.PORT || 8000;
 
 app.get("/", (req, res) => {
   res.status(200).json({
-    message: "Backend is running",
+    message: "I'm coming from backend",
     success: true,
   });
 });

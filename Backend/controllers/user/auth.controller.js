@@ -46,25 +46,28 @@ export const googleLogin = asyncHandler(async (req, res) => {
       "-password -refreshToken"
     );
 
+    // ✅ FIXED: Removed domain, added maxAge, consistent with login()
     res
       .cookie("accessToken", accessToken, {
         httpOnly: true,
-        secure: false,
-        sameSite: "lax",
+        secure: true,
+        sameSite: "none",
+        maxAge: 24 * 60 * 60 * 1000, // 1 day
       })
       .cookie("refreshToken", refreshToken, {
         httpOnly: true,
-        secure: false,
-        sameSite: "lax",
+        secure: true,
+        sameSite: "none",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       })
       .status(200)
       .json(
         new ApiResponse(
           200,
           {
-            user: profile, // ✅ NOW DEFINED
-            accessToken,
-            refreshToken,
+            user: profile,
+            accessToken, // ✅ Return in body
+            refreshToken, // ✅ Return in body
           },
           "Login successful"
         )

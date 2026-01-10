@@ -106,23 +106,26 @@ export const login = asyncHandler(async (req, res) => {
       select: "username profilePicture.url",
     });
 
+  // ✅ FIXED: Production-ready cookie settings
   return res
     .cookie("accessToken", accessToken, {
       httpOnly: true,
-      secure: false, // true in production
-      sameSite: "lax",
+      secure: true, // ✅ Changed from false
+      sameSite: "none", // ✅ Changed from "lax"
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
     })
     .cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: false,
-      sameSite: "lax",
+      secure: true, // ✅ Changed from false
+      sameSite: "none", // ✅ Changed from "lax"
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     })
     .status(200)
     .json(
       new ApiResponse(200, {
         user: profile,
-        accessToken,
-        refreshToken,
+        accessToken, // ✅ Return in body for localStorage
+        refreshToken, // ✅ Return in body for localStorage
       })
     );
 });
@@ -139,10 +142,15 @@ export const logout = asyncHandler(async (req, res) => {
       new: true,
     }
   );
+
+  // ✅ Cookie options must match what was used to SET them
   const options = {
     httpOnly: true,
     secure: true,
+    sameSite: "none", // ✅ Must match cookie creation
+    path: "/", // ✅ Must match cookie creation
   };
+
   return res
     .status(200)
     .clearCookie("accessToken", options)
