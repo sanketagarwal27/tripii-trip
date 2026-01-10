@@ -142,10 +142,15 @@ export const logout = asyncHandler(async (req, res) => {
       new: true,
     }
   );
+
+  // ✅ Cookie options must match what was used to SET them
   const options = {
     httpOnly: true,
     secure: true,
+    sameSite: "none", // ✅ Must match cookie creation
+    path: "/", // ✅ Must match cookie creation
   };
+
   return res
     .status(200)
     .clearCookie("accessToken", options)
