@@ -1,13 +1,14 @@
-// index.js
-
+// index.js or app.js (main server file)
 import express, { urlencoded } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import http from "http";
 
+// Database
 import connectDB from "./utils/db.js";
 
+// Routes
 import authroutes from "./routes/auth.routes.js";
 import communityRoute from "./routes/community.routes.js";
 import postRoute from "./routes/post.routes.js";
@@ -15,15 +16,13 @@ import chatbotRoute from "./routes/chatbot.routes.js";
 import placesRoute from "./routes/places.routes.js";
 import tripRoute from "./routes/trip.routes.js";
 import contributionRoute from "./routes/contribution.routes.js";
+import { initSocket } from "./socket/server.js";
 import adminRoutes from "./routes/admin.routes.js";
 
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
-
-// 🔥 REQUIRED for Render + cookies
-app.set("trust proxy", 1);
 
 /* ✅ CORS MUST BE FIRST - ENHANCED */
 app.use(
@@ -55,10 +54,7 @@ app.get("/", (req, res) => {
   });
 });
 
-app.get("/api/health", (req, res) => {
-  res.status(200).json({ status: "ok" });
-});
-
+// API Routes
 app.use("/api/auth", authroutes);
 app.use("/api/community", communityRoute);
 app.use("/api/post", postRoute);
@@ -68,30 +64,21 @@ app.use("/api/trip", tripRoute);
 app.use("/api/contribution", contributionRoute);
 app.use("/api/admin", adminRoutes);
 
-/* ================= ERROR HANDLER ================= */
-
-app.use((err, req, res, next) => {
-  const origin = req.headers.origin;
-
-  if (
-    origin &&
-    (origin.endsWith(".vercel.app") || origin === "http://localhost:5173")
-  ) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-  }
-
-  console.error("ERROR:", err.message);
-
-  res.status(500).json({
-    success: false,
-    message: err.message || "Internal Server Error",
-  });
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
 });
-
-/* ================= SERVER ================= */
 
 server.listen(PORT, () => {
   connectDB();
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`Server listening at port ${PORT}`);
+});
+
+process.on("unhandledRejection", (err) => {
+  console.error("Unhandled Rejection:", err);
+  server.close(() => process.exit(1));
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
+  process.exit(1);
 });

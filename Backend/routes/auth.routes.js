@@ -1,7 +1,6 @@
 import express from "express";
-import multer from "multer";
-
 import { googleLogin } from "../controllers/user/auth.controller.js";
+
 import {
   register,
   login,
@@ -20,11 +19,10 @@ const router = express.Router();
 
 router.options("/login", (req, res) => res.sendStatus(204));
 
-router.options("/login", (req, res) => res.sendStatus(204));
-
-/* ================= AUTH ROUTES ================= */
-
-router.post("/google", googleLogin);
+/* -------------------------------------------------------
+   AUTH ROUTES — EXISTING (UNCHANGED)
+---------------------------------------------------------*/
+router.post("/google", googleLogin); // FIXED
 
 router.post("/send-otp", (req, res) => res.send("Disabled in MVP"));
 router.post("/verify-otp", (req, res) => res.send("Disabled in MVP"));
@@ -33,15 +31,24 @@ router.post("/register", register);
 router.post("/login", login);
 router.post("/logout", verifyJWT, logout);
 
-/* ================= SOCIAL ROUTES ================= */
+/* -------------------------------------------------------
+   NEW USER SOCIAL ROUTES (ADDED)
+---------------------------------------------------------*/
 
+// ✓ follow / unfollow
 router.post("/follow/:userId", verifyJWT, followOrUnfollow);
+
+// ✓ suggested users
 router.get("/suggested-users", verifyJWT, getSuggestedUser);
+
+// ✓ search users with pagination
 router.get("/search", verifyJWT, searchUsersWithPagination);
+
+// ✓ get profile (public + private logic)
 router.get("/profile/:_id", verifyJWT, getProfile);
 
-/* ================= PROFILE ================= */
-
+// ✓ edit profile (requires multer for profile image)
+import multer from "multer";
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.put(
