@@ -36,7 +36,7 @@ app.use(
 );
 
 // ✅ Handle preflight requests globally
-app.options("*", cors());
+app.options("/", cors());
 
 /* ✅ THEN other middleware */
 app.use(express.json());
