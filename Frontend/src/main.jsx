@@ -40,6 +40,7 @@ import Dining from "./pages/contribution/components/Dining";
 import Spot from "./pages/contribution/components/Spot";
 import { ContributionProvider } from "./context/ContributionContext";
 import { Toaster } from "react-hot-toast";
+import AuthWrapper from "./components/AuthWrapper"; // ✅ Import AuthWrapper
 
 // Auth Logic
 function RequireAuth({ children }) {
@@ -56,81 +57,84 @@ function AppRouter() {
   const user = useSelector((s) => s.auth.user);
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Authentication */}
-        <Route
-          path="/auth"
-          element={
-            <NoAuth>
-              <AuthPage />
-            </NoAuth>
-          }
-        />
-
-        {/* Protected Routes */}
-        <Route
-          element={
-            <RequireAuth>
-              <AppLayout />
-            </RequireAuth>
-          }
-        >
-          {/* Home + Post Layout */}
-          <Route element={<MiniAppLayout />}>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/post/:id" element={<CommentPage />} />
-          </Route>
-
-          {/* Community Hub Layout */}
-          <Route element={<MiniCommunityLayout />}>
-            <Route path="/communities" element={<CommunityHub />} />
-            <Route path="/community/:id" element={<Community />} />
-            <Route
-              path="/community/:communityId/message/:messageId/comments"
-              element={<CommComment />}
-            />
-            <Route
-              path="/community/:communityId/createRoom"
-              element={<CreateRoom />}
-            />
-            <Route
-              path="/community/:communityId/room/:roomId"
-              element={<Room />}
-            />
-          </Route>
-
-          {/* Sunday AI layout */}
-          <Route element={<MiniSundayLayout />}>
-            <Route path="/chatbot" element={<Chatbot />} />
-          </Route>
-
-          {/* Trip layout */}
-          <Route element={<TripLayout />}>
-            <Route path="/trips" element={<Trips />} />
-            <Route path="/trips/trip/:tripId" element={<Trip />} />
-          </Route>
-
-          <Route path="/places" element={<Places />} />
-          <Route path="/profile/:id" element={<ProfilePage />} />
-
-          {/* --- CONTRIBUTION ROUTES (FLAT) --- */}
-          <Route path="/contribute" element={<Contribution />} />
+      {/* ✅ Wrap routes with AuthWrapper to ensure auth is ready */}
+      <AuthWrapper>
+        <Routes>
+          {/* Authentication */}
           <Route
-            path="/contribute/add-accommodation"
-            element={<Accommodation />}
-          />
-          <Route path="/contribute/add-dining" element={<Dining />} />
-          <Route path="/contribute/add-spot" element={<Spot />} />
-
-          {/* Admin Panel */}
-          <Route
-            path="/admin"
+            path="/auth"
             element={
-              user?.role === "admin" ? <AdminPanel /> : <Navigate to={"/"} />
+              <NoAuth>
+                <AuthPage />
+              </NoAuth>
             }
           />
-        </Route>
-      </Routes>
+
+          {/* Protected Routes */}
+          <Route
+            element={
+              <RequireAuth>
+                <AppLayout />
+              </RequireAuth>
+            }
+          >
+            {/* Home + Post Layout */}
+            <Route element={<MiniAppLayout />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/post/:id" element={<CommentPage />} />
+            </Route>
+
+            {/* Community Hub Layout */}
+            <Route element={<MiniCommunityLayout />}>
+              <Route path="/communities" element={<CommunityHub />} />
+              <Route path="/community/:id" element={<Community />} />
+              <Route
+                path="/community/:communityId/message/:messageId/comments"
+                element={<CommComment />}
+              />
+              <Route
+                path="/community/:communityId/createRoom"
+                element={<CreateRoom />}
+              />
+              <Route
+                path="/community/:communityId/room/:roomId"
+                element={<Room />}
+              />
+            </Route>
+
+            {/* Sunday AI layout */}
+            <Route element={<MiniSundayLayout />}>
+              <Route path="/chatbot" element={<Chatbot />} />
+            </Route>
+
+            {/* Trip layout */}
+            <Route element={<TripLayout />}>
+              <Route path="/trips" element={<Trips />} />
+              <Route path="/trips/trip/:tripId" element={<Trip />} />
+            </Route>
+
+            <Route path="/places" element={<Places />} />
+            <Route path="/profile/:id" element={<ProfilePage />} />
+
+            {/* --- CONTRIBUTION ROUTES (FLAT) --- */}
+            <Route path="/contribute" element={<Contribution />} />
+            <Route
+              path="/contribute/add-accommodation"
+              element={<Accommodation />}
+            />
+            <Route path="/contribute/add-dining" element={<Dining />} />
+            <Route path="/contribute/add-spot" element={<Spot />} />
+
+            {/* Admin Panel */}
+            <Route
+              path="/admin"
+              element={
+                user?.role === "admin" ? <AdminPanel /> : <Navigate to={"/"} />
+              }
+            />
+          </Route>
+        </Routes>
+      </AuthWrapper>
     </BrowserRouter>
   );
 }

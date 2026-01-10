@@ -1,28 +1,35 @@
-const API_BASE = `${import.meta.env.VITE_BACKEND_URL}/api/chatbot`;
+// src/api/chatbot.js (or wherever this file is)
+import api from "./axios"; // ✅ Use the axios instance with interceptors
 
+// ✅ Fetch chat history
 export const fetchChatHistory = async () => {
-  const res = await fetch(`${API_BASE}/history`, {
-    credentials: "include",
-  });
-  return res.json();
+  try {
+    const response = await api.get("/api/chatbot/history");
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch chat history:", error);
+    throw error;
+  }
 };
 
+// ✅ Send prompt to AI
 export const sendPrompt = async (prompt) => {
-  const res = await fetch(`${API_BASE}/`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ prompt }),
-  });
-  return res.json();
+  try {
+    const response = await api.post("/api/chatbot/", { prompt });
+    return response.data;
+  } catch (error) {
+    console.error("Failed to send prompt:", error);
+    throw error;
+  }
 };
 
+// ✅ Update chat message
 export const updateChatMessage = async (messageId, text) => {
-  const res = await fetch(`${API_BASE}/${messageId}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ text }),
-  });
-  return res.json();
+  try {
+    const response = await api.patch(`/api/chatbot/${messageId}`, { text });
+    return response.data;
+  } catch (error) {
+    console.error("Failed to update chat message:", error);
+    throw error;
+  }
 };

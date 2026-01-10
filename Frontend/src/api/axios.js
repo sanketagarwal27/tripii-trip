@@ -21,19 +21,42 @@ api.interceptors.request.use(
       token = localStorage.getItem("accessToken");
     }
 
+    // ✅ DEBUG: Log token presence
+    console.log("🔑 Token check:", {
+      fromRedux: !!state.auth?.accessToken,
+      fromLocalStorage: !!localStorage.getItem("accessToken"),
+      hasToken: !!token,
+      url: config.url,
+    });
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log("✅ Added Authorization header");
+    } else {
+      console.warn("⚠️ No token found! Request will be unauthorized.");
     }
 
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    console.error("❌ Request interceptor error:", error);
+    return Promise.reject(error);
+  }
 );
 
 // ✅ RESPONSE INTERCEPTOR: Handle 401/403 errors
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log("✅ API Success:", response.config.url, response.status);
+    return response;
+  },
   (error) => {
+    console.error("❌ API Error:", {
+      url: error.config?.url,
+      status: error.response?.status,
+      message: error.response?.data?.message,
+    });
+
     if (error.response?.status === 401 || error.response?.status === 403) {
       // Clear localStorage tokens
       localStorage.removeItem("accessToken");

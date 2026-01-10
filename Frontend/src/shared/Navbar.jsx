@@ -1,13 +1,16 @@
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import profileimage from "../../public/travel.jpg";
 import { Bell, MessageSquare } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { logoutRequest } from "@/api/auth";
 import { disconnectSocket } from "../../Socket.js";
+import { logoutUser } from "@/redux/authslice"; // ✅ Import logout action
+import toast from "react-hot-toast";
 
 const Navbar = () => {
   const { user, userProfile } = useSelector((store) => store.auth);
   const navigate = useNavigate();
+  const dispatch = useDispatch(); // ✅ Add dispatch
   const { pathname } = useLocation();
 
   /* ---------- ACTIVE CHECKERS ---------- */
@@ -32,6 +35,33 @@ const Navbar = () => {
       !isAdminPanel &&
       !isProfile &&
       !isMarketplace);
+
+  /* ✅ FIXED LOGOUT HANDLER */
+  const handleLogout = async () => {
+    try {
+      // 1. Call backend logout API
+      await logoutRequest();
+
+      // 2. Disconnect socket
+      disconnectSocket();
+
+      // 3. Clear Redux state + localStorage
+      dispatch(logoutUser());
+
+      // 4. Show success message
+      toast.success("Logged out successfully");
+
+      // 5. Redirect to auth page
+      navigate("/auth");
+    } catch (error) {
+      console.error("Logout error:", error);
+
+      // Even if API fails, clear local state
+      disconnectSocket();
+      dispatch(logoutUser());
+      navigate("/auth");
+    }
+  };
 
   return (
     <div className="navbar">
@@ -91,25 +121,17 @@ const Navbar = () => {
           Contribute
         </button>
 
-        {user.role === "admin" && (
+        {user?.role === "admin" && (
           <button
             className={isAdminPanel ? "nav-active" : ""}
             onClick={() => navigate("/admin")}
           >
-            {" "}
-            Admin Panel{" "}
+            Admin Panel
           </button>
         )}
 
-        <button
-          onClick={() => {
-            logoutRequest();
-            disconnectSocket();
-            navigate("/auth");
-          }}
-        >
-          Logout
-        </button>
+        {/* ✅ FIXED LOGOUT BUTTON */}
+        <button onClick={handleLogout}>Logout</button>
       </div>
 
       {/* Right Side */}
@@ -121,7 +143,7 @@ const Navbar = () => {
           <MessageSquare size={22} />
         </button>
 
-        <Link to={`/profile/${userProfile._id}`} className="navbar-profile">
+        <Link to={`/profile/${userProfile?._id}`} className="navbar-profile">
           <img
             src={userProfile?.profilePicture?.url || profileimage}
             alt="profile"
