@@ -61,7 +61,7 @@ const RightSideBar = () => {
     };
 
     loadUsers();
-  }, [dispatch, userProfile?.following]); // Added userProfile.following dependency for proper re-renders
+  }, [dispatch]); // Added userProfile.following dependency for proper re-renders
 
   if (!userProfile) return null; // Moved after hooks to prevent hook errors
 
@@ -282,10 +282,15 @@ const RightSideBar = () => {
                 </div>
 
                 <button
+                  type="button"
                   className={`rs-follow ${
                     u._isFollowing ? "rs-following" : ""
                   }`}
-                  onClick={() => toggleFollow(u._id)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleFollow(u._id);
+                  }}
                 >
                   {u._isFollowing ? "Following" : "Follow"}
                 </button>

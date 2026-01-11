@@ -1,13 +1,22 @@
 // src/redux/chatbotSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { fetchChatHistory, sendPrompt } from "@/api/chatbot"; // ✅ Import from fixed API
+import { fetchChatHistory, sendPrompt, updateChatMessage } from "@/api/chatbot"; // ✅ Add updateChatMessage
 
 /* ---------------- EDIT AI MESSAGE ---------------- */
 export const chatbotEditMessage = createAsyncThunk(
   "chat/edit",
-  async ({ messageId, text }) => {
-    await updateChatMessage(messageId, text);
-    return { messageId, text };
+  async ({ messageId, text }, { rejectWithValue }) => {
+    try {
+      console.log("📝 Updating message:", messageId);
+      const data = await updateChatMessage(messageId, text);
+      console.log("✅ Message updated:", data);
+      return { messageId, text };
+    } catch (error) {
+      console.error("❌ Update error:", error);
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update message"
+      );
+    }
   }
 );
 
@@ -73,6 +82,7 @@ const chatbotSlice = createSlice({
     addUserMessage: (state, action) => {
       state.messages.push({
         _id: action.payload.messageId,
+        messageId: action.payload.messageId,
         sender: "user",
         text: action.payload.text,
         timestamp: new Date().toISOString(),
@@ -119,11 +129,12 @@ const chatbotSlice = createSlice({
         state.isLoading = false;
 
         // Add AI response to messages
-        if (action.payload?.message || action.payload?.text) {
+        if (action.payload?.messageId || action.payload?.text) {
           state.messages.push({
-            _id: Date.now(),
-            sender: "ai",
-            text: action.payload.message || action.payload.text,
+            _id: action.payload.messageId || Date.now(),
+            messageId: action.payload.messageId || Date.now(),
+            sender: "model", // ✅ FIX: Use "model" to match backend
+            text: action.payload.text,
             timestamp: new Date().toISOString(),
           });
         }
@@ -138,11 +149,46 @@ const chatbotSlice = createSlice({
         // Optionally add error message to chat
         state.messages.push({
           _id: Date.now(),
+          messageId: Date.now(),
           sender: "system",
           text: "Sorry, I couldn't process your message. Please try again.",
           timestamp: new Date().toISOString(),
           isError: true,
         });
+      });
+
+    // ✅ Edit Message
+    builder
+      .addCase(chatbotEditMessage.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(chatbotEditMessage.fulfilled, (state, action) => {
+        state.isLoading = false;
+
+        // 🔹 FIX: Update the message in the state
+        const index = state.messages.findIndex(
+          (msg) =>
+            msg.messageId === action.payload.messageId ||
+            msg._id === action.payload.messageId
+        );
+
+        if (index !== -1) {
+          state.messages[index].text = action.payload.text;
+          console.log("✅ Message updated in Redux state");
+        } else {
+          console.warn(
+            "⚠️ Message not found in state:",
+            action.payload.messageId
+          );
+        }
+
+        state.error = null;
+      })
+      .addCase(chatbotEditMessage.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+        console.warn("⚠️ Message edit failed:", action.payload);
       });
   },
 });

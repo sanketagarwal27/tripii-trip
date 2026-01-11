@@ -363,31 +363,98 @@ export const downloadTripPhoto = asyncHandler(async (req, res) => {
   const { photoId } = req.params;
   const userId = req.user._id;
 
-  const photo = await TripPhoto.findById(photoId);
-  if (!photo) throw new ApiError(404, "Photo not found");
+  console.log("📥 Download request for photo:", photoId, "by user:", userId);
 
-  const trip = await Trip.findById(photo.trip);
-  if (!trip) throw new ApiError(404, "Trip not found");
+  // ✅ Populate trip and uploadedBy in single query
+  const photo = await TripPhoto.findById(photoId)
+    .populate({
+      path: "trip",
+      select: "createdBy participants",
+    })
+    .populate("uploadedBy", "username");
 
-  const isParticipant =
-    trip.participants.includes(userId) || trip.createdBy.equals(userId);
+  if (!photo) {
+    console.log("❌ Photo not found:", photoId);
+    throw new ApiError(404, "Photo not found");
+  }
 
-  if (!isParticipant) {
+  if (!photo.trip) {
+    console.log("❌ Trip not found for photo:", photoId);
+    throw new ApiError(404, "Associated trip not found");
+  }
+
+  const trip = photo.trip;
+
+  console.log("🔍 Trip data:", {
+    tripId: trip._id,
+    createdBy: trip.createdBy,
+    participantsCount: trip.participants?.length,
+    participants: trip.participants,
+  });
+
+  // ✅ FIX: Handle both array structures
+  // Case 1: participants = [ObjectId, ObjectId, ...]
+  // Case 2: participants = [{ user: ObjectId, status: "active" }, ...]
+
+  const isCreator = trip.createdBy.toString() === userId.toString();
+
+  let isParticipant = false;
+  if (Array.isArray(trip.participants)) {
+    isParticipant = trip.participants.some((p) => {
+      // If p is an object with 'user' field (nested structure)
+      if (p && typeof p === "object" && p.user) {
+        return p.user.toString() === userId.toString();
+      }
+      // If p is just an ObjectId (flat structure)
+      return p.toString() === userId.toString();
+    });
+  }
+
+  const isUploader = photo.uploadedBy?._id?.toString() === userId.toString();
+
+  console.log("🔐 Authorization check:", {
+    userId: userId.toString(),
+    isCreator,
+    isParticipant,
+    isUploader,
+  });
+
+  if (!isCreator && !isParticipant) {
+    console.log("❌ User not authorized");
     throw new ApiError(403, "Not authorized to download photo");
   }
 
-  if (!photo.allowDownload) {
+  // ✅ Check if downloads are allowed
+  // Owner and uploader can always download
+  if (!photo.allowDownload && !isCreator && !isUploader) {
+    console.log("❌ Downloads disabled for this photo");
     throw new ApiError(403, "Downloads are disabled for this photo");
   }
 
-  // ✅ Optional: Track download count
-  // await TripPhoto.updateOne({ _id: photoId }, { $inc: { downloads: 1 } });
+  console.log("✅ Download authorized");
+
+  // ✅ Track download count (optional but useful for analytics)
+  await TripPhoto.updateOne(
+    { _id: photoId },
+    {
+      $inc: { downloadCount: 1 },
+      $push: {
+        downloadHistory: {
+          userId,
+          downloadedAt: new Date(),
+        },
+      },
+    }
+  );
 
   return res.status(200).json(
     new ApiResponse(
       200,
       {
         downloadUrl: photo.image.url,
+        filename: `${
+          photo.location?.name || "trip-photo"
+        }-${photoId}.jpg`.replace(/[^a-z0-9.-]/gi, "_"),
       },
       "Download authorized"
     )

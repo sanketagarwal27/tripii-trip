@@ -67,7 +67,7 @@ const Spot = () => {
         <button onClick={() => navigate(-1)} className={styles.backBtn}>
           <ArrowLeft size={24} />
         </button>
-        <h1>Add Tourist Spot</h1>
+        <h1>Add Adveture Activity</h1>
       </header>
 
       <form className={styles.formWrapper} onSubmit={handleSubmit}>

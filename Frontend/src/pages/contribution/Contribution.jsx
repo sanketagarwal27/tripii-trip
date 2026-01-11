@@ -241,7 +241,7 @@ const Contribution = () => {
                 <MapPin size={32} />
               </div>
               <div className={styles.cardContent}>
-                <h3>Tourist Spot</h3>
+                <h3>Avdenture Activity</h3>
                 <span className={styles.actionLink}>
                   Add Spot <PlusCircle size={16} />
                 </span>

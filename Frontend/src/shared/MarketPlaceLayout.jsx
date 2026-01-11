@@ -1,4 +1,3 @@
-// shared/MiniCommunityLayout.jsx
 import Filters from "@/components/marketPlace/Filters";
 import { Outlet } from "react-router-dom";
 

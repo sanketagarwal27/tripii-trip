@@ -1,19 +1,48 @@
-import mongoose from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
-const PropertySchema = new mongoose.Schema(
+const BusinessListingSchema = new Schema(
   {
     /* =========================
-       BASIC PROPERTY INFO (MANDATORY)
+       PLATFORM OWNERSHIP
     ========================== */
-    propertyName: {
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
+
+    /* =========================
+       WHAT IS BEING LISTED
+    ========================== */
+    listingFor: {
+      type: String,
+      required: true,
+      enum: [
+        "Hotel",
+        "Hostel",
+        "Resort",
+        "Homestay",
+        "Restaurant",
+        "Cafe",
+        "Travel Package Agency",
+        "Adventure Activity Provider",
+        "Local Guide",
+        "Transport Service",
+      ],
+    },
+
+    /* =========================
+       BUSINESS IDENTITY (MANDATORY)
+    ========================== */
+    businessName: {
       type: String,
       required: true,
       trim: true,
     },
 
-    propertyType: {
+    legalBusinessName: {
       type: String,
-      enum: ["hotel", "hostel", "restaurant", "cafe", "homestay"],
       required: true,
     },
 
@@ -34,7 +63,7 @@ const PropertySchema = new mongoose.Schema(
     },
 
     /* =========================
-       OWNER / REPRESENTATIVE (MANDATORY)
+       OWNER / AUTHORIZED PERSON
     ========================== */
     owner: {
       fullName: { type: String, required: true },
@@ -50,20 +79,22 @@ const PropertySchema = new mongoose.Schema(
         idType: {
           type: String,
           enum: ["aadhaar", "pan", "passport", "driving_license"],
+          required: true,
         },
-        idNumber: { type: String },
-        idDocumentUrl: { type: String },
-        selfieUrl: { type: String }, // advanced KYC
+        idNumber: { type: String, required: true },
+        idDocumentUrl: { type: String, required: true },
+        selfieUrl: { type: String }, // enhanced KYC
       },
     },
 
     /* =========================
-       LOCATION & ADDRESS (MANDATORY)
+       LOCATION & ADDRESS
     ========================== */
     address: {
       fullAddress: { type: String, required: true },
       city: { type: String, required: true },
       state: { type: String, required: true },
+      country: { type: String, default: "India" },
       pincode: { type: String, required: true },
       landmark: { type: String },
 
@@ -72,18 +103,19 @@ const PropertySchema = new mongoose.Schema(
         lng: { type: Number, required: true },
       },
 
-      addressProofUrl: { type: String }, // utility bill etc.
+      addressProofUrl: { type: String, required: true },
     },
 
     /* =========================
-       LEGAL DOCUMENTS (MINIMUM + ADVANCED)
+       LEGAL & TAX DOCUMENTS
     ========================== */
     legalDocuments: {
-      businessRegistrationUrl: { type: String },
+      businessRegistrationUrl: { type: String, required: true },
+
       tradeLicenseUrl: { type: String },
 
-      panCardNumber: { type: String },
-      panCardUrl: { type: String },
+      panCardNumber: { type: String, required: true },
+      panCardUrl: { type: String, required: true },
 
       gstNumber: { type: String },
       gstCertificateUrl: { type: String },
@@ -92,6 +124,7 @@ const PropertySchema = new mongoose.Schema(
       fssaiCertificateUrl: { type: String },
 
       fireSafetyCertificateUrl: { type: String }, // hotels/hostels
+      insurancePolicyUrl: { type: String }, // activities / transport
     },
 
     /* =========================
@@ -104,23 +137,30 @@ const PropertySchema = new mongoose.Schema(
     },
 
     /* =========================
-       BANKING & PAYOUT (MANDATORY BEFORE PAYMENTS)
+       BANKING & PAYOUTS
     ========================== */
     bankDetails: {
-      accountHolderName: { type: String },
-      accountNumber: { type: String },
-      ifscCode: { type: String },
-      cancelledChequeUrl: { type: String },
+      accountHolderName: { type: String, required: true },
+      accountNumber: { type: String, required: true },
+      ifscCode: { type: String, required: true },
+      cancelledChequeUrl: { type: String, required: true },
     },
 
     /* =========================
-       PROPERTY MEDIA (VERY IMPORTANT)
+       MEDIA (STRICT)
     ========================== */
     media: {
-      exteriorPhotos: [String],
+      coverImage: { type: String, required: true },
+
+      exteriorPhotos: {
+        type: [String],
+        validate: [(v) => v.length >= 2, "Min 2 exterior photos"],
+      },
+
       interiorPhotos: [String],
       roomsOrDiningPhotos: [String],
-      kitchenPhotos: [String], // restaurants
+      kitchenPhotos: [String],
+
       videoWalkthroughUrl: { type: String },
     },
 
@@ -131,9 +171,9 @@ const PropertySchema = new mongoose.Schema(
       openingTime: { type: String },
       closingTime: { type: String },
 
-      numberOfRooms: { type: Number }, // hotels
-      numberOfBeds: { type: Number }, // hostels
-      seatingCapacity: { type: Number }, // restaurants
+      numberOfRooms: { type: Number },
+      numberOfBeds: { type: Number },
+      seatingCapacity: { type: Number },
 
       priceRange: {
         min: { type: Number },
@@ -145,18 +185,34 @@ const PropertySchema = new mongoose.Schema(
     },
 
     /* =========================
-       ONLINE PRESENCE (OPTIONAL BUT STRONG)
+       SERVICE-SPECIFIC (AGENCY / ACTIVITIES)
+    ========================== */
+    serviceDetails: {
+      licenseNumber: { type: String }, // travel agency / guide
+      yearsOfExperience: { type: Number },
+      operatingRegions: [String],
+
+      emergencySupportAvailable: { type: Boolean },
+      insuranceProvided: { type: Boolean },
+
+      activityTypes: [String], // paragliding, scuba, etc
+      maxGroupSize: { type: Number },
+      safetyGuidelinesUrl: { type: String },
+    },
+
+    /* =========================
+       ONLINE PRESENCE
     ========================== */
     onlinePresence: {
       websiteUrl: { type: String },
-      googleBusinessUrl: { type: String },
+      googleBusinessUrl: { type: String, required: true },
       instagramUrl: { type: String },
       facebookUrl: { type: String },
       otherPlatformLinks: [String],
     },
 
     /* =========================
-       VERIFICATION & TRUST SYSTEM
+       VERIFICATION & TRUST
     ========================== */
     verification: {
       status: {
@@ -170,22 +226,34 @@ const PropertySchema = new mongoose.Schema(
 
       fraudRiskScore: {
         type: Number,
-        default: 0, // 0 = low risk, 100 = high risk
+        default: 0,
       },
 
       manuallyReviewedBy: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: Schema.Types.ObjectId,
         ref: "Admin",
       },
     },
 
     /* =========================
-       SYSTEM FLAGS
+       PLATFORM CONTROL
     ========================== */
     isActive: { type: Boolean, default: true },
-    isBookable: { type: Boolean, default: false }, // only true after verification
+    isLive: { type: Boolean, default: false },
+    isBookable: { type: Boolean, default: false },
+
+    priorityScore: { type: Number, default: 0 },
+
+    termsAccepted: {
+      type: Boolean,
+      required: true,
+      validate: (v) => v === true,
+    },
   },
   { timestamps: true }
 );
 
-export const Property = mongoose.model("Property", PropertySchema);
+export const BusinessListing = mongoose.model(
+  "BusinessListing",
+  BusinessListingSchema
+);

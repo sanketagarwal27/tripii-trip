@@ -49,29 +49,49 @@ function detectMode(prompt = "") {
    HELPER: Extract JSON from markdown-wrapped response
 ========================================================= */
 function extractJSON(text) {
+  if (!text || typeof text !== "string") {
+    console.error("Invalid text input for JSON extraction");
+    return null;
+  }
+
   // Remove markdown code blocks
-  const cleaned = text
+  let cleaned = text
     .replace(/```json\s*/gi, "")
     .replace(/```\s*/g, "")
     .trim();
 
+  // Try to parse the cleaned text directly
   try {
-    // Try to parse the cleaned text
-    return JSON.parse(cleaned);
+    const parsed = JSON.parse(cleaned);
+    // Validate it has the expected structure
+    if (parsed && typeof parsed === "object") {
+      return parsed;
+    }
   } catch (e) {
-    // If parsing fails, try to find JSON object in the text
-    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      try {
-        return JSON.parse(jsonMatch[0]);
-      } catch (e2) {
-        console.error("Failed to extract JSON:", e2);
-        return null;
+    // Continue to next attempt
+  }
+
+  // Try to find JSON object in the text
+  try {
+    // Look for the first { and last }
+    const firstBrace = cleaned.indexOf("{");
+    const lastBrace = cleaned.lastIndexOf("}");
+
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      const jsonStr = cleaned.substring(firstBrace, lastBrace + 1);
+      const parsed = JSON.parse(jsonStr);
+
+      // Validate it has the expected structure
+      if (parsed && typeof parsed === "object") {
+        return parsed;
       }
     }
-    console.error("No valid JSON found in response");
-    return null;
+  } catch (e) {
+    console.error("Failed to extract JSON from substring:", e);
   }
+
+  console.error("No valid JSON found in response");
+  return null;
 }
 
 /* =========================================================
@@ -82,9 +102,10 @@ You are Sunday, an AI travel planner inside the TripiiTrip app.
 Generate an itinerary that can be directly imported as trip plans.
 
 CRITICAL RULES:
-- Output STRICT JSON only.
-- No markdown, emojis, comments, or extra text.
-- Follow the schema exactly or return {""} as their value.
+- Output STRICT JSON only. NO other text before or after.
+- No markdown code blocks (no \`\`\`json), no explanations, no comments.
+- Start with { and end with }
+- Follow the schema exactly.
 
 TIME RULES:
 - Every activity MUST include time.
@@ -97,7 +118,7 @@ TIME RULES:
 - If timing depends on weather, explain briefly in "weatherReason".
 
 DATE RULES:
-- Use YYYY-MM-DD.
+- Use YYYY-MM-DD format.
 - Dates must be continuous.
 - Day 1 aligns with inferred start date.
 
@@ -107,30 +128,32 @@ CONTENT RULES:
 - Short, actionable descriptions.
 - No repetition.
 
-JSON SCHEMA:
+JSON SCHEMA (MUST FOLLOW EXACTLY):
 {
   "days": [
     {
       "day": 1,
       "date": "YYYY-MM-DD",
-      "summary": "",
+      "summary": "Brief day summary",
       "plans": [
         {
-          "title": "",
-          "description": "",
+          "title": "Activity title",
+          "description": "Activity description",
           "time": { "start": "HH:MM", "end": "HH:MM" },
-          "location": { "name": "", "address": "" },
-          "weatherReason": ""
+          "location": { "name": "Location name", "address": "Full address" },
+          "weatherReason": "Optional weather note"
         }
       ]
     }
   ],
   "budget": {
-    "transport": "LOW|MEDIUM|HIGH",
-    "accommodation": "LOW|MEDIUM|HIGH",
-    "local": "LOW|MEDIUM|HIGH"
+    "transport": "LOW",
+    "accommodation": "LOW",
+    "local": "LOW"
   }
 }
+
+REMEMBER: Your response must be ONLY valid JSON. No text before or after the JSON object.
 `;
 
 const CHAT_SYSTEM_PROMPT = `
@@ -182,6 +205,7 @@ export const getChatbotResponse = asyncHandler(async (req, res) => {
   if (!prompt) throw new ApiError(400, "Prompt is required");
 
   const mode = detectMode(prompt);
+  console.log("🎯 Detected mode:", mode);
 
   // Fetch last messages from AiChat model
   const historyDocs = await AiChat.find({ user: userId })
@@ -210,6 +234,11 @@ export const getChatbotResponse = asyncHandler(async (req, res) => {
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents,
+    generationConfig: {
+      temperature: 0.7,
+      topP: 0.9,
+      topK: 40,
+    },
   });
 
   let reply = "";
@@ -219,16 +248,33 @@ export const getChatbotResponse = asyncHandler(async (req, res) => {
     reply = candidate.content.parts.map((p) => p.text).join("\n");
   }
 
-  if (!reply) reply = mode === "PLAN" ? "{}" : "I couldn't clarify that.";
+  console.log("🤖 Raw AI reply:", reply.substring(0, 200) + "...");
+
+  if (!reply) {
+    reply =
+      mode === "PLAN"
+        ? JSON.stringify({
+            days: [],
+            budget: { transport: "LOW", accommodation: "LOW", local: "LOW" },
+          })
+        : "I couldn't clarify that.";
+  }
 
   // 🔹 CLEAN JSON FOR PLAN MODE
   let finalReply = reply;
   if (mode === "PLAN") {
     const extracted = extractJSON(reply);
-    if (extracted) {
+    if (extracted && extracted.days && Array.isArray(extracted.days)) {
       finalReply = JSON.stringify(extracted);
+      console.log("✅ Successfully extracted valid JSON plan");
     } else {
-      console.warn("Failed to extract valid JSON, storing raw response");
+      console.warn("⚠️ Failed to extract valid JSON, using fallback");
+      finalReply = JSON.stringify({
+        days: [],
+        budget: { transport: "LOW", accommodation: "LOW", local: "LOW" },
+        error:
+          "Failed to generate valid plan. Please try rephrasing your request.",
+      });
     }
   }
 
@@ -249,7 +295,8 @@ export const getChatbotResponse = asyncHandler(async (req, res) => {
     },
   ]);
 
-  console.log("Reply is:", finalReply);
+  console.log("💾 Saved to database. Reply length:", finalReply.length);
+
   return res.status(200).json(
     new ApiResponse(
       200,
@@ -279,6 +326,8 @@ export const updateAIMessage = asyncHandler(async (req, res) => {
     { text },
     { new: true }
   );
+
+  console.log("Updated AI message:", updated);
 
   if (!updated) throw new ApiError(404, "Message not found");
 
