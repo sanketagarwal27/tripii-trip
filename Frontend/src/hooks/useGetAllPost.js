@@ -1,52 +1,42 @@
-// src/hooks/useGetAllPost.js
 import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { setPosts } from "@/redux/postSlice";
 import { getFeed } from "@/api/post";
-import { getMe } from "@/api/users";
-import { setUserProfile } from "@/redux/authslice";
 
-const useGetAllPost = (shouldfetch) => {
+const useGetAllPost = ({ page = 1, limit = 20 } = {}) => {
   const dispatch = useDispatch();
-  const user = useSelector((s) => s.auth.user);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // If your feed doesn't strictly require a logged-in user, fetch regardless.
-    // If feed requires user, check for user !== null
     let cancelled = false;
 
     const fetchPosts = async () => {
       try {
         setLoading(true);
-        const res = await getFeed();
-        if (cancelled) return;
-        const postsData = res.data?.data?.posts || res.data?.posts || [];
-        dispatch(setPosts(postsData));
         setError(null);
 
-        const res2 = await getMe();
-        dispatch(setUserProfile(res2.data?.data));
+        const res = await getFeed({ page, limit });
+        if (cancelled) return;
+
+        const posts = res.data?.data?.posts ?? [];
+        dispatch(setPosts(posts));
       } catch (err) {
         if (cancelled) return;
         setError(
-          err.response?.data?.message || err.message || "Failed to load posts"
+          err.response?.data?.message || err.message || "Failed to load feed"
         );
-        console.error("Failed to load posts:", err.response || err);
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
 
-    // If feed needs a user, use: if (user === null) return;
-    // But don’t flip loading state prematurely when user is undefined/null.
     fetchPosts();
 
     return () => {
       cancelled = true;
     };
-  }, [dispatch /* remove user unless necessary */]);
+  }, [dispatch, page, limit]);
 
   return { loading, error };
 };

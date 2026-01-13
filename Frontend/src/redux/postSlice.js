@@ -6,22 +6,22 @@ const postSlice = createSlice({
   initialState: {
     posts: [],
     selectedPost: null,
+    lastFetchedAt: null,
   },
   reducers: {
     // Accepts an array but filters out invalid posts defensively
     setPosts: (state, action) => {
       state.posts = Array.isArray(action.payload) ? action.payload : [];
+      state.lastFetchedAt = Date.now();
     },
 
     addPost: (state, action) => {
-      const post = action.payload;
-      if (!post) return;
-      state.posts = [post, ...state.posts];
+      if (!action.payload) return;
+      state.posts.unshift(action.payload);
     },
 
     removePost: (state, action) => {
-      const id = action.payload;
-      state.posts = state.posts.filter((p) => p._id !== id);
+      state.posts = state.posts.filter((p) => p._id !== action.payload);
     },
 
     updatePost: (state, action) => {
@@ -33,10 +33,6 @@ const postSlice = createSlice({
 
     setSelectedPost: (state, action) => {
       state.selectedPost = action.payload;
-    },
-
-    cleanupInvalidPosts: (state) => {
-      state.posts = state.posts.filter((post) => post?.author?._id);
     },
   },
 });

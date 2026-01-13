@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   toggleLike,
@@ -21,22 +21,41 @@ import {
 
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { getContextualPostLikes } from "@/api/post";
+import PostLikesOverlay from "./PostLikesOverlay";
 
 const PostCard = ({ post }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { userProfile } = useSelector((s) => s.auth);
 
-  const [isLiked, setIsLiked] = useState(post.likes.includes(userProfile?._id));
-  const [likeCount, setLikeCount] = useState(post.likes.length);
+  const hasLiked = post.likes?.some(
+    (l) => l.user === userProfile?._id || l.user?._id === userProfile?._id
+  );
+
+  const [isLiked, setIsLiked] = useState(hasLiked);
+  const [likeCount, setLikeCount] = useState(post.likes?.length || 0);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const [inlineComment, setInlineComment] = useState("");
   const [isPostingComment, setIsPostingComment] = useState(false);
+  const [contextualLikes, setContextualLikes] = useState([]);
+  const [likesPreviewLoading, setLikesPreviewLoading] = useState(false);
+  const [showLikesOverlay, setShowLikesOverlay] = useState(false);
 
   /* ------------------------------------------
      LIKE HANDLER
   -------------------------------------------- */
+
+  useEffect(() => {
+    setIsLiked(
+      post.likes?.some(
+        (l) => l.user === userProfile?._id || l.user?._id === userProfile?._id
+      )
+    );
+    setLikeCount(post.likes?.length || 0);
+  }, [post.likes, userProfile?._id]);
+
   const handleLike = async () => {
     if (!userProfile) return toast.error("Login required");
 
@@ -79,7 +98,7 @@ const PostCard = ({ post }) => {
       dispatch(
         updatePost({
           ...post,
-          comments: [newComment, ...(post.comments || [])],
+          commentCount: (post.commentCount || 0) + 1,
         })
       );
 
@@ -108,6 +127,32 @@ const PostCard = ({ post }) => {
       toast.error("Delete failed");
     }
   };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchPreviewLikes = async () => {
+      if (!userProfile || post.likes.length === 0) return;
+
+      try {
+        setLikesPreviewLoading(true);
+        const res = await getContextualPostLikes(post._id, 5);
+        if (!cancelled) {
+          setContextualLikes(res.data?.data?.users || []);
+        }
+      } catch (err) {
+        console.error("Failed to load contextual likes");
+      } finally {
+        if (!cancelled) setLikesPreviewLoading(false);
+      }
+    };
+
+    fetchPreviewLikes();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [post._id, post.likes?.length, userProfile?._id]);
 
   return (
     <div className="postcard">
@@ -146,7 +191,15 @@ const PostCard = ({ post }) => {
       {/* MEDIA CAROUSEL + THUMBNAILS */}
       {post.media?.length > 0 && (
         <div className="postcard-media-wrapper">
-          <img src={post.media[currentIndex].url} className="postcard-media" />
+          <img
+            src={post.media[currentIndex].url}
+            className="
+    w-full
+    object-cover
+    rounded-xl
+    select-none
+  "
+          />
 
           {currentIndex > 0 && (
             <button
@@ -197,7 +250,7 @@ const PostCard = ({ post }) => {
           }}
         >
           <MessageSquare size={18} />
-          <span>{post.comments?.length || 0}</span>
+          <span>{post.commentCount || 0}</span>
         </button>
 
         <button className="postcard-action-btn">
@@ -209,12 +262,54 @@ const PostCard = ({ post }) => {
         </button>
       </div>
 
+      {contextualLikes.length > 0 && (
+        <div className="mt-1 flex items-center gap-2">
+          {/* Avatars */}
+          <div className="flex items-center">
+            <p style={{ color: "grey", fontSize: "12px", marginRight: "15px" }}>
+              Liked by :
+            </p>
+            {contextualLikes.slice(0, 5).map((u) => (
+              <img
+                key={u._id}
+                src={u.profilePicture?.url || "/travel.jpg"}
+                className="
+            w-6 h-6
+            rounded-full
+            object-cover
+            border-2 border-white
+            -ml-2
+            first:ml-0
+          "
+              />
+            ))}
+          </div>
+
+          {/* Show more */}
+          {(post.likes?.length || 0) > contextualLikes.length && (
+            <button
+              onClick={() => setShowLikesOverlay(true)}
+              className="text-xs text-zinc-500 hover:text-primary"
+            >
+              Show more
+            </button>
+          )}
+        </div>
+      )}
+
       {/* INLINE COMMENT BOX */}
-      <div className="postcard-inline-comment">
+      <div className="mt-1 flex items-center gap-2">
         <input
           type="text"
           placeholder="Add a comment..."
-          className="postcard-inline-input"
+          className="
+    flex-1
+    text-sm
+    px-3 py-2
+    rounded-full
+    bg-zinc-100 dark:bg-zinc-800
+    focus:outline-none
+  "
           value={inlineComment}
           onChange={(e) => setInlineComment(e.target.value)}
           disabled={isPostingComment}
@@ -236,6 +331,12 @@ const PostCard = ({ post }) => {
           </button>
         )}
       </div>
+      {showLikesOverlay && (
+        <PostLikesOverlay
+          postId={post._id}
+          onClose={() => setShowLikesOverlay(false)}
+        />
+      )}
     </div>
   );
 };

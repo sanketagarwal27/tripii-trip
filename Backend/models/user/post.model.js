@@ -63,7 +63,14 @@ const postSchema = new Schema(
       required: true,
     },
 
-    likes: [{ type: Schema.Types.ObjectId, ref: "User" }],
+    likes: [
+      {
+        user: { type: Schema.Types.ObjectId, ref: "User", index: true },
+        likedAt: { type: Date, default: Date.now },
+        _id: false,
+      },
+    ],
+
     comments: [{ type: Schema.Types.ObjectId, ref: "Comment" }],
 
     /* ============================================================
@@ -156,5 +163,8 @@ const postSchema = new Schema(
 postSchema.index({ type: 1 });
 postSchema.index({ tripId: 1 });
 postSchema.index({ author: 1 });
+postSchema.index({ "likes.user": 1 });
+postSchema.index({ "likes.likedAt": -1 });
+postSchema.index({ createdAt: -1 });
 
 export const Post = mongoose.model("Post", postSchema);

@@ -227,7 +227,9 @@ export const toggleLike = asyncHandler(async (req, res) => {
   const post = await Post.findById(postId).populate("author");
   if (!post) throw new ApiError(404, "Post not found");
 
-  const hasLiked = post.likes.some((id) => id.toString() === userId.toString());
+  const hasLiked = post.likes.some(
+    (l) => l.user.toString() === userId.toString()
+  );
 
   // -------------------------------
   // UNLIKE CASE
@@ -235,7 +237,7 @@ export const toggleLike = asyncHandler(async (req, res) => {
   if (hasLiked) {
     const updatedPost = await Post.findByIdAndUpdate(
       postId,
-      { $pull: { likes: userId } },
+      { $pull: { likes: { user: userId } } },
       { new: true }
     );
 
@@ -264,9 +266,14 @@ export const toggleLike = asyncHandler(async (req, res) => {
   // -------------------------------
   // LIKE CASE
   // -------------------------------
-  const updatedPost = await Post.findByIdAndUpdate(
-    postId,
-    { $addToSet: { likes: userId } },
+  const updatedPost = await Post.findOneAndUpdate(
+    {
+      _id: postId,
+      "likes.user": { $ne: userId },
+    },
+    {
+      $push: { likes: { user: userId, likedAt: new Date() } },
+    },
     { new: true }
   );
 
@@ -497,12 +504,14 @@ export const getFeedPosts = asyncHandler(async (req, res) => {
   const posts = await Post.find()
     .sort({ createdAt: -1 })
     .skip(skip)
-    .limit(parseInt(limit))
+    .limit(limit)
     .populate("author", "username profilePicture.url")
-    .populate({
-      path: "comments",
-      populate: { path: "author", select: "username profilePicture" },
-    });
+    .lean();
+
+  posts.forEach((p) => {
+    p.commentCount = p.comments?.length || 0;
+    delete p.comments;
+  });
 
   const total = await Post.countDocuments();
 
@@ -658,4 +667,83 @@ export const deleteComment = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200, {}, "Comment deleted successfully"));
+});
+
+export const getContextualPostLikes = asyncHandler(async (req, res) => {
+  const viewerId = req.user._id;
+  const { postId } = req.params;
+  const { page = 1, limit = 20 } = req.query;
+  const pageNum = Math.max(1, parseInt(page));
+  const limitNum = Math.min(50, parseInt(limit));
+
+  const skip = (pageNum - 1) * limitNum;
+
+  if (!mongoose.Types.ObjectId.isValid(postId)) {
+    throw new ApiError(400, "Invalid post ID");
+  }
+
+  const result = await Post.aggregate([
+    { $match: { _id: new mongoose.Types.ObjectId(postId) } },
+
+    // viewer relations
+    {
+      $lookup: {
+        from: "users",
+        let: { viewerId: new mongoose.Types.ObjectId(viewerId) },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$_id", "$$viewerId"] } } },
+          {
+            $project: {
+              relations: { $setUnion: ["$followers", "$following"] },
+            },
+          },
+        ],
+        as: "viewer",
+      },
+    },
+    { $unwind: "$viewer" },
+
+    // flatten likes
+    { $unwind: "$likes" },
+
+    // only contextual likes
+    {
+      $match: {
+        $expr: { $in: ["$likes.user", "$viewer.relations"] },
+      },
+    },
+
+    // sort by like time
+    { $sort: { "likes.likedAt": -1 } },
+
+    // paginate
+    { $skip: skip },
+    { $limit: parseInt(limit) },
+
+    // join user
+    {
+      $lookup: {
+        from: "users",
+        localField: "likes.user",
+        foreignField: "_id",
+        pipeline: [{ $project: { username: 1, "profilePicture.url": 1 } }],
+        as: "user",
+      },
+    },
+    { $unwind: "$user" },
+
+    // final shape
+    {
+      $project: {
+        _id: "$user._id",
+        username: "$user.username",
+        profilePicture: "$user.profilePicture",
+        likedAt: "$likes.likedAt",
+      },
+    },
+  ]);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { users: result }, "Contextual likes fetched"));
 });

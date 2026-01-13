@@ -7,12 +7,14 @@ import useGetMyCommunities from "@/hooks/useGetMyCommunities";
 import useGetRooms from "@/hooks/useGetRooms";
 import useGetMyTrips from "@/hooks/useGetMyTrips";
 import GlobalUploadBar from "@/components/GlobalUploadBar";
+import useBootstrapAuth from "@/hooks/useBootstrapAuth";
 
 const AppLayout = () => {
   const { loading, error } = useGetAllPost();
   useGetSuggestedCommunities();
   useGetMyCommunities();
   useGetRooms();
+  useBootstrapAuth();
 
   //trips
   useGetMyTrips();

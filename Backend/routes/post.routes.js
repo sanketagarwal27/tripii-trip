@@ -9,6 +9,7 @@ import {
   deleteComment,
   deletePost,
   getCommentsByPost,
+  getContextualPostLikes,
   getFeedPosts,
   getPostById,
   toggleBookmark,
@@ -44,5 +45,10 @@ router.get("/getPost/:postId", getPostById);
 router.post("/bookMark/:postId", toggleBookmark);
 router.post("/comment/like/:commentId", toggleCommentLike);
 router.delete("/comment/delete/:commentId", deleteComment);
+router.get(
+  "/:postId/likes/contextual-likes",
+  verifyJWT,
+  getContextualPostLikes
+);
 
 export default router;

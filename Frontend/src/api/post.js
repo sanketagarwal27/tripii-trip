@@ -45,3 +45,8 @@ export const deleteComment = (commentId) =>
   api.delete(`/api/post/comment/delete/${commentId}`, {
     withCredentials: true,
   });
+
+export const getContextualPostLikes = (postId, limit = 5) =>
+  api.get(`/api/post/${postId}/likes/contextual-likes?limit=${limit}`, {
+    withCredentials: true,
+  });
