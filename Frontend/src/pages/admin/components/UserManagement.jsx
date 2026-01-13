@@ -9,10 +9,15 @@ import {
   Ban,
   Trash2,
   CheckCircle,
-  XCircle,
   AlertTriangle,
   Loader2,
   KeyRound,
+  LayoutGrid,
+  UserCheck,
+  UserPlus,
+  BadgeCheck,
+  X,
+  ArrowLeft,
 } from "lucide-react";
 
 import {
@@ -22,6 +27,7 @@ import {
   permanentDeleteUser,
   toggleUserBan,
   sendWarning,
+  getUserStats,
 } from "@/api/admin.js";
 
 const UserManagement = () => {
@@ -29,12 +35,11 @@ const UserManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
-
+  const [userStats, setUserStats] = useState({});
   const [selectedUser, setSelectedUser] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // Action State
-  // Type can be: 'BAN', 'UNBAN', 'PROMOTE', 'DELETE', 'WARN', 'VERIFY'
   const [pendingAction, setPendingAction] = useState(null);
   const [loadingAction, setLoadingAction] = useState(false);
 
@@ -45,6 +50,15 @@ const UserManagement = () => {
   const [feedback, setFeedback] = useState({ type: "", message: "" });
 
   // --- Search Logic ---
+
+  useEffect(() => {
+    const getStats = async () => {
+      const stats = await getUserStats();
+      setUserStats(stats.data);
+    };
+    getStats();
+  }, []);
+
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
       if (searchQuery.trim().length > 1 && !selectedUser) {
@@ -82,20 +96,17 @@ const UserManagement = () => {
     if (!isoString) return "N/A";
     return new Date(isoString).toLocaleDateString(undefined, {
       year: "numeric",
-      month: "long",
+      month: "short",
       day: "numeric",
     });
   };
 
   // --- Action Triggers ---
-
-  // 1. Simple Actions (Ban/Unban/Verify)
   const triggerSimpleAction = (actionType, label, danger = false) => {
     setPendingAction({ type: actionType, label, danger });
     setShowConfirmModal(true);
   };
 
-  // 2. Warning Action (Opens Form)
   const triggerWarningAction = () => {
     setPendingAction({
       type: "WARN",
@@ -106,18 +117,13 @@ const UserManagement = () => {
     setShowConfirmModal(true);
   };
 
-  // 3. Secure Actions (Promote/Delete) -> Requires OTP
   const triggerSecureAction = async (actionType, label, danger = false) => {
     if (!selectedUser) return;
-
-    setLoadingAction(true); // Show loading while requesting OTP
+    setLoadingAction(true);
     try {
-      // Step 1: Request OTP from backend
       await sendOtp(selectedUser._id);
-
-      // Step 2: Open Modal for OTP Entry
       setPendingAction({ type: actionType, label, danger, requiresOtp: true });
-      setOtpInput(""); // Reset OTP field
+      setOtpInput("");
       setShowConfirmModal(true);
       setFeedback({ type: "success", message: "OTP sent to your email." });
     } catch (error) {
@@ -141,7 +147,6 @@ const UserManagement = () => {
       const userId = selectedUser._id;
 
       switch (pendingAction.type) {
-        // --- OTP Protected Actions ---
         case "PROMOTE":
           if (!otpInput) throw new Error("OTP is required");
           response = await promoteUserToAdmin(userId, otpInput);
@@ -150,15 +155,13 @@ const UserManagement = () => {
 
         case "DELETE":
           if (!otpInput) throw new Error("OTP is required");
-          response = await permanentDeleteUser(userId, otpInput); // Assuming API takes OTP
-          setSelectedUser(null); // Remove from view
+          response = await permanentDeleteUser(userId, otpInput);
+          setSelectedUser(null);
           break;
 
-        // --- Standard Actions ---
         case "BAN":
         case "UNBAN":
           response = await toggleUserBan(userId);
-          // Toggle local state based on result
           setSelectedUser((prev) => ({
             ...prev,
             accountStatus:
@@ -172,7 +175,6 @@ const UserManagement = () => {
           break;
 
         case "VERIFY":
-          // await verifyUser(userId);
           setSelectedUser((prev) => ({ ...prev, isVerified: true }));
           break;
 
@@ -200,9 +202,8 @@ const UserManagement = () => {
     }
   };
 
-  // --- Render Modal Content Dynamically ---
+  // --- Render Modal Content ---
   const renderModalContent = () => {
-    // 1. Warning Form
     if (pendingAction?.type === "WARN") {
       return (
         <div className="space-y-4">
@@ -216,7 +217,7 @@ const UserManagement = () => {
               onChange={(e) =>
                 setWarningForm({ ...warningForm, subject: e.target.value })
               }
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
             />
           </div>
           <div>
@@ -230,22 +231,20 @@ const UserManagement = () => {
                 setWarningForm({ ...warningForm, message: e.target.value })
               }
               placeholder="Enter warning details..."
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
             />
           </div>
         </div>
       );
     }
 
-    // 2. OTP Input Form (Promote/Delete)
     if (pendingAction?.requiresOtp) {
       return (
         <div className="space-y-4">
-          <div className="bg-blue-50 p-3 rounded-lg flex items-start gap-3">
-            <KeyRound className="text-blue-600 mt-1" size={18} />
-            <p className="text-sm text-blue-800">
-              An OTP has been sent to your registered admin email. Please enter
-              it below to confirm this high-security action.
+          <div className="bg-teal-50 p-3 rounded-lg flex items-start gap-3">
+            <KeyRound className="text-teal-600 mt-1" size={18} />
+            <p className="text-sm text-teal-800">
+              An OTP has been sent to your admin email. Please enter it below.
             </p>
           </div>
           <div>
@@ -260,14 +259,13 @@ const UserManagement = () => {
                 setOtpInput(e.target.value.replace(/[^0-9]/g, ""))
               }
               placeholder="123456"
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-center text-2xl tracking-widest font-mono"
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 outline-none text-center text-2xl tracking-widest font-mono"
             />
           </div>
         </div>
       );
     }
 
-    // 3. Standard Confirmation Message
     return (
       <p className="text-gray-600 mb-6">
         Are you sure you want to <strong>{pendingAction?.label}</strong> for
@@ -286,20 +284,17 @@ const UserManagement = () => {
   };
 
   return (
-    <div className="p-6 w-full max-w-7xl mx-auto min-h-screen">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-        <User className="text-blue-600" />
-        User Management
-      </h1>
+    <div className="p-6 relative min-h-screen bg-slate-50/50">
+      {/* Decorative Background Blob */}
+      <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-teal-50 to-transparent -z-10" />
 
       {/* --- Feedback Alert --- */}
       {feedback.message && (
         <div
-          className={`mb-6 p-4 rounded-lg flex items-center gap-2 text-sm font-medium animate-in fade-in slide-in-from-top-2
-          ${
+          className={`fixed top-6 right-6 z-50 p-4 rounded-xl shadow-lg flex items-center gap-3 text-sm font-medium animate-in slide-in-from-right border ${
             feedback.type === "success"
-              ? "bg-green-50 text-green-700 border border-green-100"
-              : "bg-red-50 text-red-700 border border-red-100"
+              ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+              : "bg-red-50 text-red-700 border-red-100"
           }`}
         >
           {feedback.type === "success" ? (
@@ -310,72 +305,143 @@ const UserManagement = () => {
           {feedback.message}
           <button
             onClick={() => setFeedback({})}
-            className="ml-auto hover:underline opacity-70"
+            className="ml-auto hover:opacity-70"
           >
-            Dismiss
+            <X size={16} />
           </button>
         </div>
       )}
 
-      {/* --- Search Area --- */}
+      {/* --- Header --- */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+          <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-cyan-600 flex items-center gap-2">
+            <LayoutGrid className="text-teal-600" /> User Management
+          </h2>
+          <p className="text-gray-500 mt-1">
+            Manage accounts, security roles, and user discipline.
+          </p>
+        </div>
+        {/* Placeholder Stats (Optional visual consistency) */}
+        {!selectedUser && (
+          <div className="flex gap-4 hidden lg:flex">
+            <StatMini
+              icon={User}
+              label="Total Users"
+              value={userStats.totalUsers}
+            />
+            <StatMini
+              icon={UserPlus}
+              label="New Today"
+              value={`+${userStats.newUsersToday}`}
+            />
+            <StatMini
+              icon={ShieldAlert}
+              label="Banned"
+              value={userStats.bannedUsers}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* --- Search Area (Visible only when no user selected) --- */}
       {!selectedUser && (
-        <div className="w-full max-w-2xl mx-auto">
-          <div className="relative">
-            <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-              size={20}
-            />
-            <input
-              type="text"
-              placeholder="Search by username, email or full name..."
-              className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-200 shadow-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all text-lg"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {isSearching && (
-              <Loader2
-                className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-blue-500"
+        <>
+          <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm mb-6 flex flex-col md:flex-row gap-4 justify-between items-center ring-1 ring-gray-100">
+            <div className="relative w-full max-w-2xl group">
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-teal-500 transition-colors"
                 size={20}
               />
-            )}
+              <input
+                type="text"
+                placeholder="Search by username, email or full name..."
+                className="w-full pl-10 pr-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-teal-100 focus:bg-white transition-all outline-none text-gray-700 placeholder-gray-400 font-medium"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {isSearching && (
+                <Loader2
+                  className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-teal-500"
+                  size={20}
+                />
+              )}
+            </div>
           </div>
 
-          {/* Search Results */}
-          {searchResults.length > 0 && (
-            <div className="mt-4 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden divide-y divide-gray-50 animate-in fade-in slide-in-from-top-4">
-              {searchResults.map((user) => (
-                <div
-                  key={user._id}
-                  onClick={() => handleSelectUser(user)}
-                  className="p-4 hover:bg-blue-50 cursor-pointer transition-colors flex items-center gap-4 group"
-                >
-                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold overflow-hidden">
-                    {user.avatar ? (
-                      <img
-                        src={user.avatar.url}
-                        alt="avatar"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      user.username[0].toUpperCase()
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-800 group-hover:text-blue-700">
-                      {user.fullName || "Unknown Name"}
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      @{user.username} • {user.email}
-                    </p>
-                  </div>
-                  <div className="ml-auto">
-                    <Badge status={user.accountStatus} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+          {/* Search Results Table */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-xl shadow-gray-100/50 overflow-hidden min-h-[400px]">
+            {searchResults.length > 0 ? (
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-teal-50/50 border-b border-teal-100">
+                  <tr>
+                    <th className="p-5 text-xs font-bold text-teal-900 uppercase tracking-wider">
+                      User Profile
+                    </th>
+                    <th className="p-5 text-xs font-bold text-teal-900 uppercase tracking-wider">
+                      Role
+                    </th>
+                    <th className="p-5 text-xs font-bold text-teal-900 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="p-5 text-xs font-bold text-teal-900 uppercase tracking-wider text-right">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {searchResults.map((user) => (
+                    <tr
+                      key={user._id}
+                      onClick={() => handleSelectUser(user)}
+                      className="hover:bg-teal-50/30 transition-colors duration-200 cursor-pointer group"
+                    >
+                      <td className="p-5">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-50 to-cyan-50 text-teal-600 flex items-center justify-center font-bold text-lg shadow-sm overflow-hidden">
+                            {user.avatar ? (
+                              <img
+                                src={user.avatar.url}
+                                alt="avatar"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              user.username[0].toUpperCase()
+                            )}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-gray-800 group-hover:text-teal-700 transition-colors">
+                              {user.fullName || "Unknown Name"}
+                            </h3>
+                            <p className="text-sm text-gray-500">
+                              @{user.username} • {user.email}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-5">
+                        <Badge role={user.role} />
+                      </td>
+                      <td className="p-5">
+                        <Badge status={user.accountStatus} />
+                      </td>
+                      <td className="p-5 text-right">
+                        <span className="text-teal-600 font-medium text-sm hover:underline">
+                          Manage
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-96 text-gray-400">
+                <Search size={48} className="mb-4 opacity-20" />
+                <p>Start searching to find users...</p>
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {/* --- Selected User Dashboard --- */}
@@ -383,16 +449,18 @@ const UserManagement = () => {
         <div className="animate-in zoom-in-95 duration-300">
           <button
             onClick={clearSelection}
-            className="mb-4 text-sm text-gray-500 hover:text-blue-600 flex items-center gap-1 transition-colors"
+            className="mb-6 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-teal-600 flex items-center gap-2 transition-all shadow-sm"
           >
-            ← Back to Search
+            <ArrowLeft size={16} /> Back to Search
           </button>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Col: Profile Card */}
             <div className="lg:col-span-1 space-y-6">
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center">
-                <div className="w-32 h-32 bg-gray-100 rounded-full mb-4 flex items-center justify-center overflow-hidden border-4 border-white shadow-md relative">
+              <div className="bg-white p-8 rounded-2xl shadow-xl shadow-gray-100/50 border border-gray-100 flex flex-col items-center text-center relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-br from-teal-50 to-cyan-50 -z-0" />
+
+                <div className="w-32 h-32 bg-white rounded-full mb-4 flex items-center justify-center overflow-hidden border-4 border-white shadow-lg relative z-10">
                   {selectedUser.avatar ? (
                     <img
                       src={selectedUser.avatar.url}
@@ -409,30 +477,32 @@ const UserManagement = () => {
                   )}
                 </div>
 
-                <h2 className="text-2xl font-bold text-gray-900">
+                <h2 className="text-2xl font-bold text-gray-900 z-10">
                   {selectedUser.fullName || selectedUser.username}
                 </h2>
-                <p className="text-gray-500 mb-4">@{selectedUser.username}</p>
+                <p className="text-gray-500 mb-6 z-10">
+                  @{selectedUser.username}
+                </p>
 
-                <div className="flex gap-2 mb-6">
+                <div className="flex gap-2 mb-8 z-10">
                   <Badge status={selectedUser.accountStatus} />
                   <Badge role={selectedUser.role} />
                 </div>
 
-                <div className="w-full border-t border-gray-100 pt-4 space-y-3 text-left">
+                <div className="w-full border-t border-gray-100 pt-6 space-y-4 text-left z-10">
                   <InfoRow
-                    icon={<Mail size={16} />}
+                    icon={<Mail size={18} />}
                     label="Email"
                     value={selectedUser.email}
                   />
                   <InfoRow
-                    icon={<Calendar size={16} />}
+                    icon={<Calendar size={18} />}
                     label="Joined"
                     value={formatDate(selectedUser.createdAt)}
                   />
                   <InfoRow
-                    icon={<Shield size={16} />}
-                    label="ID"
+                    icon={<Shield size={18} />}
+                    label="User ID"
                     value={selectedUser._id}
                     isMono
                   />
@@ -442,10 +512,10 @@ const UserManagement = () => {
 
             {/* Right Col: Management Actions */}
             <div className="lg:col-span-2 space-y-6">
-              {/* 🔒 SECURITY CHECK: If user is Admin, BLOCK EVERYTHING */}
+              {/* 🔒 SECURITY CHECK */}
               {selectedUser.role === "admin" ? (
-                <div className="h-full min-h-[400px] bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center text-center p-8 animate-in fade-in zoom-in-95 duration-300">
-                  <div className="w-20 h-20 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mb-6 shadow-sm">
+                <div className="h-full min-h-[400px] bg-white border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center text-center p-8">
+                  <div className="w-20 h-20 bg-teal-50 text-teal-600 rounded-full flex items-center justify-center mb-6 shadow-sm">
                     <Shield size={40} />
                   </div>
                   <h3 className="text-2xl font-bold text-gray-800 mb-2">
@@ -453,21 +523,19 @@ const UserManagement = () => {
                   </h3>
                   <p className="text-gray-500 max-w-sm mx-auto leading-relaxed">
                     You are viewing an Administrator account. <br />
-                    To prevent accidental lockouts or privilege escalation,
+                    To prevent accidental lockouts,{" "}
                     <span className="font-semibold text-gray-700">
-                      {" "}
-                      no actions can be performed on this user
+                      no actions can be performed
                     </span>{" "}
                     from this panel.
                   </p>
                 </div>
               ) : (
-                /* 🔓 NORMAL USER: Show All Controls */
                 <>
                   {/* Access Control */}
-                  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                     <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                      <ShieldCheckIcon /> Access Control
+                      <UserCheck className="text-teal-600" /> Access Control
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <ActionCard
@@ -481,7 +549,7 @@ const UserManagement = () => {
 
                       {!selectedUser.isVerified && (
                         <ActionCard
-                          icon={<CheckCircle className="text-blue-600" />}
+                          icon={<BadgeCheck className="text-blue-600" />}
                           title="Manually Verify"
                           desc="Mark this account as trusted."
                           onClick={() =>
@@ -493,7 +561,7 @@ const UserManagement = () => {
                   </div>
 
                   {/* Status & Discipline */}
-                  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                     <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                       <AlertTriangle className="text-amber-500" /> Account
                       Status
@@ -511,7 +579,7 @@ const UserManagement = () => {
                         />
                       ) : (
                         <ActionCard
-                          icon={<CheckCircle className="text-green-600" />}
+                          icon={<CheckCircle className="text-emerald-600" />}
                           title="Unban User"
                           desc="Restore login access."
                           onClick={() =>
@@ -530,7 +598,7 @@ const UserManagement = () => {
                   </div>
 
                   {/* Danger Zone */}
-                  <div className="bg-red-50 p-6 rounded-xl border border-red-100">
+                  <div className="bg-red-50/50 p-6 rounded-2xl border border-red-100">
                     <h3 className="text-lg font-bold text-red-800 mb-4 flex items-center gap-2">
                       <ShieldAlert className="text-red-600" /> Danger Zone
                     </h3>
@@ -543,9 +611,9 @@ const UserManagement = () => {
                             true
                           )
                         }
-                        className="bg-white border border-red-200 text-red-600 hover:bg-red-600 hover:text-white px-4 py-3 rounded-lg font-semibold transition-all flex items-center gap-2 shadow-sm"
+                        className="bg-white border border-red-200 text-red-600 hover:bg-red-600 hover:text-white px-6 py-4 rounded-xl font-bold transition-all flex items-center gap-3 shadow-sm"
                       >
-                        <Trash2 size={18} /> Delete Account Permanently
+                        <Trash2 size={20} /> Delete Account Permanently
                       </button>
                     </div>
                   </div>
@@ -558,31 +626,39 @@ const UserManagement = () => {
 
       {/* --- Dynamic Confirmation/Form Modal --- */}
       {showConfirmModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 transform scale-100 animate-in zoom-in-95 duration-200">
-            <div className="flex items-center gap-4 mb-4">
-              <div
-                className={`p-3 rounded-full ${
-                  pendingAction?.danger
-                    ? "bg-red-100 text-red-600"
-                    : "bg-blue-100 text-blue-600"
-                }`}
-              >
-                {pendingAction?.danger ? (
-                  <AlertTriangle size={24} />
-                ) : (
-                  <Shield size={24} />
-                )}
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 transform scale-100 animate-in zoom-in-95 duration-200 border border-white/20">
+            <div className="flex justify-between items-start mb-6">
+              <div className="flex items-center gap-4">
+                <div
+                  className={`p-3 rounded-full ${
+                    pendingAction?.danger
+                      ? "bg-red-50 text-red-600"
+                      : "bg-teal-50 text-teal-600"
+                  }`}
+                >
+                  {pendingAction?.danger ? (
+                    <AlertTriangle size={24} />
+                  ) : (
+                    <Shield size={24} />
+                  )}
+                </div>
+                <h3 className="text-xl font-bold text-gray-900">
+                  {pendingAction?.label || "Confirm Action"}
+                </h3>
               </div>
-              <h3 className="text-xl font-bold text-gray-900">
-                {pendingAction?.label || "Confirm Action"}
-              </h3>
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={20} />
+              </button>
             </div>
 
             {/* Dynamic Content Body */}
             <div className="mb-6">{renderModalContent()}</div>
 
-            <div className="flex justify-end gap-3">
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
               <button
                 onClick={() => {
                   setShowConfirmModal(false);
@@ -590,18 +666,18 @@ const UserManagement = () => {
                   setOtpInput("");
                   setWarningForm({ subject: "", message: "" });
                 }}
-                className="px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 font-medium transition-colors"
+                className="px-4 py-2 rounded-xl text-gray-600 hover:bg-gray-100 font-medium transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={executeAction}
                 disabled={loadingAction}
-                className={`px-6 py-2 rounded-lg text-white font-bold shadow-lg shadow-gray-200 transition-all active:scale-95 flex items-center gap-2
+                className={`px-6 py-2 rounded-xl text-white font-bold shadow-lg transition-all active:scale-95 flex items-center gap-2
                   ${
                     pendingAction?.danger
-                      ? "bg-red-600 hover:bg-red-700"
-                      : "bg-blue-600 hover:bg-blue-700"
+                      ? "bg-red-600 hover:bg-red-700 shadow-red-200"
+                      : "bg-gradient-to-r from-teal-600 to-cyan-600 hover:scale-[1.02] shadow-teal-200"
                   }
                   ${loadingAction ? "opacity-70 cursor-not-allowed" : ""}
                 `}
@@ -620,9 +696,23 @@ const UserManagement = () => {
   );
 };
 
+// --- Helper Components ---
+
+const StatMini = ({ icon: Icon, label, value }) => (
+  <div className="bg-white px-4 py-2 rounded-xl border border-gray-100 shadow-sm flex items-center gap-3">
+    <div className="p-1.5 bg-teal-50 text-teal-600 rounded-lg">
+      <Icon size={16} />
+    </div>
+    <div>
+      <p className="text-xs text-gray-400 font-medium">{label}</p>
+      <p className="text-sm font-bold text-gray-700">{value}</p>
+    </div>
+  </div>
+);
+
 const InfoRow = ({ icon, label, value, isMono }) => (
-  <div className="flex items-center gap-3 py-1">
-    <div className="text-gray-400">{icon}</div>
+  <div className="flex items-center gap-4 py-2 border-b border-dashed border-gray-100 last:border-0">
+    <div className="text-gray-400 bg-gray-50 p-2 rounded-lg">{icon}</div>
     <div className="flex flex-col">
       <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
         {label}
@@ -642,13 +732,13 @@ const Badge = ({ status, role }) => {
   if (status) {
     const styles =
       status === "active"
-        ? "bg-green-100 text-green-700 border-green-200"
+        ? "bg-emerald-100 text-emerald-700 border-emerald-200"
         : status === "banned"
         ? "bg-red-100 text-red-700 border-red-200"
         : "bg-gray-100 text-gray-700 border-gray-200";
     return (
       <span
-        className={`px-2.5 py-0.5 rounded-full text-xs font-bold border capitalize ${styles}`}
+        className={`px-3 py-1 rounded-full text-xs font-bold border capitalize shadow-sm ${styles}`}
       >
         {status}
       </span>
@@ -658,10 +748,10 @@ const Badge = ({ status, role }) => {
     const styles =
       role === "admin"
         ? "bg-purple-100 text-purple-700 border-purple-200"
-        : "bg-blue-50 text-blue-700 border-blue-200";
+        : "bg-cyan-50 text-cyan-700 border-cyan-200";
     return (
       <span
-        className={`px-2.5 py-0.5 rounded-full text-xs font-bold border capitalize ${styles}`}
+        className={`px-3 py-1 rounded-full text-xs font-bold border capitalize shadow-sm ${styles}`}
       >
         {role}
       </span>
@@ -673,14 +763,18 @@ const Badge = ({ status, role }) => {
 const ActionCard = ({ icon, title, desc, onClick, danger }) => (
   <div
     onClick={onClick}
-    className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 flex items-start gap-4 hover:shadow-md active:scale-[0.98] ${
+    className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 flex items-start gap-4 hover:shadow-md active:scale-[0.98] group ${
       danger
-        ? "bg-white border-gray-200 hover:border-red-300 hover:bg-red-50 group"
-        : "bg-white border-gray-200 hover:border-blue-300 hover:bg-blue-50 group"
+        ? "bg-white border-gray-100 hover:border-red-200 hover:bg-red-50/50"
+        : "bg-white border-gray-100 hover:border-teal-200 hover:bg-teal-50/50"
     }`}
   >
     <div
-      className={`p-2 rounded-lg bg-gray-50 group-hover:bg-white transition-colors`}
+      className={`p-2 rounded-lg transition-colors ${
+        danger
+          ? "bg-red-50 group-hover:bg-red-100"
+          : "bg-gray-50 group-hover:bg-white shadow-sm"
+      }`}
     >
       {icon}
     </div>
@@ -689,7 +783,7 @@ const ActionCard = ({ icon, title, desc, onClick, danger }) => (
         className={`font-bold text-sm ${
           danger
             ? "text-gray-800 group-hover:text-red-700"
-            : "text-gray-800 group-hover:text-blue-700"
+            : "text-gray-800 group-hover:text-teal-700"
         }`}
       >
         {title}
@@ -697,23 +791,6 @@ const ActionCard = ({ icon, title, desc, onClick, danger }) => (
       <p className="text-xs text-gray-500 mt-1 leading-relaxed">{desc}</p>
     </div>
   </div>
-);
-
-const ShieldCheckIcon = () => (
-  <svg
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="text-gray-500"
-  >
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-    <path d="m9 12 2 2 4-4" />
-  </svg>
 );
 
 export default UserManagement;

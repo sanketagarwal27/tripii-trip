@@ -9,9 +9,11 @@ import {
 } from "../controllers/admin/verifyContribution.controller.js";
 import {
   awardRandomPoints,
+  getRewardHistory,
   searchUsers,
 } from "../controllers/admin/awardRandomPoints.js";
 import {
+  getUserStats,
   permanentDeleteUser,
   promoteUserToAdmin,
   requestOtp,
@@ -26,6 +28,13 @@ import {
   pendingWithEmail,
   rejectBusinessListing,
 } from "../controllers/admin/businessManagement.controller.js";
+import { getAppOverview } from "../controllers/admin/appOverview.controller.js";
+import {
+  deleteCommunity,
+  getAllCommunities,
+  updateCommunityStatus,
+  verifyCommunity,
+} from "../controllers/admin/communityManagement.controller.js";
 
 const router = Router();
 router.use(verifyJWT);
@@ -50,6 +59,13 @@ router.patch(
   authorize("verify_contribution", "admin"),
   setBackToPending
 );
+
+router.get(
+  "/get-reward-history",
+  authorize("view_rewards_history", "admin"),
+  getRewardHistory
+);
+
 router.post(
   "/award-random-points",
   authorize("award_points", "admin"),
@@ -131,6 +147,38 @@ router.patch(
   "/business-listings/:businessListingId/pending",
   authorize("verify_business_listing", "admin"),
   pendingWithEmail
+);
+
+router.get(`/user-stats`, authorize("view_users_stats", "admin"), getUserStats);
+
+router.get(
+  "/app-overview",
+  authorize("view_app_overview", "admin"),
+  getAppOverview
+);
+
+router.get(
+  "/get-communities",
+  authorize("manage_communities", "admin"),
+  getAllCommunities
+);
+
+router.patch(
+  "/verify-community/:id",
+  authorize("manage_communities", "admin"),
+  verifyCommunity
+);
+
+router.patch(
+  "/update-community-status/:id",
+  authorize("manage_communities", "admin"),
+  updateCommunityStatus
+);
+
+router.delete(
+  "/delete-community/:id",
+  authorize("manage_communities", "admin"),
+  deleteCommunity
 );
 
 export default router;

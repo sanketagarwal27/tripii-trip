@@ -40,6 +40,13 @@ export const setContributionToPending = async (contributionId) => {
   return response.data;
 };
 
+export const getRewardHistory = async () => {
+  const response = await api.get(`/api/admin/get-reward-history`, {
+    withCredentials: true,
+  });
+  return response.data;
+};
+
 export const awardRandomPoints = async (userId, xpPoints, trustScore) => {
   const response = await api.post(
     `/api/admin/award-random-points`,
@@ -114,6 +121,55 @@ export const sendWarning = async (userId, subject, message) => {
       withCredentials: true,
     }
   );
+  return response.data;
+};
+
+export const getUserStats = async () => {
+  const response = await api.get(`/api/admin/user-stats`, {
+    withCredentials: true,
+  });
+  return response.data;
+};
+
+export const getAppOverview = async () => {
+  const response = await api.get(`/api/admin/app-overview`, {
+    withCredentials: true,
+  });
+  return response.data;
+};
+
+export const getCommunities = async (params) => {
+  const response = await api.get(
+    "/api/admin/get-communities",
+    { params },
+    {
+      withCredentials: true,
+    }
+  );
+  return response.data;
+};
+
+export const verifyCommunity = async (id) => {
+  const response = await api.patch(`/api/admin/verify-community/:${id}`, {
+    withCredentials: true,
+  });
+  return response.data;
+};
+
+export const updateCommunityStatus = async (id) => {
+  const response = await api.patch(
+    `/api/admin/update-community-status/:${id}`,
+    {
+      withCredentials: true,
+    }
+  );
+  return response.data;
+};
+
+export const deleteCommunity = async (id) => {
+  const response = await api.delete(`/api/admin/delete-community/:${id}`, {
+    withCredentials: true,
+  });
   return response.data;
 };
 

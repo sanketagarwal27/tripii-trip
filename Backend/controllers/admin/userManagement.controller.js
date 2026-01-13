@@ -217,3 +217,27 @@ export const sendWarning = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, null, `Warning email sent to ${user.name}`));
 });
+
+export const getUserStats = asyncHandler(async (req, res) => {
+  const userCount = await User.countDocuments();
+  const bannedUserCount = await User.countDocuments({
+    accountStatus: "banned",
+  });
+  const newUsersTodayCount = await User.countDocuments({
+    createdAt: {
+      $gte: new Date(new Date().setHours(0, 0, 0, 0)),
+      $lt: new Date(new Date().setHours(23, 59, 59, 999)),
+    },
+  });
+  res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        totalUsers: userCount,
+        bannedUsers: bannedUserCount,
+        newUsersToday: newUsersTodayCount,
+      },
+      "User count fetched"
+    )
+  );
+});

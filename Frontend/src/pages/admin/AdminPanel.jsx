@@ -21,6 +21,8 @@ import {
 import VerifyContributions from "./components/VerifyContribution";
 import AwardRandomPoints from "./components/AwardRandomPoints";
 import UserManagement from "./components/UserManagement";
+import AppDashboard from "./components/AppDashboard";
+import ManageCommunities from "./components/ManageCommunities";
 
 const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -79,81 +81,7 @@ const AdminPanel = () => {
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard": {
-        return (
-          <>
-            {/* Stat Cards Row */}
-            <div className={styles.statsGrid}>
-              <div className={styles.statCard}>
-                <h4>Total Users</h4>
-                <div className={styles.statValue}>1,204</div>
-                <div className={styles.progressBar}>
-                  <div
-                    className={styles.progressFill}
-                    style={{ width: "70%" }}
-                  ></div>
-                </div>
-              </div>
-              <div className={styles.statCard}>
-                <h4>Total Trips</h4>
-                <div className={styles.statValue}>342</div>
-                <div className={styles.progressBar}>
-                  <div
-                    className={styles.progressFill}
-                    style={{ width: "45%" }}
-                  ></div>
-                </div>
-              </div>
-              <div className={styles.statCard}>
-                <h4>Pending Reports</h4>
-                <div className={styles.statValue} style={{ color: "#e53935" }}>
-                  15
-                </div>
-                <div className={styles.progressBar}>
-                  <div
-                    className={styles.progressFill}
-                    style={{ width: "20%", background: "#e53935" }}
-                  ></div>
-                </div>
-              </div>
-            </div>
-
-            {/* Recent Activity Section */}
-            <div className={styles.contentCard}>
-              <div className={styles.cardHeader}>
-                <h3>Recent Moderation Queue</h3>
-                <button className={styles.actionButton}>View All</button>
-              </div>
-              <table className={styles.dataTable}>
-                <thead>
-                  <tr>
-                    <th>Type</th>
-                    <th>Reported User</th>
-                    <th>Reason</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentReports.map((report) => (
-                    <tr key={report.id}>
-                      <td>
-                        <span className={styles.badge}>{report.type}</span>
-                      </td>
-                      <td>{report.user}</td>
-                      <td>{report.reason}</td>
-                      <td>{report.status}</td>
-                      <td>
-                        <button className={styles.iconBtn}>
-                          <FaTrash />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        );
+        return <AppDashboard />;
       }
       case "contributions": {
         return <VerifyContributions />;
@@ -163,6 +91,9 @@ const AdminPanel = () => {
       }
       case "users": {
         return <UserManagement />;
+      }
+      case "communities": {
+        return <ManageCommunities />;
       }
       default:
         return (

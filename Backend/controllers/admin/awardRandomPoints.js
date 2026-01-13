@@ -76,12 +76,12 @@ export const awardRandomPoints = asyncHandler(async (req, res) => {
   // Create log entry
   const log = await PointsLog.create({
     userId,
-    activity: "random_award",
+    activity: "Rewarded by admin",
     xp: xpPoints,
     trust: trustScore,
     model: "User",
     modelId: userId, // 🔥 Ensure string
-    actorId: null, // 🔥 Ensure string
+    actorId: req.user._id, // 🔥 Ensure string
   });
 
   console.log(`✅ Points awarded successfully:
@@ -93,4 +93,44 @@ export const awardRandomPoints = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200, { user, log }, "Points awarded successfully !"));
+});
+
+export const getRewardHistory = asyncHandler(async (req, res) => {
+  // 1. Fetch the recent history (Paginated or Limit 20)
+  const history = await PointsLog.find({ activity: "Rewarded by admin" })
+    .populate("userId", "fullName username avatar profilePicture") // The User who received points
+    .populate("actorId", "fullName username avatar") // The Admin who gave points
+    .sort({ createdAt: -1 })
+    .limit(20);
+
+  // 2. Calculate Total Stats (Aggregation)
+  const stats = await PointsLog.aggregate([
+    {
+      $match: { activity: "Rewarded by admin" },
+    },
+    {
+      $group: {
+        _id: null,
+        totalXpGiven: { $sum: "$xp" },
+        totalTrustGiven: { $sum: "$trust" },
+        totalActions: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const overview = stats[0] || {
+    totalXpGiven: 0,
+    totalTrustGiven: 0,
+    totalActions: 0,
+  };
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { history, overview },
+        "Reward history fetched successfully"
+      )
+    );
 });

@@ -48,6 +48,8 @@ const communitySchema = new Schema(
       default: "public_group",
     },
 
+    isVerified: { type: Boolean, default: false },
+
     lastActivityAt: {
       type: Date,
       default: Date.now,
