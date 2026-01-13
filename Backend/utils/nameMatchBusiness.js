@@ -18,3 +18,4 @@ const normalize = (str) =>
     .toLowerCase()
     .replace(/[^a-z\s]/g, "")
     .trim();
+// currently not in use due to no verification requirements

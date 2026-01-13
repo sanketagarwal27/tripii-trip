@@ -28,3 +28,5 @@ new Worker(
   },
   { connection: new Redis(process.env.REDIS_URL) }
 );
+
+// whole jobs is for risk evaluation queueing in after filling business listing form but currently not in use due to no verification requirements

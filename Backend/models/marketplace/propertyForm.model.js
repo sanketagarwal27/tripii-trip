@@ -43,7 +43,6 @@ const BusinessListingSchema = new Schema(
 
     legalBusinessName: {
       type: String,
-      required: true,
     },
 
     legalEntityType: {
@@ -55,7 +54,6 @@ const BusinessListingSchema = new Schema(
         "private_limited",
         "llp",
       ],
-      required: true,
     },
 
     yearEstablished: {
@@ -70,7 +68,7 @@ const BusinessListingSchema = new Schema(
       role: {
         type: String,
         enum: ["owner", "manager", "authorized_signatory"],
-        required: true,
+        default: "owner",
       },
       phone: { type: String, required: true },
       email: { type: String, required: true },
@@ -82,7 +80,7 @@ const BusinessListingSchema = new Schema(
           required: true,
         },
         idNumber: { type: String, required: true },
-        idDocumentUrl: { type: String, required: true },
+        idDocumentUrl: { type: String },
         selfieUrl: { type: String }, // enhanced KYC
       },
     },
@@ -103,19 +101,19 @@ const BusinessListingSchema = new Schema(
         lng: { type: Number, required: true },
       },
 
-      addressProofUrl: { type: String, required: true },
+      addressProofUrl: { type: String },
     },
 
     /* =========================
        LEGAL & TAX DOCUMENTS
     ========================== */
     legalDocuments: {
-      businessRegistrationUrl: { type: String, required: true },
+      businessRegistrationUrl: { type: String },
 
       tradeLicenseUrl: { type: String },
 
-      panCardNumber: { type: String, required: true },
-      panCardUrl: { type: String, required: true },
+      panCardNumber: { type: String },
+      panCardUrl: { type: String },
 
       gstNumber: { type: String },
       gstCertificateUrl: { type: String },
@@ -248,6 +246,16 @@ const BusinessListingSchema = new Schema(
       type: Boolean,
       required: true,
       validate: (v) => v === true,
+    },
+
+    duplicateCheck: {
+      status: {
+        type: String,
+        enum: ["clear", "flagged", "confirmed"],
+        default: "clear",
+      },
+      matchedListingIds: [Schema.Types.ObjectId],
+      score: { type: Number, default: 0 },
     },
   },
   { timestamps: true }

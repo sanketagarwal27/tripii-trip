@@ -42,17 +42,49 @@ const CommunityPost = ({ post }) => {
     );
   }, [latestPost.helpful, user?._id]);
 
+  const helpfulCount = latestPost.helpfulCount ?? 0;
+
   const [showPicker, setShowPicker] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [helpfulLoading, setHelpfulLoading] = useState(false);
+  const [reactionLoading, setReactionLoading] = useState(false);
+  const [pollLoading, setPollLoading] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
+
   const [selectedPollOptions, setSelectedPollOptions] = useState([]);
   const [isChangingVote, setIsChangingVote] = useState(false);
+  const [optimisticHelpful, setOptimisticHelpful] = useState(isHelpful);
+  const [optimisticHelpfulCount, setOptimisticHelpfulCount] =
+    useState(helpfulCount);
+  const [optimisticReactions, setOptimisticReactions] = useState(
+    latestPost.reactions || []
+  );
+  const [optimisticHasVoted, setOptimisticHasVoted] = useState(
+    () =>
+      latestPost.poll?.options?.some((opt) => opt.votes?.includes(user?._id)) ??
+      false
+  );
+
+  const [optimisticPoll, setOptimisticPoll] = useState(latestPost.poll || null);
 
   const menuRef = useRef(null);
 
   /* ---------------------------
-     SYNC HELPFUL STATE
+     SYNC STATE
   ---------------------------- */
+
+  useEffect(() => {
+    setOptimisticHelpful(isHelpful);
+    setOptimisticHelpfulCount(helpfulCount);
+  }, [isHelpful, helpfulCount]);
+
+  useEffect(() => {
+    setOptimisticReactions(latestPost.reactions || []);
+  }, [latestPost.reactions]);
+
+  useEffect(() => {
+    setOptimisticPoll(latestPost.poll || null);
+  }, [latestPost.poll]);
 
   /* ---------------------------
      CLOSE MENU ON OUTSIDE CLICK
@@ -72,11 +104,6 @@ const CommunityPost = ({ post }) => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showMenu]);
-
-  /* ---------------------------
-     DERIVED STATE
-  ---------------------------- */
-  const helpfulCount = latestPost.helpfulCount ?? 0;
 
   // 🔥 FIXED: Check pinnedMessages array correctly
   const isPinned = useMemo(() => {
@@ -111,49 +138,43 @@ const CommunityPost = ({ post }) => {
      REACTIONS
   ---------------------------- */
   const myReactions = useMemo(() => {
-    if (!Array.isArray(latestPost.reactions) || !user?._id) return new Set();
+    if (!Array.isArray(optimisticReactions) || !user?._id) return new Set();
 
     return new Set(
-      latestPost.reactions.filter((r) => r.by === user._id).map((r) => r.emoji)
+      optimisticReactions.filter((r) => r.by === user._id).map((r) => r.emoji)
     );
-  }, [latestPost.reactions, user?._id]);
+  }, [optimisticReactions, user?._id]);
 
   const aggregatedReactions = useMemo(() => {
-    return aggregateReactions(latestPost.reactions);
-  }, [latestPost.reactions]);
+    return aggregateReactions(optimisticReactions);
+  }, [optimisticReactions]);
 
   /* ---------------------------
      🔥 POLL LOGIC
   ---------------------------- */
-  const hasVoted = useMemo(() => {
-    if (!latestPost.poll?.options || !user?._id) return false;
-
-    return latestPost.poll.options.some((opt) =>
-      opt.votes?.some((v) => v.toString() === user._id.toString())
-    );
-  }, [latestPost.poll, user?._id]);
 
   const myVotes = useMemo(() => {
-    if (!latestPost.poll?.options || !user?._id) return new Set();
+    if (!optimisticPoll?.options || !user?._id) return new Set();
 
     const voted = new Set();
-    latestPost.poll.options.forEach((opt) => {
-      if (opt.votes?.some((v) => v.toString() === user._id.toString())) {
+    optimisticPoll.options.forEach((opt) => {
+      if (opt.votes?.includes(user._id)) {
         voted.add(opt.id);
       }
     });
     return voted;
-  }, [latestPost.poll, user?._id]);
+  }, [optimisticPoll, user?._id]);
 
   const isPollExpired = useMemo(() => {
-    if (!latestPost.poll?.expiresAt) return false;
-    return new Date() > new Date(latestPost.poll.expiresAt);
-  }, [latestPost.poll?.expiresAt]);
+    if (!optimisticPoll?.expiresAt) return false;
+    return new Date() > new Date(optimisticPoll.expiresAt);
+  }, [optimisticPoll?.expiresAt]);
 
   const togglePollOption = (optionId) => {
-    if (isPollExpired || (hasVoted && !isChangingVote)) return;
+    if (!optimisticPoll) return;
+    if (isPollExpired || (optimisticHasVoted && !isChangingVote)) return;
 
-    if (latestPost.poll.allowMultipleVotes) {
+    if (optimisticPoll.allowMultipleVotes) {
       setSelectedPollOptions((prev) =>
         prev.includes(optionId)
           ? prev.filter((id) => id !== optionId)
@@ -165,17 +186,50 @@ const CommunityPost = ({ post }) => {
   };
 
   const handlePollVote = async () => {
-    if (!selectedPollOptions.length) return;
+    if (!optimisticPoll || pollLoading || !selectedPollOptions.length) return;
+
+    setPollLoading(true);
+
+    // ---------- SNAPSHOT FOR ROLLBACK ----------
+    const prevPoll = structuredClone(optimisticPoll);
+
+    // ---------- OPTIMISTIC UPDATE ----------
+    const nextPoll = { ...optimisticPoll };
+
+    // remove user from all options (important for change vote)
+    nextPoll.options = nextPoll.options.map((opt) => ({
+      ...opt,
+      votes: opt.votes.filter((v) => v !== user._id),
+    }));
+
+    // add user to selected options
+    nextPoll.options = nextPoll.options.map((opt) =>
+      selectedPollOptions.includes(opt.id)
+        ? { ...opt, votes: [...opt.votes, user._id] }
+        : opt
+    );
+
+    // recalc totalVotes
+    nextPoll.totalVotes = nextPoll.options.reduce(
+      (sum, opt) => sum + opt.votes.length,
+      0
+    );
+
+    // commit optimistic state
+    setOptimisticPoll(nextPoll);
+    setOptimisticHasVoted(true);
+    setSelectedPollOptions([]);
+    setIsChangingVote(false);
 
     try {
-      setLoading(true);
       await voteOnPoll(latestPost._id, selectedPollOptions);
-      setSelectedPollOptions([]);
-      setIsChangingVote(false);
     } catch (err) {
       console.error("Poll vote error:", err);
+      // ---------- ROLLBACK ----------
+      setOptimisticPoll(prevPoll);
+      setOptimisticHasVoted(false);
     } finally {
-      setLoading(false);
+      setPollLoading(false);
     }
   };
 
@@ -193,15 +247,24 @@ const CommunityPost = ({ post }) => {
      HELPFUL
   ---------------------------- */
   const toggleHelpful = async () => {
-    if (loading) return;
+    if (helpfulLoading) return;
 
-    setLoading(true);
+    const nextState = !optimisticHelpful;
+
+    // 🔥 instant UI update
+    setOptimisticHelpful(nextState);
+    setOptimisticHelpfulCount((c) => c + (nextState ? 1 : -1));
+
+    setHelpfulLoading(true);
     try {
       await messageHelpful(latestPost._id);
     } catch (err) {
+      // ❌ rollback if backend fails
+      setOptimisticHelpful(!nextState);
+      setOptimisticHelpfulCount((c) => c - (nextState ? 1 : -1));
       console.error("Helpful error:", err);
     } finally {
-      setLoading(false);
+      setHelpfulLoading(false);
     }
   };
 
@@ -209,11 +272,32 @@ const CommunityPost = ({ post }) => {
      EMOJI REACTION
   ---------------------------- */
   const handleEmojiReact = async (emoji) => {
+    if (!user?._id || reactionLoading) return;
+
+    const alreadyReacted = optimisticReactions.some(
+      (r) => r.by === user._id && r.emoji === emoji
+    );
+
+    // optimistic update
+    setOptimisticReactions((prev) =>
+      alreadyReacted
+        ? prev.filter((r) => !(r.by === user._id && r.emoji === emoji))
+        : [...prev, { emoji, by: user._id }]
+    );
+
+    setReactionLoading(true);
+
     try {
       await reactOnMessage(latestPost._id, emoji);
       setShowPicker(false);
     } catch (err) {
       console.error("Reaction error:", err);
+      // rollback by resyncing
+      setOptimisticReactions(
+        messages.find((m) => m._id === latestPost._id)?.reactions || []
+      );
+    } finally {
+      setReactionLoading(false);
     }
   };
 
@@ -221,25 +305,32 @@ const CommunityPost = ({ post }) => {
      MENU ACTIONS
   ---------------------------- */
   const handleDelete = async () => {
-    if (!window.confirm("Delete this message?")) return;
+    if (!window.confirm("Delete this message?") || pinLoading) return;
+
+    setPinLoading(true);
+    setShowMenu(false);
 
     try {
       await deleteMessage(latestPost._id);
-      setShowMenu(false);
     } catch (err) {
       console.error("Delete error:", err);
+    } finally {
+      setPinLoading(false);
     }
   };
 
   const handlePin = async () => {
+    if (pinLoading) return;
+
+    setPinLoading(true);
+    setShowMenu(false);
+
     try {
-      setLoading(true);
       await togglePinMessage(latestPost._id);
-      setShowMenu(false);
     } catch (err) {
       console.error("Pin error:", err);
     } finally {
-      setLoading(false);
+      setPinLoading(false);
     }
   };
 
@@ -273,17 +364,18 @@ const CommunityPost = ({ post }) => {
         <div className="flex flex-col items-center gap-1 w-8 shrink-0 pt-1">
           <button
             onClick={toggleHelpful}
-            disabled={loading}
+            disabled={helpfulLoading}
             className={`rounded p-0.5 transition ${
-              isHelpful
+              optimisticHelpful
                 ? "text-green-500 bg-green-500/10"
                 : "text-text-muted-light hover:text-primary hover:bg-primary/10"
-            }`}
+            } ${helpfulLoading ? "opacity-50 cursor-not-allowed" : ""}
+}`}
           >
             <span className="material-symbols-outlined">expand_less</span>
           </button>
 
-          <span className="text-sm font-bold">{helpfulCount}</span>
+          <span className="text-sm font-bold">{optimisticHelpfulCount}</span>
         </div>
 
         {/* ---------------- CONTENT ---------------- */}
@@ -376,11 +468,11 @@ const CommunityPost = ({ post }) => {
           )}
 
           {/* POLL */}
-          {latestPost.type === "poll" && latestPost.poll && (
+          {latestPost.type === "poll" && optimisticPoll && (
             <div className="mt-3 p-4 bg-white dark:bg-surface-darker rounded-lg border">
               <div className="flex items-start justify-between mb-3">
                 <h4 className="font-semibold text-lg">
-                  {latestPost.poll.question}
+                  {optimisticPoll.question}
                 </h4>
                 {isPollExpired && (
                   <span className="text-xs text-red-500 bg-red-50 px-2 py-1 rounded">
@@ -390,12 +482,12 @@ const CommunityPost = ({ post }) => {
               </div>
 
               <div className="space-y-2">
-                {latestPost.poll.options.map((option) => {
+                {optimisticPoll.options.map((option) => {
                   const voteCount = option.votes?.length || 0;
                   const percentage =
-                    latestPost.poll.totalVotes > 0
+                    optimisticPoll.totalVotes > 0
                       ? Math.round(
-                          (voteCount / latestPost.poll.totalVotes) * 100
+                          (voteCount / optimisticPoll.totalVotes) * 100
                         )
                       : 0;
                   const isVoted = myVotes.has(option.id);
@@ -405,7 +497,9 @@ const CommunityPost = ({ post }) => {
                     <button
                       key={option.id}
                       onClick={() => togglePollOption(option.id)}
-                      disabled={isPollExpired || (hasVoted && !isChangingVote)}
+                      disabled={
+                        isPollExpired || (optimisticHasVoted && !isChangingVote)
+                      }
                       className={`w-full text-left p-3 rounded-lg border transition ${
                         isVoted
                           ? "border-primary bg-primary/10"
@@ -413,21 +507,21 @@ const CommunityPost = ({ post }) => {
                           ? "border-primary bg-primary/5"
                           : "border-border-light hover:border-primary/50"
                       } ${
-                        isPollExpired || (hasVoted && !isChangingVote)
+                        isPollExpired || (optimisticHasVoted && !isChangingVote)
                           ? "cursor-not-allowed"
                           : "cursor-pointer"
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1">
                         <span className="font-medium">{option.text}</span>
-                        {(hasVoted || isChangingVote) && (
+                        {(optimisticHasVoted || isChangingVote) && (
                           <span className="text-sm font-bold">
                             {percentage}%
                           </span>
                         )}
                       </div>
 
-                      {(hasVoted || isChangingVote) && (
+                      {(optimisticHasVoted || isChangingVote) && (
                         <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
                           <div
                             className="absolute top-0 left-0 h-full bg-primary transition-all"
@@ -452,19 +546,19 @@ const CommunityPost = ({ post }) => {
               </div>
 
               {/* POLL ACTIONS */}
-              {!hasVoted &&
+              {!optimisticHasVoted &&
                 !isPollExpired &&
                 selectedPollOptions.length > 0 && (
                   <button
                     onClick={handlePollVote}
-                    disabled={loading}
+                    disabled={pollLoading}
                     className="mt-3 w-full bg-primary text-white py-2 rounded-lg font-semibold hover:bg-primary/90 disabled:opacity-50"
                   >
-                    {loading ? "Voting..." : "Submit Vote"}
+                    {pollLoading ? "Voting..." : "Submit Vote"}
                   </button>
                 )}
 
-              {hasVoted && !isPollExpired && !isChangingVote && (
+              {optimisticHasVoted && !isPollExpired && !isChangingVote && (
                 <button
                   onClick={handleChangeVote}
                   className="mt-3 w-full border border-primary text-primary py-2 rounded-lg font-semibold hover:bg-primary/5"
@@ -473,7 +567,7 @@ const CommunityPost = ({ post }) => {
                 </button>
               )}
 
-              {hasVoted && !isPollExpired && isChangingVote && (
+              {optimisticHasVoted && !isPollExpired && isChangingVote && (
                 <div className="mt-3 flex gap-2">
                   <button
                     onClick={handleCancelChange}
@@ -483,25 +577,27 @@ const CommunityPost = ({ post }) => {
                   </button>
                   <button
                     onClick={handlePollVote}
-                    disabled={loading || selectedPollOptions.length === 0}
-                    className="flex-1 bg-primary text-white py-2 rounded-lg font-semibold hover:bg-primary/90 disabled:opacity-50"
+                    disabled={pollLoading || selectedPollOptions.length === 0}
+                    className={`flex-1 bg-primary text-white py-2 rounded-lg font-semibold hover:bg-primary/90 disabled:opacity-50 ${
+                      pollLoading ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                   >
-                    {loading ? "Updating..." : "Update Vote"}
+                    {pollLoading ? "Updating..." : "Update Vote"}
                   </button>
                 </div>
               )}
 
               <div className="mt-3 text-xs text-text-muted-light">
-                {latestPost.poll.totalVotes}{" "}
-                {latestPost.poll.totalVotes === 1 ? "vote" : "votes"} •{" "}
-                {latestPost.poll.allowMultipleVotes
+                {optimisticPoll.totalVotes}{" "}
+                {optimisticPoll.totalVotes === 1 ? "vote" : "votes"} •{" "}
+                {optimisticPoll.allowMultipleVotes
                   ? "Multiple votes allowed"
                   : "Single vote only"}
-                {latestPost.poll.expiresAt && (
+                {optimisticPoll.expiresAt && (
                   <>
                     {" "}
                     • Expires{" "}
-                    {new Date(latestPost.poll.expiresAt).toLocaleDateString()}
+                    {new Date(optimisticPoll.expiresAt).toLocaleDateString()}
                   </>
                 )}
               </div>
@@ -537,8 +633,12 @@ const CommunityPost = ({ post }) => {
             {/* REACT BUTTON */}
             <div className="relative">
               <button
+                disabled={reactionLoading}
                 onClick={() => setShowPicker((s) => !s)}
-                className="flex items-center gap-1 px-2 py-1 bg-background-light rounded-full text-xs hover:bg-primary/10"
+                className={`flex items-center gap-1 px-2 py-1 bg-background-light rounded-full text-xs
+    ${
+      reactionLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-primary/10"
+    }`}
               >
                 <span className="material-symbols-outlined !text-[18px]">
                   add_reaction
@@ -579,13 +679,20 @@ const CommunityPost = ({ post }) => {
                   return (
                     <button
                       key={r.emoji}
-                      onClick={() => handleEmojiReact(r.emoji)}
+                      onClick={
+                        !reactionLoading
+                          ? () => handleEmojiReact(r.emoji)
+                          : undefined
+                      }
+                      disabled={reactionLoading}
                       className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs shrink-0 transition
-                        ${
-                          isMine
-                            ? "bg-primary/20 border border-primary text-primary"
-                            : "bg-background-light hover:bg-primary/10 border border-transparent"
-                        }`}
+    ${
+      isMine
+        ? "bg-primary/20 border border-primary text-primary"
+        : "bg-background-light hover:bg-primary/10 border border-transparent"
+    }
+    ${reactionLoading ? "opacity-50 cursor-not-allowed" : ""}
+  `}
                     >
                       <span>{r.emoji}</span>
                       <span className="font-bold">{r.count}</span>

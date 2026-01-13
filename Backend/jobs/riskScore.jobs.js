@@ -37,3 +37,5 @@ export const calculateRiskScore = async (listing) => {
 
   return { score, reasons };
 };
+
+// whole jobs is for risk evaluation queueing in after filling business listing form but currently not in use due to no verification requirements
