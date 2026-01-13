@@ -19,7 +19,7 @@ export default function CommunityFeed() {
   }, [messages, profile?._id]);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-2">
       <CreatePostBox />
       {filteredMessages && filteredMessages.length ? (
         filteredMessages.map((m) => <CommunityPost key={m._id} post={m} />)
