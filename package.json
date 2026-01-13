@@ -4,7 +4,7 @@
   "description": "**TripiiTrip** is a full-stack, social-first travel platform designed to fundamentally upgrade how people **discover destinations, connect with others, plan trips, communicate in real time, and build trust-driven travel experiences**.",
   "main": "index.js",
   "scripts": {
-   "dev": "concurrently \"cd frontend && npm run dev\" \"cd backend && npm run dev\""
+    "dev": "concurrently \"cd frontend && npm run dev\" \"cd backend && npm run dev\""
   },
   "repository": {
     "type": "git",
@@ -21,6 +21,8 @@
   "dependencies": {
     "concurrently": "^9.2.1"
   },
-  "workspaces":["backend","frontend"]
-
+  "workspaces": [
+    "backend",
+    "frontend"
+  ]
 }

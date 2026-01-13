@@ -217,6 +217,27 @@ const userSchema = new Schema(
        PAYMENT + TRUST
     ============================================================ */
     prevSettelment: [{ type: Schema.Types.ObjectId, ref: "Settelment" }],
+
+    isHotel: {
+      type: Boolean,
+      default: false,
+    },
+    isHostel: {
+      type: Boolean,
+      default: false,
+    },
+    isResturant: {
+      type: Boolean,
+      default: false,
+    },
+    isActivityProvider: {
+      type: Boolean,
+      default: false,
+    },
+    isTravelAgent: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

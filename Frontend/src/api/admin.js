@@ -116,3 +116,88 @@ export const sendWarning = async (userId, subject, message) => {
   );
   return response.data;
 };
+
+/* =====================================
+   BUSINESS LISTINGS (MARKETPLACE ADMIN)
+===================================== */
+
+/**
+ * Get all business listings (admin)
+ * Filters: status, listingFor, search
+ */
+export const getAllBusinessListingsAdmin = async (params = {}) => {
+  const response = await api.get("/api/admin/business-listings", {
+    params,
+    withCredentials: true,
+  });
+  return response.data;
+};
+
+/**
+ * Get pending + under-review business listings
+ */
+export const getPendingBusinessListingsAdmin = async () => {
+  const response = await api.get("/api/admin/business-listings/pending", {
+    withCredentials: true,
+  });
+  return response.data;
+};
+
+/**
+ * Get single business listing (full details for admin)
+ */
+export const getBusinessListingByIdAdmin = async (businessListingId) => {
+  const response = await api.get(
+    `/api/admin/business-listings/${businessListingId}`,
+    {
+      withCredentials: true,
+    }
+  );
+  return response.data;
+};
+
+/**
+ * Approve business listing (creates public Listing)
+ */
+export const approveBusinessListingAdmin = async (businessListingId) => {
+  const response = await api.patch(
+    `/api/admin/business-listings/${businessListingId}/approve`,
+    {},
+    {
+      withCredentials: true,
+    }
+  );
+  return response.data;
+};
+
+/**
+ * Reject business listing
+ */
+export const rejectBusinessListingAdmin = async (businessListingId, reason) => {
+  const response = await api.patch(
+    `/api/admin/business-listings/${businessListingId}/reject`,
+    { reason },
+    {
+      withCredentials: true,
+    }
+  );
+  return response.data;
+};
+
+/**
+ * Mark business listing as pending + send custom email
+ */
+export const pendingBusinessListingWithEmailAdmin = async (
+  businessListingId,
+  subject,
+  message
+) => {
+  const response = await api.patch(
+    `/api/admin/business-listings/${businessListingId}/pending`,
+    { subject, message },
+    {
+      withCredentials: true,
+    }
+  );
+  return response.data;
+};

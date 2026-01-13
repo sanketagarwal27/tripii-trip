@@ -17,9 +17,11 @@ function tryParsePlan(text) {
   try {
     const parsed = JSON.parse(text);
 
+    // Check if it's a valid plan structure
     if (
       parsed &&
       Array.isArray(parsed.days) &&
+      parsed.days.length > 0 &&
       parsed.days.every(
         (d) => typeof d.day === "number" && Array.isArray(d.plans)
       )
@@ -27,8 +29,14 @@ function tryParsePlan(text) {
       return parsed;
     }
 
+    // If it has an error field, it's not a valid plan
+    if (parsed && parsed.error) {
+      return null;
+    }
+
     return null;
-  } catch {
+  } catch (e) {
+    console.error("Failed to parse plan:", e);
     return null;
   }
 }
@@ -276,6 +284,8 @@ export default function ChatInterface({ messages, isLoading }) {
   const dispatch = useDispatch();
   const [showOverlay, setShowOverlay] = useState(false);
   const [planForApply, setPlanForApply] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const hasScrolledToBottom = useRef(false);
 
   const navigate = useNavigate();
 
@@ -313,9 +323,13 @@ export default function ChatInterface({ messages, isLoading }) {
   const [editingId, setEditingId] = useState(null);
   const [editablePlan, setEditablePlan] = useState(null);
 
+  // Scroll to bottom only once on initial load
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isLoading]);
+    if (!hasScrolledToBottom.current && bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: "auto" });
+      hasScrolledToBottom.current = true;
+    }
+  }, []);
 
   return (
     <div className={styles.chatHistoryContainer}>
@@ -328,6 +342,7 @@ export default function ChatInterface({ messages, isLoading }) {
           message.sender === "model" ? tryParsePlan(message.text) : null;
 
         const isEditing = editingId === msgId;
+        const currentPlan = isEditing ? editablePlan : parsedPlan;
 
         return (
           <div
@@ -356,7 +371,7 @@ export default function ChatInterface({ messages, isLoading }) {
                 isEditing ? (
                   <>
                     <TripPlanEditor
-                      plan={editablePlan}
+                      plan={currentPlan}
                       editable
                       onChange={setEditablePlan}
                     />
@@ -364,22 +379,33 @@ export default function ChatInterface({ messages, isLoading }) {
                     <div className={styles.editActions}>
                       <button
                         className={styles.primaryBtn}
-                        onClick={() => {
-                          dispatch(
-                            chatbotEditMessage({
-                              messageId: msgId,
-                              text: JSON.stringify(editablePlan),
-                            })
-                          );
-                          setEditingId(null);
-                          setEditablePlan(null);
+                        disabled={isSaving}
+                        onClick={async () => {
+                          setIsSaving(true);
+                          try {
+                            await dispatch(
+                              chatbotEditMessage({
+                                messageId: msgId,
+                                text: JSON.stringify(editablePlan),
+                              })
+                            ).unwrap();
+
+                            setEditingId(null);
+                            setEditablePlan(null);
+                          } catch (error) {
+                            console.error("Failed to save plan:", error);
+                            alert("Failed to save changes. Please try again.");
+                          } finally {
+                            setIsSaving(false);
+                          }
                         }}
                       >
-                        Save
+                        {isSaving ? "Saving..." : "Save"}
                       </button>
 
                       <button
                         className={styles.secondaryBtn}
+                        disabled={isSaving}
                         onClick={() => {
                           setEditingId(null);
                           setEditablePlan(null);
@@ -400,7 +426,7 @@ export default function ChatInterface({ messages, isLoading }) {
                       </div>
                     </div>
 
-                    <TripPlanEditor plan={parsedPlan} />
+                    <TripPlanEditor plan={currentPlan} />
 
                     <div className={styles.planActions}>
                       <button
@@ -416,7 +442,7 @@ export default function ChatInterface({ messages, isLoading }) {
                       <button
                         className={styles.primaryBtn}
                         onClick={() => {
-                          setPlanForApply(editablePlan || parsedPlan);
+                          setPlanForApply(currentPlan);
                           setShowOverlay(true);
                         }}
                       >
@@ -446,7 +472,6 @@ export default function ChatInterface({ messages, isLoading }) {
         <ApplyToTripOverlay
           onClose={() => setShowOverlay(false)}
           onSelect={(trip) => {
-            // TODO: dispatch attach-plan-to-trip
             console.log("Apply plan to:", trip._id);
             setShowOverlay(false);
             handleApplyPlanToTrip(trip);

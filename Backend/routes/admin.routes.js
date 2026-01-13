@@ -18,6 +18,14 @@ import {
   sendWarning,
   toggleUserBan,
 } from "../controllers/admin/userManagement.controller.js";
+import {
+  approveBusinessListing,
+  getAllBusinessListingsForAdmin,
+  getBusinessListingByIdForAdmin,
+  getPendingBusinessListings,
+  pendingWithEmail,
+  rejectBusinessListing,
+} from "../controllers/admin/businessManagement.controller.js";
 
 const router = Router();
 router.use(verifyJWT);
@@ -76,4 +84,53 @@ router.post(
   authorize("send_warning", "admin"),
   sendWarning
 );
+
+/**
+ * ================================
+ * BUSINESS LISTING VERIFICATION
+ * ================================
+ */
+
+// Get all business listing submissions (with filters)
+router.get(
+  "/business-listings",
+  authorize("verify_business_listing", "admin"),
+  getAllBusinessListingsForAdmin
+);
+
+// Get only pending / under-review listings
+router.get(
+  "/business-listings/pending",
+  authorize("verify_business_listing", "admin"),
+  getPendingBusinessListings
+);
+
+// Get full details of a single business listing
+router.get(
+  "/business-listings/:businessListingId",
+  authorize("verify_business_listing", "admin"),
+  getBusinessListingByIdForAdmin
+);
+
+// Approve business listing (creates public Listing)
+router.patch(
+  "/business-listings/:businessListingId/approve",
+  authorize("verify_business_listing", "admin"),
+  approveBusinessListing
+);
+
+// Reject business listing
+router.patch(
+  "/business-listings/:businessListingId/reject",
+  authorize("verify_business_listing", "admin"),
+  rejectBusinessListing
+);
+
+// Mark pending + send custom email to owner
+router.patch(
+  "/business-listings/:businessListingId/pending",
+  authorize("verify_business_listing", "admin"),
+  pendingWithEmail
+);
+
 export default router;

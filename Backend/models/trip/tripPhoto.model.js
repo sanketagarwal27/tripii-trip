@@ -55,6 +55,24 @@ const tripPhotoSchema = new Schema(
       type: Boolean,
       default: false,
     },
+
+    downloadCount: {
+      type: Number,
+      default: 0,
+    },
+
+    downloadHistory: [
+      {
+        userId: {
+          type: Schema.Types.ObjectId,
+          ref: "User",
+        },
+        downloadedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   { timestamps: true }
 );

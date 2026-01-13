@@ -572,7 +572,7 @@ body {
   /* border: 1px solid #dce5e4; */
   border-radius: 14px;
   padding: 20px;
-  margin-bottom: 24px;
+  margin-bottom: 5px;
 
   display: flex;
   flex-direction: column;

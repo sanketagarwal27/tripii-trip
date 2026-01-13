@@ -41,6 +41,8 @@ import Spot from "./pages/contribution/components/Spot";
 import { ContributionProvider } from "./context/ContributionContext";
 import { Toaster } from "react-hot-toast";
 import AuthWrapper from "./components/AuthWrapper"; // ✅ Import AuthWrapper
+import MarketPlace from "./components/marketPlace/MarketPlace";
+import MarketPlaceLayout from "./shared/MarketPlaceLayout";
 
 // Auth Logic
 function RequireAuth({ children }) {
@@ -132,6 +134,11 @@ function AppRouter() {
                 user?.role === "admin" ? <AdminPanel /> : <Navigate to={"/"} />
               }
             />
+
+            {/* MarketPlace Layout */}
+            <Route element={<MarketPlaceLayout />}>
+              <Route path="/marketplace/*" element={<MarketPlace />} />
+            </Route>
           </Route>
         </Routes>
       </AuthWrapper>

@@ -32,6 +32,7 @@ const PostCard = ({ post }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const [inlineComment, setInlineComment] = useState("");
+  const [isPostingComment, setIsPostingComment] = useState(false);
 
   /* ------------------------------------------
      LIKE HANDLER
@@ -67,7 +68,9 @@ const PostCard = ({ post }) => {
      INLINE COMMENT SUBMIT
   -------------------------------------------- */
   const submitInlineComment = async () => {
-    if (!inlineComment.trim()) return;
+    if (!inlineComment.trim() || isPostingComment) return;
+
+    setIsPostingComment(true);
 
     try {
       const res = await addComment(post._id, inlineComment);
@@ -83,6 +86,8 @@ const PostCard = ({ post }) => {
       setInlineComment("");
     } catch (err) {
       toast.error("Failed to comment");
+    } finally {
+      setIsPostingComment(false);
     }
   };
 
@@ -138,7 +143,7 @@ const PostCard = ({ post }) => {
         </p>
       )}
 
-      {/* MEDIA CAROUSEL + THUMBNAILS (RESTORED!) */}
+      {/* MEDIA CAROUSEL + THUMBNAILS */}
       {post.media?.length > 0 && (
         <div className="postcard-media-wrapper">
           <img src={post.media[currentIndex].url} className="postcard-media" />
@@ -161,7 +166,7 @@ const PostCard = ({ post }) => {
             </button>
           )}
 
-          {/* ⭐ RESTORED THUMBNAILS */}
+          {/* THUMBNAILS */}
           {post.media.length > 1 && (
             <div className="carousel-thumbnails">
               {post.media.map((m, i) => (
@@ -204,7 +209,7 @@ const PostCard = ({ post }) => {
         </button>
       </div>
 
-      {/* ⭐ INLINE COMMENT BOX (80% INPUT + 20% BUTTON) */}
+      {/* INLINE COMMENT BOX */}
       <div className="postcard-inline-comment">
         <input
           type="text"
@@ -212,13 +217,22 @@ const PostCard = ({ post }) => {
           className="postcard-inline-input"
           value={inlineComment}
           onChange={(e) => setInlineComment(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && submitInlineComment()}
+          disabled={isPostingComment}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !isPostingComment) {
+              submitInlineComment();
+            }
+          }}
         />
 
         {/* Only show when typing */}
         {inlineComment.trim() && (
-          <button className="postcard-inline-btn" onClick={submitInlineComment}>
-            Post
+          <button
+            className="postcard-inline-btn"
+            onClick={submitInlineComment}
+            disabled={isPostingComment}
+          >
+            {isPostingComment ? "Posting..." : "Post"}
           </button>
         )}
       </div>

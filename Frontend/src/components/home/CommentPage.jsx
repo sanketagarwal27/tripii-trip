@@ -8,8 +8,8 @@ import {
   deleteComment,
   getPostById,
 } from "@/api/post";
-import { useSelector, useDispatch } from "react-redux"; // 1. Import useDispatch
-import { updatePost, setSelectedPost } from "@/redux/postSlice"; // 2. Import Actions
+import { useSelector, useDispatch } from "react-redux";
+import { updatePost, setSelectedPost } from "@/redux/postSlice";
 import toast from "react-hot-toast";
 
 /* -------------------------------------------------
@@ -80,10 +80,9 @@ const PostCarousel = ({ images }) => {
 const CommentPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const dispatch = useDispatch(); // 3. Initialize Dispatch
+  const dispatch = useDispatch();
 
   const userProfile = useSelector((s) => s.auth.userProfile);
-  // Using selectedPost to keep things consistent with where we came from
   const feedPost = useSelector((s) => s.post.selectedPost);
 
   const [post, setPost] = useState(feedPost || null);
@@ -91,9 +90,11 @@ const CommentPage = () => {
 
   const [comments, setComments] = useState([]);
   const [text, setText] = useState("");
+  const [isPostingMain, setIsPostingMain] = useState(false);
 
   const [replyText, setReplyText] = useState("");
   const [activeReplyBox, setActiveReplyBox] = useState(null);
+  const [isPostingReply, setIsPostingReply] = useState(false);
 
   /* FETCH POST IF NOT IN REDUX */
   useEffect(() => {
@@ -117,10 +118,8 @@ const CommentPage = () => {
       const res = await getCommentsByPost(id);
       let fetched = res.data.data.comments;
 
-      // 1️⃣ Remove deleted TOP-LEVEL comments
       fetched = fetched.filter((c) => !c.isDeleted);
 
-      // 2️⃣ Remove deleted REPLIES
       fetched = fetched.map((c) => ({
         ...c,
         replies: Array.isArray(c.replies)
@@ -145,43 +144,42 @@ const CommentPage = () => {
 
   /* ADD COMMENT */
   const handleSubmitMain = async () => {
-    if (!text.trim()) return;
+    if (!text.trim() || isPostingMain) return;
+
+    setIsPostingMain(true);
 
     try {
       const res = await addComment(id, text, null);
       const newComment = res.data.data;
 
-      // Update Local Comments State
       setComments((prev) => [
         { ...newComment, replies: [], _remove: false },
         ...prev,
       ]);
       setText("");
 
-      // --- REDUX UPDATE START ---
-      // Update global post state so the feed shows correct comment count
       if (post) {
         const updatedPost = {
           ...post,
-          // Add new comment to the list (safe check for array)
           comments: [newComment, ...(post.comments || [])],
         };
 
-        // Update local post state
         setPost(updatedPost);
-        // Update Redux Store (Feed & Selected Post)
         dispatch(updatePost(updatedPost));
         dispatch(setSelectedPost(updatedPost));
       }
-      // --- REDUX UPDATE END ---
     } catch {
       toast.error("Failed to comment");
+    } finally {
+      setIsPostingMain(false);
     }
   };
 
   /* ADD REPLY */
   const handleSubmitReply = async (parentId) => {
-    if (!replyText.trim()) return;
+    if (!replyText.trim() || isPostingReply) return;
+
+    setIsPostingReply(true);
 
     try {
       const res = await addComment(id, replyText, parentId);
@@ -195,12 +193,10 @@ const CommentPage = () => {
 
       setReplyText("");
       setActiveReplyBox(null);
-
-      // Note: Depending on your backend, adding a reply might NOT increase
-      // the main post's "comments" array length if it only tracks top-level.
-      // If your 'post.comments' includes replies, repeat the Redux Update logic here.
     } catch {
       toast.error("Failed to reply");
+    } finally {
+      setIsPostingReply(false);
     }
   };
 
@@ -209,7 +205,6 @@ const CommentPage = () => {
     try {
       await deleteComment(commentId);
 
-      // fade-out then remove
       if (!isReply) {
         setComments((prev) =>
           prev.map((c) => (c._id === commentId ? { ...c, _remove: true } : c))
@@ -219,8 +214,6 @@ const CommentPage = () => {
           300
         );
 
-        // --- REDUX UPDATE START (Delete) ---
-        // If we deleted a top-level comment, decrease count in Redux
         if (post) {
           const updatedPost = {
             ...post,
@@ -232,9 +225,7 @@ const CommentPage = () => {
           dispatch(updatePost(updatedPost));
           dispatch(setSelectedPost(updatedPost));
         }
-        // --- REDUX UPDATE END ---
       } else {
-        // Handle Reply Deletion locally
         setComments((prev) =>
           prev.map((c) =>
             c._id === parentId
@@ -323,26 +314,28 @@ const CommentPage = () => {
             rows={2}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            className="w-full p-3 rounded-lg border bg-background-light resize-none"
+            disabled={isPostingMain}
+            className="w-full p-3 rounded-lg border bg-background-light resize-none disabled:opacity-50"
             onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
+              if (e.key === "Enter" && !e.shiftKey && !isPostingMain) {
                 e.preventDefault();
-                handleSubmitMain(); // 🚀 submit on Enter
+                handleSubmitMain();
               }
             }}
           />
 
           <button
             onClick={handleSubmitMain}
-            className="min-w-[84px] px-4 bg-primary text-black rounded-lg h-9"
+            disabled={isPostingMain || !text.trim()}
+            className="min-w-[84px] px-4 bg-primary text-black rounded-lg h-9 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Post
+            {isPostingMain ? "Posting..." : "Post"}
           </button>
         </div>
 
         {/* COMMENTS LIST */}
-        <div className="p-4 bg-white rounded-xl shadow-sm space-y-3">
-          <h3 className="text-lg font-bold text-gray-800">Comments</h3>
+        <div className="p-4 bg-white rounded-xl shadow-sm space-y-1.5">
+          <h3 className="text-lg font-bold text-gray-800 mb-3">Comments</h3>
 
           {comments.length === 0 && (
             <p className="text-gray-500 text-center py-4">
@@ -364,6 +357,7 @@ const CommentPage = () => {
               activeReplyBox={activeReplyBox}
               setActiveReplyBox={setActiveReplyBox}
               handleSubmitReply={handleSubmitReply}
+              isPostingReply={isPostingReply}
             />
           ))}
         </div>
@@ -387,6 +381,7 @@ const CommentItem = ({
   activeReplyBox,
   setActiveReplyBox,
   handleSubmitReply,
+  isPostingReply,
 }) => {
   const replies = (comment.replies || []).filter((r) => !r.isDeleted);
 
@@ -394,13 +389,15 @@ const CommentItem = ({
 
   const canDelete = userId === comment.author._id || userId === postAuthorId;
 
+  const isActiveReply = activeReplyBox === comment._id;
+
   return (
     <div
       className={`flex flex-col transition-all duration-300 ${
         comment._remove ? "opacity-0 translate-x-4" : ""
       }`}
     >
-      <div className="flex w-full gap-3 p-4 rounded-lg">
+      <div className="flex w-full gap-3 p-2 rounded-lg">
         <Link to={`/profile/${comment.author._id}`}>
           <img
             src={comment.author.profilePicture?.url || "/travel.jpg"}
@@ -430,17 +427,18 @@ const CommentItem = ({
             )}
           </div>
 
-          <p className="text-sm mt-1">{comment.text}</p>
+          <p className="text-sm mt-0.5">{comment.text}</p>
 
-          {/* ACTIONS */}
-          <div className="flex items-center gap-4 pt-2">
+          {/* ACTIONS - NOW INCLUDES VIEW REPLIES */}
+          <div className="flex items-center gap-4 pt-1.5">
             <button
               onClick={() =>
                 setActiveReplyBox(
                   activeReplyBox === comment._id ? null : comment._id
                 )
               }
-              className="text-xs font-semibold text-gray-500 hover:text-primary"
+              disabled={isPostingReply}
+              className="text-xs font-semibold text-gray-500 hover:text-primary disabled:opacity-50"
             >
               REPLY
             </button>
@@ -450,13 +448,42 @@ const CommentItem = ({
               className="flex items-center gap-1 text-gray-500 hover:text-primary"
             >
               <ThumbsUp size={16} />
-              <span>{comment.likeCount || 0}</span>
+              <span className="text-xs">{comment.likeCount || 0}</span>
             </button>
+
+            {/* VIEW REPLIES INLINE */}
+            {replies.length > 0 && (
+              <button
+                onClick={() => setShowReplies((p) => !p)}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  className={`transition-transform ${
+                    showReplies ? "rotate-180" : ""
+                  }`}
+                >
+                  <path
+                    d="M7 10L12 15L17 10"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span className="text-xs font-medium text-black dark:text-gray-300">
+                  {replies.length}
+                </span>
+              </button>
+            )}
           </div>
 
           {/* INLINE REPLY BOX */}
-          {activeReplyBox === comment._id && (
-            <div className="mt-2 ml-14">
+          {isActiveReply && (
+            <div className="mt-2 ml-12">
               <p className="text-xs text-gray-500 mb-1">
                 Replying to{" "}
                 <span className="font-semibold">{comment.author.username}</span>
@@ -467,12 +494,13 @@ const CommentItem = ({
                 onChange={(e) => setReplyText(e.target.value)}
                 autoFocus
                 rows={1}
-                className="w-full bg-transparent border-b border-gray-400 focus:border-primary focus:outline-none text-sm py-1 resize-none"
+                disabled={isPostingReply}
+                className="w-full bg-transparent border-b border-gray-400 focus:border-primary focus:outline-none text-sm py-1 resize-none disabled:opacity-50"
                 placeholder="Write a reply..."
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
+                  if (e.key === "Enter" && !e.shiftKey && !isPostingReply) {
                     e.preventDefault();
-                    handleSubmitReply(comment._id); // 🚀 submit reply on Enter
+                    handleSubmitReply(comment._id);
                   }
                 }}
               />
@@ -483,30 +511,21 @@ const CommentItem = ({
                     setReplyText("");
                     setActiveReplyBox(null);
                   }}
-                  className="text-xs text-gray-500 hover:text-primary font-semibold"
+                  disabled={isPostingReply}
+                  className="text-xs text-gray-500 hover:text-primary font-semibold disabled:opacity-50"
                 >
                   ✕
                 </button>
 
                 <button
                   onClick={() => handleSubmitReply(comment._id)}
-                  disabled={!replyText.trim()}
+                  disabled={!replyText.trim() || isPostingReply}
                   className="text-xs font-bold text-primary disabled:opacity-40 black pointer"
                 >
-                  Post
+                  {isPostingReply ? "Posting..." : "Post"}
                 </button>
               </div>
             </div>
-          )}
-
-          {/* VIEW REPLIES BUTTON */}
-          {replies.length > 0 && (
-            <button
-              onClick={() => setShowReplies((p) => !p)}
-              className="text-xs font-semibold text-gray-500 hover:text-primary mt-2 ml-1"
-            >
-              {showReplies ? "Hide replies" : `View ${replies.length} replies`}
-            </button>
           )}
         </div>
       </div>
@@ -519,32 +538,16 @@ const CommentItem = ({
           return (
             <div
               key={r._id}
-              className="
-          relative
-          flex gap-4 p-2 pl-8 ml-14 
-          border-l border-gray-500/60
-        "
+              className="relative flex gap-3 p-1.5 pl-6 ml-12 border-l border-gray-500/60"
             >
               {/* CURVED LINE FOR THE LAST REPLY */}
               {isLast && (
-                <div
-                  className="
-              absolute 
-              -bottom-3 
-              left-0 
-              w-4 
-              h-4 
-              border-l 
-              border-b 
-              border-gray-500/60
-              rounded-bl-xl
-            "
-                />
+                <div className="absolute -bottom-2 left-0 w-3 h-3 border-l border-b border-gray-500/60 rounded-bl-xl" />
               )}
               <Link to={`/profile/${r.author._id}`}>
                 <img
                   src={r.author.profilePicture?.url || "/travel.jpg"}
-                  className="size-10 rounded-full object-cover mt-1"
+                  className="size-9 rounded-full object-cover mt-0.5"
                 />
               </Link>
 
@@ -570,15 +573,15 @@ const CommentItem = ({
                   )}
                 </div>
 
-                <p className="text-sm mt-1">{r.text}</p>
+                <p className="text-sm mt-0.5">{r.text}</p>
 
-                <div className="flex items-center gap-4 pt-2">
+                <div className="flex items-center gap-4 pt-1.5">
                   <button
                     onClick={() => onLike(r._id)}
                     className="flex items-center gap-1 text-gray-500 hover:text-primary"
                   >
                     <ThumbsUp size={16} />
-                    <span>{r.likeCount || 0}</span>
+                    <span className="text-xs">{r.likeCount || 0}</span>
                   </button>
                 </div>
               </div>

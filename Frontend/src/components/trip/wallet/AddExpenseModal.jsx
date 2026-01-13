@@ -118,7 +118,7 @@ export default function AddExpenseModal({ tripId, onClose }) {
 
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("food");
-  const [descriptionMode, setDescriptionMode] = useState("dropdown"); // dropdown or manual
+  const [descriptionMode, setDescriptionMode] = useState("dropdown");
   const [subCategory, setSubCategory] = useState("");
   const [manualDescription, setManualDescription] = useState("");
   const [location, setLocation] = useState("");
@@ -127,10 +127,11 @@ export default function AddExpenseModal({ tripId, onClose }) {
   const [payers, setPayers] = useState({});
   const [splitters, setSplitters] = useState({});
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   /* ---------------- EFFECTS ---------------- */
 
   useEffect(() => {
-    // Reset subcategory when category changes
     setSubCategory("");
     if (descriptionMode === "dropdown") {
       setDescriptionMode("dropdown");
@@ -186,49 +187,59 @@ export default function AddExpenseModal({ tripId, onClose }) {
     amount &&
     totalPaidPaise === toPaise(amount) &&
     totalSplitPaise === toPaise(amount) &&
-    selectedSplitterIds.length > 0;
+    selectedSplitterIds.length > 0 &&
+    !isSubmitting;
 
   /* ---------------- SUBMIT ---------------- */
 
   const submit = async () => {
     if (!canSubmit) return;
 
-    const paidBy = Object.entries(payers)
-      .filter(([, amt]) => toPaise(amt) > 0)
-      .map(([uid, amt]) => ({
-        user: uid,
-        amount: Number(amt),
-      }));
+    setIsSubmitting(true);
 
-    const splitAmong =
-      splitMode === "equal"
-        ? splitEqualSafely(amount, selectedSplitterIds)
-        : Object.entries(splitters)
-            .filter(([, amt]) => toPaise(amt) > 0)
-            .map(([uid, amt]) => ({
-              user: uid,
-              amount: Number(amt),
-            }));
+    try {
+      const paidBy = Object.entries(payers)
+        .filter(([, amt]) => toPaise(amt) > 0)
+        .map(([uid, amt]) => ({
+          user: uid,
+          amount: Number(amt),
+        }));
 
-    const payload = {
-      description,
-      amount: Number(amount),
-      category,
-      paidBy,
-      splitAmong,
-      splitType: splitMode,
-    };
+      const splitAmong =
+        splitMode === "equal"
+          ? splitEqualSafely(amount, selectedSplitterIds)
+          : Object.entries(splitters)
+              .filter(([, amt]) => toPaise(amt) > 0)
+              .map(([uid, amt]) => ({
+                user: uid,
+                amount: Number(amt),
+              }));
 
-    if (location.trim()) {
-      payload.location = { name: location };
+      const payload = {
+        description,
+        amount: Number(amount),
+        category,
+        paidBy,
+        splitAmong,
+        splitType: splitMode,
+      };
+
+      if (location.trim()) {
+        payload.location = { name: location };
+      }
+
+      if (descriptionMode === "dropdown" && subCategory) {
+        payload.subCategory = subCategory;
+      }
+
+      const res = await addExpense(tripId, payload);
+      onClose();
+    } catch (error) {
+      console.error("Failed to add expense:", error);
+      alert("Failed to add expense. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    if (descriptionMode === "dropdown" && subCategory) {
-      payload.subCategory = subCategory;
-    }
-
-    const res = await addExpense(tripId, payload);
-    onClose();
   };
 
   /* ---------------- UI ---------------- */
@@ -241,7 +252,8 @@ export default function AddExpenseModal({ tripId, onClose }) {
           <h3 className="text-lg font-bold">Add Expense</h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            disabled={isSubmitting}
+            className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
           >
             ✕
           </button>
@@ -255,7 +267,8 @@ export default function AddExpenseModal({ tripId, onClose }) {
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full p-3 rounded-xl border text-sm"
+              disabled={isSubmitting}
+              className="w-full p-3 rounded-xl border text-sm disabled:opacity-50"
             >
               {CATEGORY_OPTIONS.map((cat) => (
                 <option key={cat.value} value={cat.value}>
@@ -273,7 +286,8 @@ export default function AddExpenseModal({ tripId, onClose }) {
               placeholder="₹ 0.00"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-full p-3 rounded-xl border text-md font-semibold text-center"
+              disabled={isSubmitting}
+              className="w-full p-3 rounded-xl border text-md font-semibold text-center disabled:opacity-50"
             />
           </div>
 
@@ -285,7 +299,8 @@ export default function AddExpenseModal({ tripId, onClose }) {
             <div className="flex gap-2 mb-3">
               <button
                 onClick={() => setDescriptionMode("dropdown")}
-                className={`px-3 py-1.5 rounded-lg text-xs ${
+                disabled={isSubmitting}
+                className={`px-3 py-1.5 rounded-lg text-xs disabled:opacity-50 ${
                   descriptionMode === "dropdown"
                     ? "bg-primary text-white"
                     : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
@@ -295,7 +310,8 @@ export default function AddExpenseModal({ tripId, onClose }) {
               </button>
               <button
                 onClick={() => setDescriptionMode("manual")}
-                className={`px-3 py-1.5 rounded-lg text-xs ${
+                disabled={isSubmitting}
+                className={`px-3 py-1.5 rounded-lg text-xs disabled:opacity-50 ${
                   descriptionMode === "manual"
                     ? "bg-primary text-white"
                     : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
@@ -310,7 +326,8 @@ export default function AddExpenseModal({ tripId, onClose }) {
               <select
                 value={subCategory}
                 onChange={(e) => setSubCategory(e.target.value)}
-                className="w-full p-3 rounded-xl border text-sm"
+                disabled={isSubmitting}
+                className="w-full p-3 rounded-xl border text-sm disabled:opacity-50"
               >
                 <option value="">Select a specific type...</option>
                 {subCategoryOptions.map((option) => (
@@ -325,7 +342,8 @@ export default function AddExpenseModal({ tripId, onClose }) {
                 placeholder="Enter description..."
                 value={manualDescription}
                 onChange={(e) => setManualDescription(e.target.value)}
-                className="w-full p-3 rounded-xl border text-sm font-medium"
+                disabled={isSubmitting}
+                className="w-full p-3 rounded-xl border text-sm font-medium disabled:opacity-50"
               />
             )}
           </div>
@@ -337,7 +355,8 @@ export default function AddExpenseModal({ tripId, onClose }) {
               placeholder="Where did this expense occur?"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              className="w-full p-3 rounded-xl border text-sm"
+              disabled={isSubmitting}
+              className="w-full p-3 rounded-xl border text-sm disabled:opacity-50"
             />
           </div>
 
@@ -353,7 +372,8 @@ export default function AddExpenseModal({ tripId, onClose }) {
                 <input
                   type="number"
                   placeholder="₹0"
-                  className="w-28 p-2 border rounded-lg text-sm text-right"
+                  disabled={isSubmitting}
+                  className="w-28 p-2 border rounded-lg text-sm text-right disabled:opacity-50"
                   onChange={(e) =>
                     setPayers({ ...payers, [p._id]: e.target.value })
                   }
@@ -372,11 +392,16 @@ export default function AddExpenseModal({ tripId, onClose }) {
               <div className="flex gap-3 text-xs">
                 <button
                   onClick={selectAllSplitters}
-                  className="text-primary font-semibold"
+                  disabled={isSubmitting}
+                  className="text-primary font-semibold disabled:opacity-50"
                 >
                   Select all
                 </button>
-                <button onClick={clearAllSplitters} className="text-gray-500">
+                <button
+                  onClick={clearAllSplitters}
+                  disabled={isSubmitting}
+                  className="text-gray-500 disabled:opacity-50"
+                >
                   Clear
                 </button>
               </div>
@@ -387,7 +412,8 @@ export default function AddExpenseModal({ tripId, onClose }) {
                 <button
                   key={m}
                   onClick={() => setSplitMode(m)}
-                  className={`px-3 py-1 rounded-full text-xs ${
+                  disabled={isSubmitting}
+                  className={`px-3 py-1 rounded-full text-xs disabled:opacity-50 ${
                     splitMode === m
                       ? "bg-primary text-white"
                       : "bg-gray-200 dark:bg-gray-700"
@@ -411,7 +437,8 @@ export default function AddExpenseModal({ tripId, onClose }) {
                       type="checkbox"
                       checked={checked}
                       onChange={() => toggleSplitter(p._id)}
-                      className="rounded"
+                      disabled={isSubmitting}
+                      className="rounded disabled:opacity-50"
                     />
                     {p.username}
                   </label>
@@ -426,7 +453,8 @@ export default function AddExpenseModal({ tripId, onClose }) {
                     <input
                       type="number"
                       placeholder="₹0"
-                      className="w-28 p-2 border rounded-lg text-sm text-right"
+                      disabled={isSubmitting}
+                      className="w-28 p-2 border rounded-lg text-sm text-right disabled:opacity-50"
                       onChange={(e) =>
                         setSplitters({
                           ...splitters,
@@ -463,7 +491,8 @@ export default function AddExpenseModal({ tripId, onClose }) {
         <div className="p-4 border-t flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 font-semibold text-gray-700 dark:text-gray-300"
+            disabled={isSubmitting}
+            className="flex-1 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 font-semibold text-gray-700 dark:text-gray-300 disabled:opacity-50"
           >
             Cancel
           </button>
@@ -476,7 +505,7 @@ export default function AddExpenseModal({ tripId, onClose }) {
                 : "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
             }`}
           >
-            Add Expense
+            {isSubmitting ? "Adding..." : "Add Expense"}
           </button>
         </div>
       </div>
