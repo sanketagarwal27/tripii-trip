@@ -22,9 +22,9 @@ const AddMembers = ({ room, onClose }) => {
   const existingMemberIds = useMemo(
     () =>
       room.members.map((m) =>
-        typeof m.user === "string" ? m.user : m.user?._id
+        typeof m.user === "string" ? m.user : m.user?._id,
       ),
-    [room.members]
+    [room.members],
   );
 
   const communityMembers = members.filter((m) => {
@@ -37,7 +37,7 @@ const AddMembers = ({ room, onClose }) => {
    -------------------------------- */
   const following =
     currentUser?.following?.filter(
-      (u) => !existingMemberIds.includes(u?._id)
+      (u) => !existingMemberIds.includes(u?._id),
     ) || [];
 
   /** --------------------------------
@@ -56,8 +56,9 @@ const AddMembers = ({ room, onClose }) => {
         setSearchResults(
           (res.data.data || []).filter(
             (u) =>
-              u?._id !== currentUser?._id && !existingMemberIds.includes(u?._id)
-          )
+              u?._id !== currentUser?._id &&
+              !existingMemberIds.includes(u?._id),
+          ),
         );
       } catch (err) {
         console.error(err);
@@ -75,7 +76,7 @@ const AddMembers = ({ room, onClose }) => {
     setSelectedMembers((prev) =>
       prev.includes(userId)
         ? prev.filter((id) => id !== userId)
-        : [...prev, userId]
+        : [...prev, userId],
     );
   };
 
@@ -108,8 +109,8 @@ const AddMembers = ({ room, onClose }) => {
   const displayList = searchQuery
     ? searchResults
     : activeTab === "following"
-    ? following
-    : communityMembers;
+      ? following
+      : communityMembers;
 
   return (
     <>
@@ -194,7 +195,7 @@ const AddMembers = ({ room, onClose }) => {
                       className="accent-[#15f0db]"
                     />
                     <img
-                      src={u.profilePicture?.url || "/travel.jpg"}
+                      src={u?.profilePicture?.url || "/travel.jpg"}
                       className="w-10 h-10 rounded-full object-cover"
                     />
                     <div>

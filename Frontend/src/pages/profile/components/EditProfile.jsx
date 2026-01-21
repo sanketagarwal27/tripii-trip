@@ -12,7 +12,7 @@ const EditProfileModal = ({ user, onClose, onSave }) => {
 
   // Separate state for the file and its preview
   const [avatarFile, setAvatarFile] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(user.profilePicture.url);
+  const [previewUrl, setPreviewUrl] = useState(user?.profilePicture.url);
   const [saving, setSaving] = useState(false);
 
   // Handle Text Inputs

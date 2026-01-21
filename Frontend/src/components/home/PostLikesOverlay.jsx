@@ -1,10 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { getContextualPostLikes } from "@/api/post";
+import { useEffect, useRef } from "react";
 
-const PostLikesOverlay = ({ postId, onClose }) => {
-  const [users, setUsers] = useState([]);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+const PostLikesOverlay = ({ users, hasMore, loading, onLoadMore, onClose }) => {
   const modalRef = useRef(null);
 
   // Close on outside click
@@ -17,25 +13,6 @@ const PostLikesOverlay = ({ postId, onClose }) => {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [onClose]);
-
-  useEffect(() => {
-    if (!hasMore) return;
-
-    getContextualPostLikes(postId, 20, page).then((res) => {
-      const incoming = res.data?.data?.users || [];
-
-      // Deduplicate by _id
-      setUsers((prev) => {
-        const map = new Map(prev.map((u) => [u._id, u]));
-        incoming.forEach((u) => map.set(u._id, u));
-        return Array.from(map.values());
-      });
-
-      if (incoming.length < 20) {
-        setHasMore(false);
-      }
-    });
-  }, [page, postId, hasMore]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
@@ -56,7 +33,7 @@ const PostLikesOverlay = ({ postId, onClose }) => {
           {users.map((u) => (
             <div key={u._id} className="flex items-center gap-3">
               <img
-                src={u.profilePicture?.url || "/travel.jpg"}
+                src={u?.profilePicture?.url || "/travel.jpg"}
                 className="w-9 h-9 rounded-full object-cover"
               />
               <div className="flex flex-col">
@@ -75,10 +52,11 @@ const PostLikesOverlay = ({ postId, onClose }) => {
         {hasMore && (
           <div className="p-3 border-t border-zinc-200 dark:border-zinc-700">
             <button
-              onClick={() => setPage((p) => p + 1)}
-              className="w-full text-sm font-medium text-primary hover:underline"
+              onClick={onLoadMore}
+              disabled={loading}
+              className="w-full text-sm font-medium text-primary hover:underline disabled:opacity-50"
             >
-              Load more
+              {loading ? "Loading..." : "Load more"}
             </button>
           </div>
         )}

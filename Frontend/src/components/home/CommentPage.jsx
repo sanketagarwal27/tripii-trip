@@ -131,7 +131,7 @@ const CommentPage = () => {
         fetched.map((c) => ({
           ...c,
           _remove: false,
-        }))
+        })),
       );
     } catch {
       toast.error("Failed to load comments");
@@ -187,8 +187,8 @@ const CommentPage = () => {
 
       setComments((prev) =>
         prev.map((c) =>
-          c._id === parentId ? { ...c, replies: [newReply, ...c.replies] } : c
-        )
+          c._id === parentId ? { ...c, replies: [newReply, ...c.replies] } : c,
+        ),
       );
 
       setReplyText("");
@@ -207,18 +207,18 @@ const CommentPage = () => {
 
       if (!isReply) {
         setComments((prev) =>
-          prev.map((c) => (c._id === commentId ? { ...c, _remove: true } : c))
+          prev.map((c) => (c._id === commentId ? { ...c, _remove: true } : c)),
         );
         setTimeout(
           () => setComments((prev) => prev.filter((c) => c._id !== commentId)),
-          300
+          300,
         );
 
         if (post) {
           const updatedPost = {
             ...post,
             comments: (post.comments || []).filter(
-              (c) => (c._id || c) !== commentId
+              (c) => (c._id || c) !== commentId,
             ),
           };
           setPost(updatedPost);
@@ -233,8 +233,8 @@ const CommentPage = () => {
                   ...c,
                   replies: c.replies.filter((r) => r._id !== commentId),
                 }
-              : c
-          )
+              : c,
+          ),
         );
       }
     } catch {
@@ -255,10 +255,10 @@ const CommentPage = () => {
             : {
                 ...c,
                 replies: c.replies.map((r) =>
-                  r._id === commentId ? { ...r, likes, likeCount } : r
+                  r._id === commentId ? { ...r, likes, likeCount } : r,
                 ),
-              }
-        )
+              },
+        ),
       );
     } catch {}
   };
@@ -400,7 +400,7 @@ const CommentItem = ({
       <div className="flex w-full gap-3 p-2 rounded-lg">
         <Link to={`/profile/${comment.author._id}`}>
           <img
-            src={comment.author.profilePicture?.url || "/travel.jpg"}
+            src={comment.author?.profilePicture?.url || "/travel.jpg"}
             className="size-10 rounded-full object-cover mt-1"
           />
         </Link>
@@ -434,7 +434,7 @@ const CommentItem = ({
             <button
               onClick={() =>
                 setActiveReplyBox(
-                  activeReplyBox === comment._id ? null : comment._id
+                  activeReplyBox === comment._id ? null : comment._id,
                 )
               }
               disabled={isPostingReply}

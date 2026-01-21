@@ -97,8 +97,21 @@ const BusinessListingSchema = new Schema(
       landmark: { type: String },
 
       geoLocation: {
-        lat: { type: Number, required: true },
-        lng: { type: Number, required: true },
+        type: {
+          type: String,
+          enum: ["Point"],
+          default: "Point",
+        },
+        coordinates: {
+          type: [Number], // [longitude, latitude]
+          required: true,
+          validate: {
+            validator: function (v) {
+              return v.length === 2;
+            },
+            message: "Coordinates must be [longitude, latitude]",
+          },
+        },
       },
 
       addressProofUrl: { type: String },
@@ -203,7 +216,7 @@ const BusinessListingSchema = new Schema(
     ========================== */
     onlinePresence: {
       websiteUrl: { type: String },
-      googleBusinessUrl: { type: String, required: true },
+      googleBusinessUrl: { type: String },
       instagramUrl: { type: String },
       facebookUrl: { type: String },
       otherPlatformLinks: [String],
@@ -260,6 +273,8 @@ const BusinessListingSchema = new Schema(
   },
   { timestamps: true }
 );
+
+BusinessListingSchema.index({ "address.geoLocation": "2dsphere" });
 
 export const BusinessListing = mongoose.model(
   "BusinessListing",

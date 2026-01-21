@@ -1,4 +1,6 @@
-import { createSlice } from "@reduxjs/toolkit";
+// redux/roomSlice.js
+import { createSlice, createSelector } from "@reduxjs/toolkit";
+import { enrichRoomsWithStatus, computeRoomStatus } from "@/utils/roomStatus";
 
 const initialState = {
   rooms: [],
@@ -45,7 +47,7 @@ const roomSlice = createSlice({
     removeRoomMessage: (state, action) => {
       const messageId = action.payload;
       state.roomMessages = state.roomMessages.filter(
-        (m) => m._id !== messageId
+        (m) => m._id !== messageId,
       );
     },
     setRoomLoading: (state, action) => {
@@ -73,7 +75,7 @@ const roomSlice = createSlice({
       if (!state.selectedRoomData) return;
 
       const exists = state.selectedRoomData.members?.some(
-        (m) => m.user?._id === user._id
+        (m) => m.user?._id === user._id,
       );
 
       if (!exists) {
@@ -105,6 +107,53 @@ const roomSlice = createSlice({
     },
   },
 });
+
+// ============================================
+// SELECTORS - Auto-compute status in real-time
+// ============================================
+
+const selectRoomState = (state) => state.room;
+
+/**
+ * 🔥 Returns myRooms with computed statuses
+ * Filters out finished/cancelled rooms
+ */
+export const selectMyRoomsWithStatus = createSelector(
+  [selectRoomState],
+  (roomState) => {
+    const enriched = enrichRoomsWithStatus(roomState.myRooms);
+    // Only show active or upcoming rooms
+    return enriched.filter(
+      (r) => r.computedStatus === "active" || r.computedStatus === "upcoming",
+    );
+  },
+);
+
+/**
+ * 🔥 Returns suggestedRooms with computed statuses
+ * Filters out finished/cancelled rooms
+ */
+export const selectSuggestedRoomsWithStatus = createSelector(
+  [selectRoomState],
+  (roomState) => {
+    const enriched = enrichRoomsWithStatus(roomState.suggestedRooms);
+    return enriched.filter(
+      (r) => r.computedStatus === "active" || r.computedStatus === "upcoming",
+    );
+  },
+);
+
+/**
+ * 🔥 Returns tripRooms with computed statuses
+ * Only shows active trips
+ */
+export const selectTripRoomsWithStatus = createSelector(
+  [selectRoomState],
+  (roomState) => {
+    const enriched = enrichRoomsWithStatus(roomState.tripRooms);
+    return enriched.filter((r) => r.computedStatus === "active");
+  },
+);
 
 export const {
   setRooms,

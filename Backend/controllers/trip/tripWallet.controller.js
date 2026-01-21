@@ -118,7 +118,7 @@ export const getTripWallet = asyncHandler(async (req, res) => {
   // 1️⃣ Fetch trip WITH POPULATED PARTICIPANTS
   const trip = await Trip.findById(tripId).populate(
     "participants.user",
-    "_id username"
+    "_id username",
   );
 
   if (!trip) {
@@ -140,7 +140,7 @@ export const getTripWallet = asyncHandler(async (req, res) => {
     console.log(
       `   Checking: ${participantUserId} === ${userId.toString()} ? ${matches} (status: ${
         p.status
-      })`
+      })`,
     );
 
     return isActive && matches;
@@ -205,15 +205,15 @@ export const getTripWallet = asyncHandler(async (req, res) => {
         participants: wallet.participants.map((p) => ({
           _id: p.user._id,
           username: p.user.username,
-          profilePicture: p.user.profilePicture,
+          profilePicture: p.user?.profilePicture,
           personalBudget: p.personalBudget,
           totalPaid: p.totalPaid,
           totalOwes: p.totalOwes,
           totalOwed: p.totalOwed,
         })),
       },
-      "Wallet fetched"
-    )
+      "Wallet fetched",
+    ),
   );
 });
 
@@ -262,7 +262,7 @@ export const updateWalletSettings = asyncHandler(async (req, res) => {
   const wallet = await TripWallet.findOneAndUpdate(
     { trip: tripId },
     { $set: updates },
-    { new: true }
+    { new: true },
   ).lean();
 
   emitToTrip(tripId, EVENTS.WALLET_SETTINGS_UPDATED, {
@@ -342,7 +342,7 @@ export const addExpense = asyncHandler(async (req, res) => {
   // 1️⃣ Update totalPaid for payers
   expense.paidBy.forEach((p) => {
     const participant = wallet.participants.find(
-      (x) => x.user.toString() === p.user.toString()
+      (x) => x.user.toString() === p.user.toString(),
     );
     if (participant) {
       participant.totalPaid += p.amount;
@@ -352,7 +352,7 @@ export const addExpense = asyncHandler(async (req, res) => {
   // 2️⃣ Update totalOwes for splitters
   expense.splitAmong.forEach((s) => {
     const participant = wallet.participants.find(
-      (x) => x.user.toString() === s.user.toString()
+      (x) => x.user.toString() === s.user.toString(),
     );
     if (participant) {
       participant.totalOwes += s.amount;
@@ -362,7 +362,7 @@ export const addExpense = asyncHandler(async (req, res) => {
   // 3️⃣ ✅ NEW: Update totalOwed for payers (money owed TO them)
   expense.paidBy.forEach((payer) => {
     const payerParticipant = wallet.participants.find(
-      (x) => x.user.toString() === payer.user.toString()
+      (x) => x.user.toString() === payer.user.toString(),
     );
     if (!payerParticipant) return;
 
@@ -433,7 +433,7 @@ export const updateExpense = asyncHandler(async (req, res) => {
   // 1️⃣ Reverse totalPaid
   expense.paidBy.forEach((p) => {
     const participant = wallet.participants.find(
-      (x) => x.user.toString() === p.user.toString()
+      (x) => x.user.toString() === p.user.toString(),
     );
     if (participant) {
       participant.totalPaid = Math.max(0, participant.totalPaid - p.amount);
@@ -443,7 +443,7 @@ export const updateExpense = asyncHandler(async (req, res) => {
   // 2️⃣ Reverse totalOwes
   expense.splitAmong.forEach((s) => {
     const participant = wallet.participants.find(
-      (x) => x.user.toString() === s.user.toString()
+      (x) => x.user.toString() === s.user.toString(),
     );
     if (participant) {
       participant.totalOwes = Math.max(0, participant.totalOwes - s.amount);
@@ -453,7 +453,7 @@ export const updateExpense = asyncHandler(async (req, res) => {
   // 3️⃣ Reverse totalOwed
   expense.paidBy.forEach((payer) => {
     const payerParticipant = wallet.participants.find(
-      (x) => x.user.toString() === payer.user.toString()
+      (x) => x.user.toString() === payer.user.toString(),
     );
     if (!payerParticipant) return;
 
@@ -467,7 +467,7 @@ export const updateExpense = asyncHandler(async (req, res) => {
 
       payerParticipant.totalOwed = Math.max(
         0,
-        payerParticipant.totalOwed - owedAmount
+        payerParticipant.totalOwed - owedAmount,
       );
     });
   });
@@ -483,7 +483,7 @@ export const updateExpense = asyncHandler(async (req, res) => {
   // 1️⃣ Add new totalPaid
   expense.paidBy.forEach((p) => {
     const participant = wallet.participants.find(
-      (x) => x.user.toString() === p.user.toString()
+      (x) => x.user.toString() === p.user.toString(),
     );
     if (participant) {
       participant.totalPaid += p.amount;
@@ -493,7 +493,7 @@ export const updateExpense = asyncHandler(async (req, res) => {
   // 2️⃣ Add new totalOwes
   expense.splitAmong.forEach((s) => {
     const participant = wallet.participants.find(
-      (x) => x.user.toString() === s.user.toString()
+      (x) => x.user.toString() === s.user.toString(),
     );
     if (participant) {
       participant.totalOwes += s.amount;
@@ -503,7 +503,7 @@ export const updateExpense = asyncHandler(async (req, res) => {
   // 3️⃣ Add new totalOwed
   expense.paidBy.forEach((payer) => {
     const payerParticipant = wallet.participants.find(
-      (x) => x.user.toString() === payer.user.toString()
+      (x) => x.user.toString() === payer.user.toString(),
     );
     if (!payerParticipant) return;
 
@@ -569,7 +569,7 @@ export const deleteExpense = asyncHandler(async (req, res) => {
   // 1️⃣ Reverse totalPaid
   expense.paidBy.forEach((p) => {
     const participant = wallet.participants.find(
-      (x) => x.user.toString() === p.user.toString()
+      (x) => x.user.toString() === p.user.toString(),
     );
     if (participant) {
       participant.totalPaid = Math.max(0, participant.totalPaid - p.amount);
@@ -579,7 +579,7 @@ export const deleteExpense = asyncHandler(async (req, res) => {
   // 2️⃣ Reverse totalOwes
   expense.splitAmong.forEach((s) => {
     const participant = wallet.participants.find(
-      (x) => x.user.toString() === s.user.toString()
+      (x) => x.user.toString() === s.user.toString(),
     );
     if (participant) {
       participant.totalOwes = Math.max(0, participant.totalOwes - s.amount);
@@ -589,7 +589,7 @@ export const deleteExpense = asyncHandler(async (req, res) => {
   // 3️⃣ ✅ NEW: Reverse totalOwed
   expense.paidBy.forEach((payer) => {
     const payerParticipant = wallet.participants.find(
-      (x) => x.user.toString() === payer.user.toString()
+      (x) => x.user.toString() === payer.user.toString(),
     );
     if (!payerParticipant) return;
 
@@ -603,7 +603,7 @@ export const deleteExpense = asyncHandler(async (req, res) => {
 
       payerParticipant.totalOwed = Math.max(
         0,
-        payerParticipant.totalOwed - owedAmount
+        payerParticipant.totalOwed - owedAmount,
       );
     });
   });
@@ -751,7 +751,7 @@ export const confirmSettlement = asyncHandler(async (req, res) => {
   }
 
   const settlement = trip.summary.settlements.find(
-    (s) => s._id.toString() === settlementId
+    (s) => s._id.toString() === settlementId,
   );
 
   if (!settlement) throw new ApiError(404, "Settlement not found");
@@ -819,10 +819,10 @@ export const confirmSettlement = asyncHandler(async (req, res) => {
     if (!wallet) throw new ApiError(404, "Wallet not found");
 
     const payer = wallet.participants.find(
-      (p) => p.user.toString() === settlement.from.toString()
+      (p) => p.user.toString() === settlement.from.toString(),
     );
     const receiver = wallet.participants.find(
-      (p) => p.user.toString() === settlement.to.toString()
+      (p) => p.user.toString() === settlement.to.toString(),
     );
 
     if (!payer || !receiver) {
@@ -862,7 +862,7 @@ export const confirmSettlement = asyncHandler(async (req, res) => {
         model: "Trip",
         modelId: trip._id,
         actorId: settlement.to,
-      }
+      },
     );
 
     settlement.trustEvaluated = true;
@@ -922,13 +922,13 @@ export const assignAccountant = asyncHandler(async (req, res) => {
     .filter(Boolean);
 
   const validUserIds = userIds.filter((uid) =>
-    participantIds.includes(uid.toString())
+    participantIds.includes(uid.toString()),
   );
 
   if (validUserIds.length === 0) {
     throw new ApiError(
       400,
-      "Only trip participants can be assigned as accountant"
+      "Only trip participants can be assigned as accountant",
     );
   }
 
@@ -977,7 +977,7 @@ export const assignAccountant = asyncHandler(async (req, res) => {
   });
 
   return res.json(
-    new ApiResponse(200, null, "Accountants assigned successfully")
+    new ApiResponse(200, null, "Accountants assigned successfully"),
   );
 });
 
@@ -1043,7 +1043,7 @@ export const setPersonalBudget = asyncHandler(async (req, res) => {
   }
 
   const participant = wallet.participants.find(
-    (p) => p.user.toString() === userId.toString()
+    (p) => p.user.toString() === userId.toString(),
   );
 
   if (!participant) {
@@ -1094,7 +1094,7 @@ export const setTripBudget = asyncHandler(async (req, res) => {
   await TripWallet.findOneAndUpdate(
     { trip: tripId },
     { $set: { budget } },
-    { new: true }
+    { new: true },
   ).lean();
 
   emitToTrip(tripId, EVENTS.WALLET_TRIP_BUDGET_UPDATED, {

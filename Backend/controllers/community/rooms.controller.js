@@ -30,7 +30,7 @@ import { optimizeImageBuffer } from "../../utils/sharpImage.js";
 const sortMembers = (
   members = [],
   followingSet = new Set(),
-  followersSet = new Set()
+  followersSet = new Set(),
 ) => {
   return members.slice().sort((a, b) => {
     const roleOrder = (r) => (r === "owner" ? 0 : r === "moderator" ? 1 : 2);
@@ -88,6 +88,8 @@ const uploadRoomMedia = async (file, roomId) => {
 
 //  CREATE ROOM (with Trip option)
 
+// In your room.controller.js - ONLY the createRoom function fix
+
 export const createRoom = asyncHandler(async (req, res) => {
   const { communityId } = req.params;
   const userId = req.user._id;
@@ -103,6 +105,7 @@ export const createRoom = asyncHandler(async (req, res) => {
     initialMembers = "[]",
     tripType,
     locationName,
+    visibility,
   } = req.body;
 
   // Parse JSON
@@ -144,7 +147,7 @@ export const createRoom = asyncHandler(async (req, res) => {
   ) {
     throw new ApiError(
       403,
-      "Members are not allowed to create rooms in this community"
+      "Members are not allowed to create rooms in this community",
     );
   }
 
@@ -173,7 +176,7 @@ export const createRoom = asyncHandler(async (req, res) => {
     publicId: uploadedBg.public_id,
   };
 
-  // Build members array
+  // Build members array FOR ROOM
   const roomMembers = [{ user: userId, role: "owner", joinedAt: new Date() }];
 
   if (Array.isArray(initialMembers) && initialMembers.length > 0) {
@@ -212,12 +215,30 @@ export const createRoom = asyncHandler(async (req, res) => {
     isEphemeral,
     roomtype,
     status,
+    visibility,
   });
 
   let trip = null;
 
   // Create trip if Trip room
   if (roomtype === "Trip") {
+    // 🔥 FIX: Build Trip participants with correct structure
+    const tripParticipants = roomMembers.map((m) => ({
+      user: m.user,
+      joinedAt: m.joinedAt || new Date(),
+      joinedVia: "room", // Since they're joining via room creation
+      status: "active",
+    }));
+
+    // 🔥 FIX: Build Wallet participants with correct structure
+    const walletParticipants = roomMembers.map((m) => ({
+      user: m.user,
+      personalBudget: 0,
+      totalPaid: 0,
+      totalOwed: 0,
+      totalOwes: 0,
+    }));
+
     trip = await Trip.create({
       title: name,
       description,
@@ -225,10 +246,10 @@ export const createRoom = asyncHandler(async (req, res) => {
       endDate,
       coverPhoto: roombackgroundImage,
       createdBy: userId,
-      participants: roomMembers.map((m) => m.user),
+      participants: tripParticipants, // ✅ FIXED: Proper subdocument structure
       type: tripType,
       location: {
-        name: locationName, // ✅ FIXED
+        name: locationName,
       },
       visibility: "private",
       visibleInCommunities: [communityId],
@@ -237,27 +258,27 @@ export const createRoom = asyncHandler(async (req, res) => {
       createdByType: "user",
     });
 
-    // ✅ CREATE WALLET (CRITICAL)
+    // ✅ CREATE WALLET WITH CORRECT STRUCTURE
     await TripWallet.create({
       trip: trip._id,
       manager: userId,
-      participants: roomMembers.map((m) => m.user),
+      participants: walletParticipants, // ✅ FIXED: Proper subdocument structure
       budget: 0,
       totalSpend: 0,
-      settlements: [],
       settings: {
-        splitMode: "equal",
-        currency: "INR",
+        expensePermission: "all",
       },
     });
 
     room.linkedTrip = trip._id;
-
     await room.save();
 
+    // Extract just user IDs for User updates
+    const participantUserIds = roomMembers.map((m) => m.user);
+
     await User.updateMany(
-      { _id: { $in: roomMembers.map((m) => m.user) } },
-      { $addToSet: { trips: trip._id } }
+      { _id: { $in: participantUserIds } },
+      { $addToSet: { trips: trip._id } },
     );
   }
 
@@ -267,13 +288,14 @@ export const createRoom = asyncHandler(async (req, res) => {
     {
       $addToSet: { rooms: room._id },
       $inc: { roomsLast7DaysCount: 1 },
-    }
+    },
   );
 
-  // Update users
+  // Update users - extract user IDs from roomMembers
+  const roomMemberUserIds = roomMembers.map((m) => m.user);
   await User.updateMany(
-    { _id: { $in: roomMembers.map((m) => m.user) } },
-    { $addToSet: { rooms: room._id } }
+    { _id: { $in: roomMemberUserIds } },
+    { $addToSet: { rooms: room._id } },
   );
 
   // Create activity
@@ -320,15 +342,17 @@ export const createRoom = asyncHandler(async (req, res) => {
             emitToUser(memberId, "notification:new", tripNotif);
           } catch (err) {}
         }
-      })
+      }),
   );
 
   // Socket broadcast
+  let populatedRoom = null;
   try {
-    const populatedRoom = await room.populate(
-      "createdBy",
-      "username profilePicture.url"
-    );
+    populatedRoom = await Room.findById(room._id)
+      .populate("createdBy", "username profilePicture.url")
+      .populate("members.user", "username profilePicture.url")
+      .populate("linkedTrip", "title startDate endDate location")
+      .lean();
 
     emitToCommunity(communityId.toString(), "room:created", {
       room: populatedRoom,
@@ -345,16 +369,20 @@ export const createRoom = asyncHandler(async (req, res) => {
     console.error("Emit error:", err);
   }
 
+  if (!populatedRoom) {
+    populatedRoom = room.toObject();
+  }
+
   return res
     .status(201)
     .json(
       new ApiResponse(
         201,
-        { room, trip },
+        { room: populatedRoom, trip },
         roomtype === "Trip"
           ? "Trip room created successfully"
-          : "Room created successfully"
-      )
+          : "Room created successfully",
+      ),
     );
 });
 
@@ -376,10 +404,10 @@ export const getCommunityRooms = asyncHandler(async (req, res) => {
 
   const user = await User.findById(userId).select("following followers").lean();
   const followingSet = new Set(
-    (user.following || []).map((id) => id.toString())
+    (user.following || []).map((id) => id.toString()),
   );
   const followersSet = new Set(
-    (user.followers || []).map((id) => id.toString())
+    (user.followers || []).map((id) => id.toString()),
   );
 
   const rooms = await Room.find({ parentCommunity: communityId })
@@ -400,8 +428,8 @@ export const getCommunityRooms = asyncHandler(async (req, res) => {
       new ApiResponse(
         200,
         { rooms: processedRooms },
-        "Rooms in this community fetched"
-      )
+        "Rooms in this community fetched",
+      ),
     );
 });
 
@@ -421,10 +449,10 @@ export const getMyCommunityRooms = asyncHandler(async (req, res) => {
 
   const user = await User.findById(userId).select("following followers").lean();
   const followingSet = new Set(
-    (user.following || []).map((id) => id.toString())
+    (user.following || []).map((id) => id.toString()),
   );
   const followersSet = new Set(
-    (user.followers || []).map((id) => id.toString())
+    (user.followers || []).map((id) => id.toString()),
   );
 
   const rooms = await Room.find({
@@ -448,8 +476,8 @@ export const getMyCommunityRooms = asyncHandler(async (req, res) => {
       new ApiResponse(
         200,
         { rooms: processedRooms },
-        "User rooms in this community fetched"
-      )
+        "User rooms in this community fetched",
+      ),
     );
 });
 
@@ -588,22 +616,18 @@ export const getSuggestedRooms = asyncHandler(async (req, res) => {
 /* ===========================
    JOIN ROOM
    =========================== */
+// In your room.controller.js - joinRoom function
+
 export const joinRoom = asyncHandler(async (req, res) => {
   const { roomId } = req.params;
   const userId = req.user._id;
 
-  /* ---------------------------------------------------------
-     1️⃣ FETCH ROOM (MUST INCLUDE TRIP FIELDS)
-  --------------------------------------------------------- */
   const room = await Room.findById(roomId).select(
-    "parentCommunity members roomtype linkedTrip name"
+    "parentCommunity members roomtype linkedTrip name",
   );
 
   if (!room) throw new ApiError(404, "Room not found");
 
-  /* ---------------------------------------------------------
-     2️⃣ COMMUNITY MEMBERSHIP CHECK
-  --------------------------------------------------------- */
   const membership = await CommunityMembership.findOne({
     community: room.parentCommunity,
     user: userId,
@@ -612,80 +636,76 @@ export const joinRoom = asyncHandler(async (req, res) => {
   if (!membership)
     throw new ApiError(403, "Only community members can join this room");
 
-  /* ---------------------------------------------------------
-     3️⃣ ALREADY A ROOM MEMBER?
-  --------------------------------------------------------- */
   const alreadyMember = room.members.some(
-    (m) => m.user.toString() === userId.toString()
+    (m) => m.user.toString() === userId.toString(),
   );
 
   if (alreadyMember) throw new ApiError(409, "Already a member of this room");
 
-  /* ---------------------------------------------------------
-     4️⃣ ADD USER TO ROOM
-  --------------------------------------------------------- */
-  room.members.push({
+  // Add to room
+  const newMember = {
     user: userId,
     role: "member",
     joinedAt: new Date(),
-  });
+  };
 
+  room.members.push(newMember);
   await room.save();
 
-  /* ---------------------------------------------------------
-     5️⃣ ADD ROOM TO USER
-  --------------------------------------------------------- */
   await User.findByIdAndUpdate(userId, {
     $addToSet: { rooms: roomId },
   });
 
-  /* ---------------------------------------------------------
-     6️⃣ 🔥 TRIP SYNC (ONLY IF TRIP ROOM)
-  --------------------------------------------------------- */
+  // 🔥 TRIP SYNC
   if (room.roomtype === "Trip" && room.linkedTrip) {
-    // Add user to Trip participants
     await Trip.findByIdAndUpdate(room.linkedTrip, {
-      $addToSet: { participants: userId },
+      $addToSet: {
+        participants: {
+          user: userId,
+          joinedAt: new Date(),
+          joinedVia: "room",
+          status: "active",
+        },
+      },
     });
 
-    // Add trip to user's trips
     await User.findByIdAndUpdate(userId, {
       $addToSet: { trips: room.linkedTrip },
     });
 
-    // Add user to Trip Wallet
     const wallet = await TripWallet.findOne({ trip: room.linkedTrip });
     if (wallet) {
       await TripWallet.findByIdAndUpdate(wallet._id, {
-        $addToSet: { participants: userId },
+        $addToSet: {
+          participants: {
+            user: userId,
+            personalBudget: 0,
+            totalPaid: 0,
+            totalOwed: 0,
+            totalOwes: 0,
+          },
+        },
       });
     }
   }
 
-  /* ---------------------------------------------------------
-     7️⃣ FETCH USER DATA FOR SOCKET PAYLOAD
-  --------------------------------------------------------- */
   const userData = await User.findById(userId)
     .select("username profilePicture.url")
     .lean();
 
-  /* ---------------------------------------------------------
-     8️⃣ SOCKET: EMIT TO ROOM
-  --------------------------------------------------------- */
+  // 🔥 FIX: Emit with all necessary fields
   emitToRoom(roomId.toString(), "room:userJoined", {
     roomId: room._id,
     user: {
       _id: userData._id,
       username: userData.username,
-      profilePicture: userData.profilePicture.url,
+      profilePicture: userData.profilePicture,
     },
     role: "member",
-    joinedAt: new Date(),
+    joinedAt: newMember.joinedAt,
   });
 
-  /* ---------------------------------------------------------
-     9️⃣ NOTIFY OTHER ROOM MEMBERS (SAFE LOOP)
-  --------------------------------------------------------- */
+  // Notify other members
   for (const member of room.members) {
     if (member.user.toString() !== userId.toString()) {
       try {
@@ -704,9 +724,6 @@ export const joinRoom = asyncHandler(async (req, res) => {
     }
   }
 
-  /* ---------------------------------------------------------
-     🔟 RESPONSE
-  --------------------------------------------------------- */
   return res
     .status(200)
     .json(new ApiResponse(200, { user: userData }, "Joined room successfully"));
@@ -723,7 +740,7 @@ export const leaveRoom = asyncHandler(async (req, res) => {
   if (!room) throw new ApiError(404, "Room not found");
 
   const memberIndex = room.members.findIndex(
-    (m) => m.user.toString() === userId.toString()
+    (m) => m.user.toString() === userId.toString(),
   );
   if (memberIndex === -1) throw new ApiError(404, "You are not a member");
 
@@ -753,12 +770,12 @@ export const sendRoomMessage = asyncHandler(async (req, res) => {
   const file = req.files?.media?.[0];
 
   const room = await Room.findById(roomId).select(
-    "members parentCommunity status"
+    "members parentCommunity status",
   );
   if (!room) throw new ApiError(404, "Room not found");
 
   const isMember = room.members.some(
-    (m) => m.user.toString() === userId.toString()
+    (m) => m.user.toString() === userId.toString(),
   );
   if (!isMember) {
     throw new ApiError(403, "Only room members can send messages");
@@ -785,8 +802,8 @@ export const sendRoomMessage = asyncHandler(async (req, res) => {
     messageData.type = uploaded.mimeType?.startsWith("image/")
       ? "image"
       : uploaded.mimeType?.startsWith("video/")
-      ? "video"
-      : "document";
+        ? "video"
+        : "document";
     messageData.media = uploaded;
   } else if (gifUrl) {
     messageData.type = "gif";
@@ -817,7 +834,7 @@ export const getRoomMessages = asyncHandler(async (req, res) => {
   if (!room) throw new ApiError(404, "Room not found");
 
   const isMember = room.members.some(
-    (m) => m.user.toString() === userId.toString()
+    (m) => m.user.toString() === userId.toString(),
   );
   if (!isMember) throw new ApiError(403, "Only members can view messages");
 
@@ -840,8 +857,8 @@ export const getRoomMessages = asyncHandler(async (req, res) => {
         hasMore: messages.length === parseInt(limit),
         nextCursor: messages.length ? messages[0].createdAt : null,
       },
-      "Messages fetched"
-    )
+      "Messages fetched",
+    ),
   );
 });
 
@@ -859,25 +876,25 @@ export const reactToRoomMessage = asyncHandler(async (req, res) => {
 
   const room = await Room.findById(message.room).select("members");
   const isMember = room.members.some(
-    (m) => m.user.toString() === userId.toString()
+    (m) => m.user.toString() === userId.toString(),
   );
   if (!isMember) throw new ApiError(403, "Only members can react");
 
   const existing = message.reactions.find(
-    (r) => r.emoji === emoji && r.by.toString() === userId.toString()
+    (r) => r.emoji === emoji && r.by.toString() === userId.toString(),
   );
   let updated;
   if (existing) {
     updated = await MessageInRoom.findByIdAndUpdate(
       messageId,
       { $pull: { reactions: { emoji, by: userId } } },
-      { new: true }
+      { new: true },
     );
   } else {
     updated = await MessageInRoom.findByIdAndUpdate(
       messageId,
       { $push: { reactions: { emoji, by: userId } } },
-      { new: true }
+      { new: true },
     );
   }
 
@@ -892,8 +909,8 @@ export const reactToRoomMessage = asyncHandler(async (req, res) => {
       new ApiResponse(
         200,
         updated.reactions,
-        existing ? "Reaction removed" : "Reaction added"
-      )
+        existing ? "Reaction removed" : "Reaction added",
+      ),
     );
 });
 
@@ -911,7 +928,7 @@ export const deleteRoomMessage = asyncHandler(async (req, res) => {
   if (!room) throw new ApiError(404, "Room not found");
 
   const member = room.members.find(
-    (m) => m.user.toString() === userId.toString()
+    (m) => m.user.toString() === userId.toString(),
   );
   if (!member) throw new ApiError(403, "You are not a member");
 
@@ -996,8 +1013,8 @@ export const searchRooms = asyncHandler(async (req, res) => {
           totalPages: Math.ceil(total / lim),
         },
       },
-      "Rooms fetched successfully"
-    )
+      "Rooms fetched successfully",
+    ),
   );
 });
 
@@ -1020,7 +1037,7 @@ export const updateRoomSettings = asyncHandler(async (req, res) => {
   if (!room) throw new ApiError(404, "Room not found");
 
   const myMembership = room.members.find(
-    (m) => m.user.toString() === userId.toString()
+    (m) => m.user.toString() === userId.toString(),
   );
 
   const myRole = myMembership.role; // owner | moderator
@@ -1103,7 +1120,7 @@ export const updateRoomSettings = asyncHandler(async (req, res) => {
     if (removedUserIds.length) {
       await User.updateMany(
         { _id: { $in: removedUserIds } },
-        { $pull: { rooms: room._id } }
+        { $pull: { rooms: room._id } },
       );
     }
   }
@@ -1112,7 +1129,7 @@ export const updateRoomSettings = asyncHandler(async (req, res) => {
   if (Array.isArray(changeRoles)) {
     changeRoles.forEach(({ userId: targetUserId, role }) => {
       const member = room.members.find(
-        (m) => m.user.toString() === targetUserId
+        (m) => m.user.toString() === targetUserId,
       );
 
       if (!member) return;
@@ -1151,7 +1168,7 @@ export const updateRoomSettings = asyncHandler(async (req, res) => {
   /* ---------------- REMOVE EXTERNAL LINKS ---------------- */
   if (Array.isArray(removeExternalLinks)) {
     room.externalLinks = room.externalLinks.filter(
-      (l) => !removeExternalLinks.includes(l.name)
+      (l) => !removeExternalLinks.includes(l.name),
     );
   }
 
@@ -1198,7 +1215,7 @@ export const getRoomDetails = asyncHandler(async (req, res) => {
 
   // ensure user is a member
   const isMember = room.members.some(
-    (m) => m.user?._id.toString() === userId.toString()
+    (m) => m.user?._id.toString() === userId.toString(),
   );
 
   if (!isMember) {

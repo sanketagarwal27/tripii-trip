@@ -1,5 +1,4 @@
 // src/redux/communitySlice.js
-// src/redux/communitySlice.js
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
@@ -7,9 +6,21 @@ const initialState = {
   suggested: [],
   selectedCommunity: null,
   profile: null,
-  rooms: [],
+
+  // 🔥 UPDATED SHAPE
+  rooms: {
+    communityId: null,
+    data: [],
+  },
+
   messages: [],
-  activities: [],
+
+  // 🔥 UPDATED SHAPE
+  activities: {
+    communityId: null,
+    data: [],
+  },
+
   loading: false,
   error: null,
   selectedMessage: null,
@@ -38,62 +49,108 @@ const communitySlice = createSlice({
       state.profile = action.payload;
     },
     setCommunityRooms: (state, action) => {
-      state.rooms = action.payload;
+      // NEW FORMAT: { communityId, rooms }
+      if (action.payload?.communityId) {
+        state.rooms = {
+          communityId: action.payload.communityId,
+          data: action.payload.rooms || [],
+        };
+        return;
+      }
+
+      // OLD FORMAT: rooms[]
+      state.rooms = {
+        communityId: state.profile?._id || null,
+        data: Array.isArray(action.payload) ? action.payload : [],
+      };
     },
+
     setCommunityMessages: (state, action) => {
       state.messages = Array.isArray(action.payload) ? action.payload : [];
     },
     setCommunityActivities: (state, action) => {
-      state.activities = Array.isArray(action.payload) ? action.payload : [];
+      // NEW FORMAT: { communityId, activities }
+      if (action.payload?.communityId) {
+        state.activities = {
+          communityId: action.payload.communityId,
+          data: action.payload.activities || [],
+        };
+        return;
+      }
+
+      // OLD FORMAT: activities[]
+      state.activities = {
+        communityId: state.profile?._id || null,
+        data: Array.isArray(action.payload) ? action.payload : [],
+      };
     },
+
     setCommunityError: (state, action) => {
       state.error = action.payload;
     },
     clearCommunityState: (state) => {
       state.profile = null;
-      state.rooms = [];
+      state.rooms = { communityId: null, data: [] };
       state.messages = [];
-      state.activities = [];
+      state.activities = { communityId: null, data: [] };
       state.error = null;
     },
 
-    // ---------------- ROOMS - 🔥 NEW ACTIONS ----------------
+    // ---------------- ROOMS - 🔥 FIXED ACTIONS ----------------
     addCommunityRoom: (state, action) => {
       const room = action.payload;
-      // Check if room already exists
-      const exists = state.rooms.some((r) => r._id === room._id);
+
+      // Ensure rooms.data exists
+      if (!state.rooms?.data) {
+        state.rooms = { communityId: state.profile?._id || null, data: [] };
+      }
+
+      const exists = state.rooms.data.some((r) => r._id === room._id);
       if (!exists) {
-        state.rooms.unshift(room); // Add to beginning for newest first
+        state.rooms.data.unshift(room);
       }
     },
 
     updateCommunityRoom: (state, action) => {
       const updated = action.payload;
-      const idx = state.rooms.findIndex((r) => r._id === updated._id);
+
+      // Ensure rooms.data exists
+      if (!state.rooms?.data) {
+        state.rooms = { communityId: state.profile?._id || null, data: [] };
+        return;
+      }
+
+      const idx = state.rooms.data.findIndex((r) => r._id === updated._id);
 
       if (idx !== -1) {
         // Handle special case for adding members
         if (updated.$addMember) {
-          const currentMembers = state.rooms[idx].members || [];
+          const currentMembers = state.rooms.data[idx].members || [];
           const memberExists = currentMembers.some(
             (m) =>
               m.user?._id?.toString() ===
-              updated.$addMember.user?._id?.toString()
+              updated.$addMember.user?._id?.toString(),
           );
 
           if (!memberExists) {
-            state.rooms[idx].members = [...currentMembers, updated.$addMember];
+            state.rooms.data[idx].members = [
+              ...currentMembers,
+              updated.$addMember,
+            ];
           }
         } else {
           // Normal update
-          state.rooms[idx] = { ...state.rooms[idx], ...updated };
+          state.rooms.data[idx] = { ...state.rooms.data[idx], ...updated };
         }
       }
     },
 
     removeCommunityRoom: (state, action) => {
       const roomId = action.payload;
-      state.rooms = state.rooms.filter((r) => r._id !== roomId);
+
+      if (!state.rooms?.data) return;
+
+      state.rooms.data = state.rooms.data.filter((r) => r._id !== roomId);
     },
 
     // ---------------- MESSAGES ----------------
@@ -154,11 +211,14 @@ const communitySlice = createSlice({
     // ---------------- ACTIVITIES ----------------
     addCommunityActivity: (state, action) => {
       const a = action.payload;
-      if (state.activities.some((x) => x._id === a._id)) return;
+      if (!state.activities?.data) return;
 
-      state.activities.unshift(a);
-      if (state.activities.length > 200) {
-        state.activities = state.activities.slice(0, 200);
+      if (state.activities.data.some((x) => x._id === a._id)) return;
+
+      state.activities.data.unshift(a);
+
+      if (state.activities.data.length > 200) {
+        state.activities.data = state.activities.data.slice(0, 200);
       }
     },
 
@@ -191,7 +251,6 @@ const communitySlice = createSlice({
       state.messages.push(...newMessages);
     },
 
-    //pin messages
     // ---------------- PIN / UNPIN ----------------
     pinCommunityMessage: (state, action) => {
       const { messageId, pinnedBy, pinnedAt } = action.payload;
@@ -202,7 +261,7 @@ const communitySlice = createSlice({
       }
 
       const exists = state.profile.pinnedMessages.some(
-        (p) => String(p.message) === String(messageId)
+        (p) => String(p.message) === String(messageId),
       );
 
       if (!exists) {
@@ -220,7 +279,8 @@ const communitySlice = createSlice({
 
       state.profile.pinnedMessages = state.profile.pinnedMessages.filter(
         (p) =>
-          (p.message?._id || p.message || p).toString() !== messageId.toString()
+          (p.message?._id || p.message || p).toString() !==
+          messageId.toString(),
       );
     },
 
@@ -246,7 +306,7 @@ const communitySlice = createSlice({
 
     removeMemberFromCommunity(state, action) {
       state.profile.members = state.profile.members.filter(
-        (m) => m.user._id !== action.payload
+        (m) => m.user._id !== action.payload,
       );
       state.profile.memberCount -= 1;
     },
@@ -265,7 +325,7 @@ export const {
   setCommunityError,
   clearCommunityState,
 
-  // 🔥 Export new room actions
+  // 🔥 Export room actions
   addCommunityRoom,
   updateCommunityRoom,
   removeCommunityRoom,

@@ -1,17 +1,30 @@
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { History, Cake, User } from "lucide-react";
+import { History, Cake } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { getSimilarCommunities } from "@/api/community";
 import ActivityItem from "./ActivityItem";
 import { formatDate, ROOM_STATUS_META } from "../common/roomStatus";
 import InviteMembersModal from "./InviteMembersModal";
+import { enrichRoomsWithStatus } from "@/utils/roomStatus";
 
 export default function RightSidebar({ profile }) {
   const navigate = useNavigate();
+
   // 🔥 Get rooms from Redux store - will update in real-time via socket
-  const rooms = useSelector((s) => s.community.rooms || []);
-  const activities = useSelector((s) => s.community.activities || []);
+  const roomsState = useSelector((s) => s.community.rooms);
+  const activitiesState = useSelector((s) => s.community.activities);
+
+  const rawRooms =
+    roomsState?.communityId === profile?._id ? roomsState.data : [];
+  const activities =
+    activitiesState?.communityId === profile?._id ? activitiesState.data : [];
+
+  // 🔥 COMPUTE STATUS IN REAL-TIME
+  const rooms = enrichRoomsWithStatus(rawRooms).filter(
+    (r) => r.computedStatus !== "finished" && r.computedStatus !== "cancelled",
+  );
+
   const [showAllActivities, setShowAllActivities] = useState(false);
   const [showAllRooms, setShowAllRooms] = useState(false);
   const [similarCommunities, setSimilarCommunities] = useState([]);
@@ -75,7 +88,7 @@ export default function RightSidebar({ profile }) {
         </button>
       )}
 
-      {/* ---------------- ROOMS - 🔥 REAL-TIME UPDATES ---------------- */}
+      {/* ---------------- ROOMS - 🔥 REAL-TIME STATUS UPDATES ---------------- */}
       <div
         className="rounded-lg p-4"
         style={{ backgroundColor: "rgba(250,250,250,1)" }}
@@ -94,15 +107,17 @@ export default function RightSidebar({ profile }) {
           <>
             <ul className="flex flex-col gap-2">
               {visibleRooms.map((r) => {
+                // 🔥 Use computed status instead of stored status
                 const statusMeta =
-                  ROOM_STATUS_META[r.status] || ROOM_STATUS_META.upcoming;
+                  ROOM_STATUS_META[r.computedStatus] ||
+                  ROOM_STATUS_META.upcoming;
 
                 return (
                   <li key={r._id}>
                     <div
                       onClick={() =>
                         navigate(
-                          `/community/${r.parentCommunity}/room/${r._id}`
+                          `/community/${r.parentCommunity}/room/${r._id}`,
                         )
                       }
                       className="flex items-center gap-3 p-2 rounded-lg hover:bg-white transition"
@@ -140,7 +155,7 @@ export default function RightSidebar({ profile }) {
                         </span>
                       </div>
 
-                      {/* STATUS BADGE */}
+                      {/* STATUS BADGE - 🔥 USING COMPUTED STATUS */}
                       <span
                         className="text-[10px] font-semibold px-2 py-1 rounded-full"
                         style={{
@@ -166,7 +181,7 @@ export default function RightSidebar({ profile }) {
             )}
           </>
         ) : (
-          <p className="text-xs text-gray-600">No rooms yet</p>
+          <p className="text-xs text-gray-600">No active rooms</p>
         )}
       </div>
 
@@ -232,7 +247,7 @@ export default function RightSidebar({ profile }) {
           <Cake size={14} />
           Created{" "}
           {new Date(
-            profile.createdAt || profile.updatedAt
+            profile.createdAt || profile.updatedAt,
           ).toLocaleDateString()}
         </div>
 

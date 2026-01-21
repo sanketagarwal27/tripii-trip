@@ -46,39 +46,43 @@ api.interceptors.request.use(
 
 // ✅ RESPONSE INTERCEPTOR: Handle 401/403 errors
 api.interceptors.response.use(
-  (response) => {
-    console.log("✅ API Success:", response.config.url, response.status);
-    return response;
-  },
+  (response) => response,
   (error) => {
-    console.error("❌ API Error:", {
-      url: error.config?.url,
-      status: error.response?.status,
-      message: error.response?.data?.message,
-    });
+    const status = error.response?.status;
+    const code = error.response?.data?.code;
 
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      // Clear localStorage tokens
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      localStorage.removeItem("userId");
+    // 🔴 401 → ALWAYS logout
+    if (status === 401) {
+      forceLogout("Session expired. Please login again.");
+      return Promise.reject(error);
+    }
 
-      if (error.response.status === 403) {
-        toast.error("Access denied. Your account has been suspended.");
+    // 🔴 403 → CONDITIONAL
+    if (status === 403) {
+      if (code === "ACCOUNT_SUSPENDED") {
+        forceLogout("Your account has been suspended.");
       } else {
-        toast.error("Session expired. Please login again.");
-      }
-
-      // Dispatch logout action
-      store.dispatch(logoutUser());
-
-      // Redirect to auth page (only if not already there)
-      if (!window.location.pathname.includes("/auth")) {
-        window.location.href = "/auth";
+        // ❌ DO NOT LOGOUT
+        // Let component handle it
+        return Promise.reject(error);
       }
     }
+
     return Promise.reject(error);
   }
 );
+
+function forceLogout(message) {
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
+  localStorage.removeItem("userId");
+
+  toast.error(message);
+  store.dispatch(logoutUser());
+
+  if (!window.location.pathname.includes("/auth")) {
+    window.location.href = "/auth";
+  }
+}
 
 export default api;

@@ -30,7 +30,7 @@ const PostCard = ({ post }) => {
   const { userProfile } = useSelector((s) => s.auth);
 
   const hasLiked = post.likes?.some(
-    (l) => l.user === userProfile?._id || l.user?._id === userProfile?._id
+    (l) => l.user === userProfile?._id || l.user?._id === userProfile?._id,
   );
 
   const [isLiked, setIsLiked] = useState(hasLiked);
@@ -39,8 +39,12 @@ const PostCard = ({ post }) => {
 
   const [inlineComment, setInlineComment] = useState("");
   const [isPostingComment, setIsPostingComment] = useState(false);
-  const [contextualLikes, setContextualLikes] = useState([]);
-  const [likesPreviewLoading, setLikesPreviewLoading] = useState(false);
+
+  // 🔥 Single source of truth for likes data
+  const [allLikesUsers, setAllLikesUsers] = useState([]);
+  const [likesPage, setLikesPage] = useState(1);
+  const [hasMoreLikes, setHasMoreLikes] = useState(true);
+  const [likesLoading, setLikesLoading] = useState(false);
   const [showLikesOverlay, setShowLikesOverlay] = useState(false);
 
   /* ------------------------------------------
@@ -50,8 +54,8 @@ const PostCard = ({ post }) => {
   useEffect(() => {
     setIsLiked(
       post.likes?.some(
-        (l) => l.user === userProfile?._id || l.user?._id === userProfile?._id
-      )
+        (l) => l.user === userProfile?._id || l.user?._id === userProfile?._id,
+      ),
     );
     setLikeCount(post.likes?.length || 0);
   }, [post.likes, userProfile?._id]);
@@ -84,6 +88,45 @@ const PostCard = ({ post }) => {
   };
 
   /* ------------------------------------------
+     FETCH LIKES DATA (called once, shared)
+  -------------------------------------------- */
+  const fetchLikes = async (pageNum) => {
+    if (!userProfile || post.likes.length === 0) return;
+
+    setLikesLoading(true);
+    try {
+      const res = await getContextualPostLikes(post._id, 20, pageNum);
+      const incoming = res.data?.data?.users || [];
+
+      // Deduplicate by _id
+      setAllLikesUsers((prev) => {
+        const map = new Map(prev.map((u) => [u._id, u]));
+        incoming.forEach((u) => map.set(u._id, u));
+        return Array.from(map.values());
+      });
+
+      if (incoming.length < 20) {
+        setHasMoreLikes(false);
+      }
+    } catch (err) {
+      console.error("Failed to load likes");
+    } finally {
+      setLikesLoading(false);
+    }
+  };
+
+  // Initial fetch on mount
+  useEffect(() => {
+    fetchLikes(1);
+  }, [post._id, post.likes?.length, userProfile?._id]);
+
+  const loadMoreLikes = () => {
+    const nextPage = likesPage + 1;
+    setLikesPage(nextPage);
+    fetchLikes(nextPage);
+  };
+
+  /* ------------------------------------------
      INLINE COMMENT SUBMIT
   -------------------------------------------- */
   const submitInlineComment = async () => {
@@ -99,7 +142,7 @@ const PostCard = ({ post }) => {
         updatePost({
           ...post,
           commentCount: (post.commentCount || 0) + 1,
-        })
+        }),
       );
 
       setInlineComment("");
@@ -128,31 +171,8 @@ const PostCard = ({ post }) => {
     }
   };
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const fetchPreviewLikes = async () => {
-      if (!userProfile || post.likes.length === 0) return;
-
-      try {
-        setLikesPreviewLoading(true);
-        const res = await getContextualPostLikes(post._id, 5);
-        if (!cancelled) {
-          setContextualLikes(res.data?.data?.users || []);
-        }
-      } catch (err) {
-        console.error("Failed to load contextual likes");
-      } finally {
-        if (!cancelled) setLikesPreviewLoading(false);
-      }
-    };
-
-    fetchPreviewLikes();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [post._id, post.likes?.length, userProfile?._id]);
+  // Show only first 5 for preview
+  const previewLikes = allLikesUsers.slice(0, 5);
 
   return (
     <div className="postcard">
@@ -193,12 +213,7 @@ const PostCard = ({ post }) => {
         <div className="postcard-media-wrapper">
           <img
             src={post.media[currentIndex].url}
-            className="
-    w-full
-    object-cover
-    rounded-xl
-    select-none
-  "
+            className="w-full object-cover rounded-xl select-none"
           />
 
           {currentIndex > 0 && (
@@ -262,31 +277,24 @@ const PostCard = ({ post }) => {
         </button>
       </div>
 
-      {contextualLikes.length > 0 && (
+      {/* LIKES PREVIEW (first 5) */}
+      {previewLikes.length > 0 && (
         <div className="mt-1 flex items-center gap-2">
-          {/* Avatars */}
           <div className="flex items-center">
             <p style={{ color: "grey", fontSize: "12px", marginRight: "15px" }}>
               Liked by :
             </p>
-            {contextualLikes.slice(0, 5).map((u) => (
+            {previewLikes.map((u) => (
               <img
                 key={u._id}
-                src={u.profilePicture?.url || "/travel.jpg"}
-                className="
-            w-6 h-6
-            rounded-full
-            object-cover
-            border-2 border-white
-            -ml-2
-            first:ml-0
-          "
+                src={u?.profilePicture?.url || "/travel.jpg"}
+                className="w-6 h-6 rounded-full object-cover border-2 border-white -ml-2 first:ml-0"
               />
             ))}
           </div>
 
-          {/* Show more */}
-          {(post.likes?.length || 0) > contextualLikes.length && (
+          {/* Show more button if total likes > 5 */}
+          {likeCount > 5 && (
             <button
               onClick={() => setShowLikesOverlay(true)}
               className="text-xs text-zinc-500 hover:text-primary"
@@ -302,14 +310,7 @@ const PostCard = ({ post }) => {
         <input
           type="text"
           placeholder="Add a comment..."
-          className="
-    flex-1
-    text-sm
-    px-3 py-2
-    rounded-full
-    bg-zinc-100 dark:bg-zinc-800
-    focus:outline-none
-  "
+          className="flex-1 text-sm px-3 py-2 rounded-full bg-zinc-100 dark:bg-zinc-800 focus:outline-none"
           value={inlineComment}
           onChange={(e) => setInlineComment(e.target.value)}
           disabled={isPostingComment}
@@ -320,7 +321,6 @@ const PostCard = ({ post }) => {
           }}
         />
 
-        {/* Only show when typing */}
         {inlineComment.trim() && (
           <button
             className="postcard-inline-btn"
@@ -331,9 +331,14 @@ const PostCard = ({ post }) => {
           </button>
         )}
       </div>
+
+      {/* OVERLAY - pass all data down */}
       {showLikesOverlay && (
         <PostLikesOverlay
-          postId={post._id}
+          users={allLikesUsers}
+          hasMore={hasMoreLikes}
+          loading={likesLoading}
+          onLoadMore={loadMoreLikes}
           onClose={() => setShowLikesOverlay(false)}
         />
       )}

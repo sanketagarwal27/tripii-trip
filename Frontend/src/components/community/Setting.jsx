@@ -84,7 +84,7 @@ const CommSetting = () => {
     return members.filter((m) =>
       (m.displayName || m.user?.username || "")
         .toLowerCase()
-        .includes(searchQuery.toLowerCase())
+        .includes(searchQuery.toLowerCase()),
     );
   }, [members, searchQuery]);
 
@@ -134,7 +134,7 @@ const CommSetting = () => {
         if (data.name) setCommunityName(data.name);
         if (data.rules)
           setCommunityRules(
-            Array.isArray(data.rules) ? data.rules.join("\n") : ""
+            Array.isArray(data.rules) ? data.rules.join("\n") : "",
           );
         if (data.backgroundImage) setCoverPreview(data.backgroundImage);
         if (data.settings) {
@@ -229,7 +229,7 @@ const CommSetting = () => {
         JSON.stringify({
           allowMemberRooms,
           allowMembersToAdd: allowAddMembers,
-        })
+        }),
       );
 
       if (coverImage) {
@@ -284,7 +284,7 @@ const CommSetting = () => {
 
     try {
       const changePromises = Object.entries(pendingRoleChanges).map(
-        ([userId, role]) => changeMemberRole(communityId, userId, role)
+        ([userId, role]) => changeMemberRole(communityId, userId, role),
       );
 
       await Promise.allSettled(changePromises);
@@ -335,7 +335,7 @@ const CommSetting = () => {
           setCommunityProfile({
             ...communityProfile,
             memberCount: communityProfile.memberCount - 1,
-          })
+          }),
         );
         dispatch(removeMemberFromCommunity(userId));
 
@@ -688,7 +688,7 @@ const CommSetting = () => {
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       <img
                         src={
-                          user.profilePicture?.url ||
+                          user?.profilePicture?.url ||
                           `https://ui-avatars.com/api/?name=${membership.displayName}&background=random`
                         }
                         alt={user.username}

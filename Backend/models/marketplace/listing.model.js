@@ -34,6 +34,7 @@ const ListingSchema = new Schema(
         "activity",
         "transport",
         "travel_agency",
+        "resort",
       ],
       required: true,
       index: true,

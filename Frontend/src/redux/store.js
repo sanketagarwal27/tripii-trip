@@ -10,6 +10,7 @@ import roomSlice from "./roomSlice.js";
 import tripSlice from "./tripSlice.js";
 import uploadSlice from "./uploadSlice.js";
 import walletSlice from "./tripWalletSlice.js";
+import adminSlice from "./adminSlice.js";
 
 const rootReducer = combineReducers({
   auth: authSlice,
@@ -21,6 +22,7 @@ const rootReducer = combineReducers({
   trip: tripSlice,
   upload: uploadSlice,
   wallet: walletSlice,
+  admin: adminSlice,
 });
 
 const persistConfig = {

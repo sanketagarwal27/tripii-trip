@@ -42,8 +42,8 @@ export default function MembersTab({ adminOnly = false }) {
   const followingIds = useMemo(() => {
     return new Set(
       (userProfile.following || []).map((f) =>
-        typeof f === "string" ? f : f._id || f.id
-      )
+        typeof f === "string" ? f : f._id || f.id,
+      ),
     );
   }, [userProfile.following]);
 
@@ -81,8 +81,8 @@ export default function MembersTab({ adminOnly = false }) {
 
     members.sort((a, b) =>
       (a.displayName || a.user.username).localeCompare(
-        b.displayName || b.user.username
-      )
+        b.displayName || b.user.username,
+      ),
     );
 
     return [...me, ...admins, ...moderators, ...members];
@@ -122,9 +122,9 @@ export default function MembersTab({ adminOnly = false }) {
                 >
                   <img
                     src={
-                      user.profilePicture?.url ||
+                      user?.profilePicture?.url ||
                       `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                        name
+                        name,
                       )}&background=random`
                     }
                     alt={user.username}
