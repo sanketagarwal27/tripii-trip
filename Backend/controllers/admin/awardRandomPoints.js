@@ -20,7 +20,7 @@ export const searchUsers = asyncHandler(async (req, res) => {
     ],
   })
     .select(
-      "_id username fullName email xpPoints trustScore level sublevel levelProgress nextLevelXP profilePicture createdAt accountStatus role"
+      "_id username fullName email xpPoints trustScore level sublevel levelProgress nextLevelXP profilePicture createdAt accountStatus role",
     )
     .limit(10);
 
@@ -31,7 +31,7 @@ export const searchUsers = asyncHandler(async (req, res) => {
     email: user.email,
     currentXp: user.xpPoints || 0,
     currentTrust: user.trustScore || 0,
-    avatar: user.profilePicture || "",
+    avatar: user?.profilePicture || "",
     createdAt: user.createdAt,
     accountStatus: user.accountStatus,
     role: user.role,
@@ -130,7 +130,7 @@ export const getRewardHistory = asyncHandler(async (req, res) => {
       new ApiResponse(
         200,
         { history, overview },
-        "Reward history fetched successfully"
-      )
+        "Reward history fetched successfully",
+      ),
     );
 });

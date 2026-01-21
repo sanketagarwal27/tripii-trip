@@ -75,9 +75,9 @@ const RightSideBar = () => {
       dispatch(
         setSuggestedUser(
           suggestedUser.map((u) =>
-            u._id === id ? { ...u, _isFollowing: !u._isFollowing } : u
-          )
-        )
+            u._id === id ? { ...u, _isFollowing: !u._isFollowing } : u,
+          ),
+        ),
       );
 
       const res = await followOrUnfollow(id);
@@ -102,7 +102,7 @@ const RightSideBar = () => {
   // const progress = Math.min((currXP / nextXP) * 100, 100); // Unused
 
   const filteredSuggested = suggestedUser?.filter(
-    (u) => u._id !== userProfile._id
+    (u) => u._id !== userProfile._id,
   );
 
   return (
@@ -115,7 +115,7 @@ const RightSideBar = () => {
               className="rs-avatar"
               style={{
                 backgroundImage: `url(${
-                  userProfile.profilePicture?.url || "/travel.jpg"
+                  userProfile?.profilePicture?.url || "/travel.jpg"
                 })`,
                 // --- NEW: Dynamic Border Color ---
                 border: `3px solid ${currentLevelStyle.color}`,
@@ -246,8 +246,8 @@ const RightSideBar = () => {
                       {p.overview?.aiData?.budgetRating === "Expensive"
                         ? "$$$"
                         : p.overview?.aiData?.budgetRating === "Moderate"
-                        ? "$$"
-                        : "$"}
+                          ? "$$"
+                          : "$"}
                     </span>
                     <button className="rs-visit-btn">View &rarr;</button>
                   </div>
@@ -270,7 +270,7 @@ const RightSideBar = () => {
                     className="rs-friend-img"
                     style={{
                       backgroundImage: `url(${
-                        u.profilePicture?.url || "/travel.jpg"
+                        u?.profilePicture?.url || "/travel.jpg"
                       })`,
                     }}
                   ></div>

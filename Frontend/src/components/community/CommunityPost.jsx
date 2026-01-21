@@ -38,7 +38,7 @@ const CommunityPost = ({ post }) => {
     return latestPost.helpful.some((h) =>
       typeof h === "string"
         ? h === user._id
-        : h?.user?.toString() === user._id.toString()
+        : h?.user?.toString() === user._id.toString(),
     );
   }, [latestPost.helpful, user?._id]);
 
@@ -57,12 +57,12 @@ const CommunityPost = ({ post }) => {
   const [optimisticHelpfulCount, setOptimisticHelpfulCount] =
     useState(helpfulCount);
   const [optimisticReactions, setOptimisticReactions] = useState(
-    latestPost.reactions || []
+    latestPost.reactions || [],
   );
   const [optimisticHasVoted, setOptimisticHasVoted] = useState(
     () =>
       latestPost.poll?.options?.some((opt) => opt.votes?.includes(user?._id)) ??
-      false
+      false,
   );
 
   const [optimisticPoll, setOptimisticPoll] = useState(latestPost.poll || null);
@@ -141,7 +141,7 @@ const CommunityPost = ({ post }) => {
     if (!Array.isArray(optimisticReactions) || !user?._id) return new Set();
 
     return new Set(
-      optimisticReactions.filter((r) => r.by === user._id).map((r) => r.emoji)
+      optimisticReactions.filter((r) => r.by === user._id).map((r) => r.emoji),
     );
   }, [optimisticReactions, user?._id]);
 
@@ -178,7 +178,7 @@ const CommunityPost = ({ post }) => {
       setSelectedPollOptions((prev) =>
         prev.includes(optionId)
           ? prev.filter((id) => id !== optionId)
-          : [...prev, optionId]
+          : [...prev, optionId],
       );
     } else {
       setSelectedPollOptions([optionId]);
@@ -206,13 +206,13 @@ const CommunityPost = ({ post }) => {
     nextPoll.options = nextPoll.options.map((opt) =>
       selectedPollOptions.includes(opt.id)
         ? { ...opt, votes: [...opt.votes, user._id] }
-        : opt
+        : opt,
     );
 
     // recalc totalVotes
     nextPoll.totalVotes = nextPoll.options.reduce(
       (sum, opt) => sum + opt.votes.length,
-      0
+      0,
     );
 
     // commit optimistic state
@@ -275,14 +275,14 @@ const CommunityPost = ({ post }) => {
     if (!user?._id || reactionLoading) return;
 
     const alreadyReacted = optimisticReactions.some(
-      (r) => r.by === user._id && r.emoji === emoji
+      (r) => r.by === user._id && r.emoji === emoji,
     );
 
     // optimistic update
     setOptimisticReactions((prev) =>
       alreadyReacted
         ? prev.filter((r) => !(r.by === user._id && r.emoji === emoji))
-        : [...prev, { emoji, by: user._id }]
+        : [...prev, { emoji, by: user._id }],
     );
 
     setReactionLoading(true);
@@ -294,7 +294,7 @@ const CommunityPost = ({ post }) => {
       console.error("Reaction error:", err);
       // rollback by resyncing
       setOptimisticReactions(
-        messages.find((m) => m._id === latestPost._id)?.reactions || []
+        messages.find((m) => m._id === latestPost._id)?.reactions || [],
       );
     } finally {
       setReactionLoading(false);
@@ -346,7 +346,8 @@ const CommunityPost = ({ post }) => {
     }
   };
 
-  const avatar = latestPost.sender?.profilePicture?.url || "/public/travel.jpg";
+  const avatar =
+    latestPost?.sender?.profilePicture?.url || "/public/travel.jpg";
 
   return (
     <div className="group relative rounded-xl p-4 bg-[rgb(250,250,250)] dark:bg-surface-dark">
@@ -487,7 +488,7 @@ const CommunityPost = ({ post }) => {
                   const percentage =
                     optimisticPoll.totalVotes > 0
                       ? Math.round(
-                          (voteCount / optimisticPoll.totalVotes) * 100
+                          (voteCount / optimisticPoll.totalVotes) * 100,
                         )
                       : 0;
                   const isVoted = myVotes.has(option.id);
@@ -504,8 +505,8 @@ const CommunityPost = ({ post }) => {
                         isVoted
                           ? "border-primary bg-primary/10"
                           : isSelected
-                          ? "border-primary bg-primary/5"
-                          : "border-border-light hover:border-primary/50"
+                            ? "border-primary bg-primary/5"
+                            : "border-border-light hover:border-primary/50"
                       } ${
                         isPollExpired || (optimisticHasVoted && !isChangingVote)
                           ? "cursor-not-allowed"
@@ -660,7 +661,7 @@ const CommunityPost = ({ post }) => {
               onClick={() => {
                 dispatch(setSelectedMessage(latestPost));
                 navigate(
-                  `/community/${latestPost.community}/message/${latestPost._id}/comments`
+                  `/community/${latestPost.community}/message/${latestPost._id}/comments`,
                 );
               }}
             >

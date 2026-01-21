@@ -1,32 +1,47 @@
-// src/components/community/CommunityFeed.jsx
 import React, { useMemo } from "react";
 import { useSelector } from "react-redux";
 import CreatePostBox from "@/components/community/CreatePostBox";
 import CommunityPost from "@/components/community/CommunityPost";
+import useCommunityMessages from "@/hooks/useCommunityMessages";
 
 export default function CommunityFeed() {
-  const messages = useSelector((s) => s.community.messages || []);
   const profile = useSelector((s) => s.community.profile);
 
-  // 🔥 FILTER: Only show messages from current community
-  const filteredMessages = useMemo(() => {
-    if (!profile?._id) return [];
+  // 🛡️ Guard: don't run hook until profile is ready
+  const communityId = profile?._id;
+  const { loading, loadMore, hasMore } = useCommunityMessages(communityId);
 
-    return messages.filter((m) => {
-      const msgCommunityId = String(m.community?._id || m.community || "");
-      return msgCommunityId === String(profile._id);
-    });
-  }, [messages, profile?._id]);
+  const messages = useSelector((s) => s.community.messages || []);
+
+  // ⚠️ TEMPORARY FILTER (remove later)
+  const filteredMessages = useMemo(() => {
+    if (!communityId) return [];
+    return messages.filter(
+      (m) => String(m.community?._id || m.community) === String(communityId)
+    );
+  }, [messages, communityId]);
 
   return (
     <div className="flex flex-col gap-2">
       <CreatePostBox />
-      {filteredMessages && filteredMessages.length ? (
+
+      {loading && filteredMessages.length === 0 ? (
+        <div className="text-text-muted-light">Loading posts…</div>
+      ) : filteredMessages.length ? (
         filteredMessages.map((m) => <CommunityPost key={m._id} post={m} />)
       ) : (
         <div className="text-text-muted-light">
           No posts yet — start the conversation!
         </div>
+      )}
+
+      {hasMore && !loading && (
+        <button
+          onClick={loadMore}
+          className="text-sm text-primary mt-2 self-center"
+        >
+          Load more
+        </button>
       )}
     </div>
   );

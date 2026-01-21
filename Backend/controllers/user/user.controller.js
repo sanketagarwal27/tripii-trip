@@ -96,7 +96,7 @@ export const login = asyncHandler(async (req, res) => {
   if (!valid) throw new ApiError(400, "Incorrect password");
 
   const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
-    user._id
+    user._id,
   );
 
   const profile = await User.findById(user._id)
@@ -126,7 +126,7 @@ export const login = asyncHandler(async (req, res) => {
         user: profile,
         accessToken, // ✅ Return in body for localStorage
         refreshToken, // ✅ Return in body for localStorage
-      })
+      }),
     );
 });
 
@@ -140,7 +140,7 @@ export const logout = asyncHandler(async (req, res) => {
     },
     {
       new: true,
-    }
+    },
   );
 
   // ✅ Cookie options must match what was used to SET them
@@ -179,8 +179,8 @@ export const getSuggestedUser = asyncHandler(async (req, res) => {
         new ApiResponse(
           200,
           { users: suggestedUser },
-          "Suggested users fetched successfully"
-        )
+          "Suggested users fetched successfully",
+        ),
       );
   } catch (error) {
     console.error("error in suggestion part: ", error);
@@ -384,9 +384,9 @@ export const editProfile = asyncHandler(async (req, res) => {
     // Handle profile picture update
     if (profilePicture) {
       // Delete old image if exists
-      if (user.profilePicture?.publicId) {
+      if (user?.profilePicture?.publicId) {
         await cloudinary.uploader
-          .destroy(user.profilePicture.publicId)
+          .destroy(user?.profilePicture.publicId)
           .catch((error) => console.error("Old image deletion failed:", error));
       }
 
@@ -422,7 +422,7 @@ export const editProfile = asyncHandler(async (req, res) => {
   } catch (error) {
     throw new ApiError(
       error.statusCode || 500,
-      error.message || "Profile update failed"
+      error.message || "Profile update failed",
     );
   }
 });

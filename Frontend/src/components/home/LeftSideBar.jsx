@@ -4,6 +4,11 @@ import { DoorOpenIcon, Tag, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { clearRoomState } from "@/redux/roomSlice";
 import Image from "../../../public/travel.jpg";
+import {
+  selectMyRoomsWithStatus,
+  selectSuggestedRoomsWithStatus,
+  selectTripRoomsWithStatus,
+} from "@/redux/roomSlice"; // 🔥 NEW SELECTORS
 
 /* ---------- Community Row ---------- */
 const CommunitySidebarItem = ({ community }) => {
@@ -221,25 +226,24 @@ const SidebarSection = ({ title, items, renderItem, loading }) => {
 
 /* ---------- LEFT SIDEBAR ---------- */
 const LeftSidebar = () => {
-  const {
-    myRooms,
-    tripRooms,
-    suggestedRooms,
-    loading: roomsLoading,
-  } = useSelector((s) => s.room);
-
+  const { loading: roomsLoading } = useSelector((s) => s.room);
   const { my: myCommunities, suggested } = useSelector((s) => s.community);
 
+  // 🔥 USE SELECTORS WITH AUTO-COMPUTED STATUS
+  const myRooms = useSelector(selectMyRoomsWithStatus);
+  const tripRooms = useSelector(selectTripRoomsWithStatus);
+  const suggestedRooms = useSelector(selectSuggestedRoomsWithStatus);
+
   const [sortedSuggestedCommunities, setSortedSuggestedCommunities] = useState(
-    []
+    [],
   );
 
   useEffect(() => {
     if (Array.isArray(suggested)) {
       setSortedSuggestedCommunities(
         [...suggested].sort(
-          (a, b) => (b.memberCount || 0) - (a.memberCount || 0)
-        )
+          (a, b) => (b.memberCount || 0) - (a.memberCount || 0),
+        ),
       );
     }
   }, [suggested]);
@@ -247,7 +251,7 @@ const LeftSidebar = () => {
   return (
     <aside className="leftsidebar">
       <div className="ls-inner">
-        {/* My Rooms → open room */}
+        {/* My Rooms → open room (🔥 auto-filtered to active/upcoming) */}
         <SidebarSection
           title="My Rooms"
           items={myRooms}
@@ -255,7 +259,7 @@ const LeftSidebar = () => {
           loading={roomsLoading}
         />
 
-        {/* Suggested Trips → open community */}
+        {/* Suggested Trips → open community (🔥 auto-filtered to active) */}
         <SidebarSection
           title="Suggested Trips"
           items={tripRooms}
@@ -272,7 +276,7 @@ const LeftSidebar = () => {
           renderItem={(c) => <CommunitySidebarItem community={c} />}
         />
 
-        {/* Suggested Rooms → open community */}
+        {/* Suggested Rooms → open community (🔥 auto-filtered) */}
         <SidebarSection
           title="Suggested Rooms"
           items={suggestedRooms}

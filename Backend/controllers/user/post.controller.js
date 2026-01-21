@@ -73,7 +73,7 @@ const uploadMediaFiles = async (files) => {
     const resource_type = isVideo ? "video" : "image";
     const cloud = await cloudinary.uploader.upload(
       `data:${file.mimetype};base64,${buffer.toString("base64")}`,
-      { resource_type }
+      { resource_type },
     );
 
     results.push({
@@ -146,7 +146,7 @@ export const createTripPost = asyncHandler(async (req, res) => {
 
   const trip = await Trip.findById(tripId).populate(
     "participants",
-    "username profilePicture"
+    "username profilePicture",
   );
   if (!trip) throw new ApiError(404, "Trip not found");
 
@@ -164,7 +164,7 @@ export const createTripPost = asyncHandler(async (req, res) => {
       : null;
 
   const media = await uploadMediaFiles(
-    Array.isArray(mediaFiles) ? mediaFiles : []
+    Array.isArray(mediaFiles) ? mediaFiles : [],
   );
   let coverPhoto = null;
   if (coverFile) {
@@ -175,7 +175,7 @@ export const createTripPost = asyncHandler(async (req, res) => {
   const snapshot = (trip.participants || []).map((u) => ({
     userId: u._id,
     username: u.username,
-    profilePicture: u.profilePicture?.url || "",
+    profilePicture: u?.profilePicture?.url || "",
   }));
 
   const post = await Post.create({
@@ -188,15 +188,15 @@ export const createTripPost = asyncHandler(async (req, res) => {
       travelTips: Array.isArray(travelTips)
         ? travelTips
         : travelTips
-        ? [travelTips]
-        : [],
+          ? [travelTips]
+          : [],
       planningSummary: planningSummary || "",
       visitedPlaces,
       famousPlaces: Array.isArray(famousPlaces)
         ? famousPlaces
         : famousPlaces
-        ? [famousPlaces]
-        : [],
+          ? [famousPlaces]
+          : [],
       expenseHistory: expenseHistory || null,
       coverPhoto,
       selectedGalleryPhotos,
@@ -228,7 +228,7 @@ export const toggleLike = asyncHandler(async (req, res) => {
   if (!post) throw new ApiError(404, "Post not found");
 
   const hasLiked = post.likes.some(
-    (l) => l.user.toString() === userId.toString()
+    (l) => l.user.toString() === userId.toString(),
   );
 
   // -------------------------------
@@ -238,7 +238,7 @@ export const toggleLike = asyncHandler(async (req, res) => {
     const updatedPost = await Post.findByIdAndUpdate(
       postId,
       { $pull: { likes: { user: userId } } },
-      { new: true }
+      { new: true },
     );
 
     // rollback EXACT XP log caused by THIS liker
@@ -246,7 +246,7 @@ export const toggleLike = asyncHandler(async (req, res) => {
       "Post",
       postId,
       userId, // actorId
-      "post_like_received" // activity
+      "post_like_received", // activity
     );
 
     const updatedUser = await User.findById(userId).select("-password");
@@ -258,8 +258,8 @@ export const toggleLike = asyncHandler(async (req, res) => {
           likes: updatedPost.likes,
           updatedUser,
         },
-        "Post unliked"
-      )
+        "Post unliked",
+      ),
     );
   }
 
@@ -274,7 +274,7 @@ export const toggleLike = asyncHandler(async (req, res) => {
     {
       $push: { likes: { user: userId, likedAt: new Date() } },
     },
-    { new: true }
+    { new: true },
   );
 
   try {
@@ -311,8 +311,8 @@ export const toggleLike = asyncHandler(async (req, res) => {
         userId,
         updatedUser,
       },
-      "Post liked"
-    )
+      "Post liked",
+    ),
   );
 });
 
@@ -371,7 +371,7 @@ export const addComment = asyncHandler(async (req, res) => {
 
   const populated = await Comment.findById(comment._id).populate(
     "author",
-    "username profilePicture"
+    "username profilePicture",
   );
 
   return res.status(201).json(new ApiResponse(201, populated, "Comment added"));
@@ -432,8 +432,8 @@ export const getCommentsByPost = asyncHandler(async (req, res) => {
           totalComments: total,
         },
       },
-      "Comments fetched"
-    )
+      "Comments fetched",
+    ),
   );
 });
 
@@ -490,8 +490,8 @@ export const deletePost = asyncHandler(async (req, res) => {
       {
         updatedUser,
       },
-      "Post deleted successfully"
-    )
+      "Post deleted successfully",
+    ),
   );
 });
 
@@ -526,8 +526,8 @@ export const getFeedPosts = asyncHandler(async (req, res) => {
           totalPosts: total,
         },
       },
-      "Feed posts"
-    )
+      "Feed posts",
+    ),
   );
 });
 
@@ -616,8 +616,8 @@ export const toggleCommentLike = asyncHandler(async (req, res) => {
         likes: comment.likes,
         likeCount: comment.likeCount,
       },
-      "Comment like toggled"
-    )
+      "Comment like toggled",
+    ),
   );
 });
 
@@ -658,7 +658,7 @@ export const deleteComment = asyncHandler(async (req, res) => {
         text: "This reply was deleted.",
         deletedBy: userId,
       },
-    }
+    },
   );
 
   // 6. Remove comment from Post.comments array

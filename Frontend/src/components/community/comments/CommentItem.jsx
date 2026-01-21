@@ -127,7 +127,7 @@ const CommentItem = ({
     >
       <div className="flex w-full gap-3 p-4 rounded-lg">
         <img
-          src={comment.author.profilePicture?.url || "/travel.jpg"}
+          src={comment.author?.profilePicture?.url || "/travel.jpg"}
           className="size-10 rounded-full object-cover mt-1"
           alt={`${comment.author.username}'s profile`}
           onClick={() => navigate(`/profile/${comment?.author?._id}`)}

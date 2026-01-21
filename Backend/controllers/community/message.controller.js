@@ -99,7 +99,7 @@ export const sendMessage = asyncHandler(async (req, res) => {
     sender: userId,
     content: content?.trim() || "",
     senderDisplayName: membership.displayName || req.user.username,
-    senderDisplayProfile: req.user.profilePicture?.url || "",
+    senderDisplayProfile: req.user?.profilePicture?.url || "",
     mentions: Array.isArray(mentions) ? mentions : [],
   };
 
@@ -183,7 +183,7 @@ export const sendMessage = asyncHandler(async (req, res) => {
     sender: {
       _id: message.sender._id,
       username: message.sender.username,
-      profilePicture: message.sender.profilePicture,
+      profilePicture: message.sender?.profilePicture,
       displayName: message.senderDisplayName,
     },
   };
@@ -194,7 +194,7 @@ export const sendMessage = asyncHandler(async (req, res) => {
   await Community.findByIdAndUpdate(
     communityId,
     { lastActivityAt: new Date() },
-    { new: true }
+    { new: true },
   );
 
   // ---------- MENTION NOTIFICATIONS (SAFE ADD-ON) ----------
@@ -303,8 +303,8 @@ export const getMessages = asyncHandler(async (req, res) => {
         hasMore: messages.length === parseInt(limit),
         nextCursor: messages.length ? messages[0].createdAt : null,
       },
-      "Messages fetched"
-    )
+      "Messages fetched",
+    ),
   );
 });
 
@@ -328,7 +328,7 @@ export const reactToMessage = asyncHandler(async (req, res) => {
   if (!member) throw new ApiError(403, "Only members can react");
 
   const exists = message.reactions.some(
-    (r) => r.emoji === emoji && r.by.toString() === userId.toString()
+    (r) => r.emoji === emoji && r.by.toString() === userId.toString(),
   );
 
   let updated;
@@ -336,13 +336,13 @@ export const reactToMessage = asyncHandler(async (req, res) => {
     updated = await MessageInComm.findByIdAndUpdate(
       messageId,
       { $pull: { reactions: { emoji, by: userId } } },
-      { new: true }
+      { new: true },
     );
   } else {
     updated = await MessageInComm.findByIdAndUpdate(
       messageId,
       { $push: { reactions: { emoji, by: userId } } },
-      { new: true }
+      { new: true },
     );
   }
 
@@ -357,8 +357,8 @@ export const reactToMessage = asyncHandler(async (req, res) => {
       new ApiResponse(
         200,
         updated.reactions,
-        exists ? "Reaction removed" : "Reaction added"
-      )
+        exists ? "Reaction removed" : "Reaction added",
+      ),
     );
 });
 
@@ -370,13 +370,13 @@ export const toggleMessageHelpful = asyncHandler(async (req, res) => {
   if (!message) throw new ApiError(404, "Message not found");
 
   const alreadyHelpful = message.helpful.some(
-    (h) => h.user.toString() === userId.toString()
+    (h) => h.user.toString() === userId.toString(),
   );
 
   if (alreadyHelpful) {
     // ========== REMOVE HELPFUL ==========
     message.helpful = message.helpful.filter(
-      (h) => h.user.toString() !== userId.toString()
+      (h) => h.user.toString() !== userId.toString(),
     );
 
     // rollback points ONLY if not self
@@ -385,7 +385,7 @@ export const toggleMessageHelpful = asyncHandler(async (req, res) => {
         "MessageInComm",
         messageId,
         userId,
-        "message_helpful_received"
+        "message_helpful_received",
       );
     }
   } else {
@@ -427,7 +427,7 @@ export const toggleMessageHelpful = asyncHandler(async (req, res) => {
 
   const updatedMessage = await MessageInComm.findById(message._id).populate(
     "sender",
-    "username profilePicture.url"
+    "username profilePicture.url",
   );
 
   return res.status(200).json(
@@ -439,8 +439,8 @@ export const toggleMessageHelpful = asyncHandler(async (req, res) => {
         helpfulCount: message.helpful.length,
         messages: updatedMessage,
       },
-      "Helpful updated"
-    )
+      "Helpful updated",
+    ),
   );
 });
 
@@ -490,7 +490,7 @@ export const createComment = asyncHandler(async (req, res) => {
   const updatedMessage = await MessageInComm.findByIdAndUpdate(
     messageId,
     { $inc: { commentCount: 1 } },
-    { new: true }
+    { new: true },
   ).select("_id commentCount community");
 
   emitToCommunity(
@@ -499,7 +499,7 @@ export const createComment = asyncHandler(async (req, res) => {
     {
       messageId,
       commentCount: updatedMessage.commentCount,
-    }
+    },
   );
 
   if (message.sender.toString() !== userId.toString()) {
@@ -547,12 +547,12 @@ export const reactToComment = asyncHandler(async (req, res) => {
   if (!comment) throw new ApiError(404, "Comment not found");
 
   const exists = comment.reactions.some(
-    (r) => r.emoji === emoji && r.by.toString() === userId.toString()
+    (r) => r.emoji === emoji && r.by.toString() === userId.toString(),
   );
 
   if (exists) {
     comment.reactions = comment.reactions.filter(
-      (r) => !(r.emoji === emoji && r.by.toString() === userId.toString())
+      (r) => !(r.emoji === emoji && r.by.toString() === userId.toString()),
     );
   } else {
     comment.reactions.push({ emoji, by: userId });
@@ -606,8 +606,8 @@ export const getMessageComments = asyncHandler(async (req, res) => {
           ? comments[comments.length - 1].createdAt
           : null,
       },
-      "Comments fetched"
-    )
+      "Comments fetched",
+    ),
   );
 });
 
@@ -631,11 +631,11 @@ export const deleteMessage = asyncHandler(async (req, res) => {
 
   /* ---------------- PIN PROTECTION ---------------- */
   const community = await Community.findById(message.community).select(
-    "pinnedMessages"
+    "pinnedMessages",
   );
 
   const isPinned = community?.pinnedMessages?.some(
-    (p) => p.message.toString() === messageId.toString()
+    (p) => p.message.toString() === messageId.toString(),
   );
 
   if (isPinned) {
@@ -755,7 +755,7 @@ export const deleteComment = asyncHandler(async (req, res) => {
   const updatedMessage = await MessageInComm.findByIdAndUpdate(
     comment.message,
     { $inc: { commentCount: -1 } },
-    { new: true }
+    { new: true },
   ).select("_id commentCount community");
 
   emitToCommunity(comment.community.toString(), "community:comment:deleted", {
@@ -774,7 +774,7 @@ export const deleteComment = asyncHandler(async (req, res) => {
       {
         messageId: updatedMessage._id,
         commentCount: Math.max(0, updatedMessage.commentCount),
-      }
+      },
     );
   }
 
@@ -873,7 +873,7 @@ export const togglePinMessage = asyncHandler(async (req, res) => {
   }
 
   const pinIndex = community.pinnedMessages.findIndex(
-    (p) => p.message.toString() === messageId
+    (p) => p.message.toString() === messageId,
   );
 
   // 🔁 TOGGLE LOGIC
@@ -894,7 +894,7 @@ export const togglePinMessage = asyncHandler(async (req, res) => {
       {
         messageId,
         unpinnedBy: user.username,
-      }
+      },
     );
 
     return res.status(200).json(new ApiResponse(200, {}, "Message unpinned"));
@@ -926,7 +926,7 @@ export const togglePinMessage = asyncHandler(async (req, res) => {
     pinnedBy: {
       _id: user._id,
       username: user.username,
-      profilePicture: user.profilePicture?.url || null,
+      profilePicture: user?.profilePicture?.url || null,
     },
     pinnedAt: new Date().toISOString(),
   });
@@ -990,7 +990,7 @@ export const voteOnPoll = asyncHandler(async (req, res) => {
   await Community.findByIdAndUpdate(
     message.community,
     { lastActivityAt: new Date() },
-    { new: true }
+    { new: true },
   );
 
   emitToCommunity(message.community.toString(), "community:poll:updated", {
@@ -1014,7 +1014,7 @@ export const markMessageSeen = asyncHandler(async (req, res) => {
   if (!msg) throw new ApiError(404, "Message not found");
 
   const isSeen = msg.seenBy.some(
-    (s) => s.user.toString() === userId.toString()
+    (s) => s.user.toString() === userId.toString(),
   );
   if (!isSeen) {
     msg.seenBy.push({ user: userId, seenAt: new Date() });
@@ -1095,7 +1095,7 @@ export const markAllAsSeen = asyncHandler(async (req, res) => {
       community: communityId,
       isSeen: false,
     },
-    { $set: { isSeen: true } }
+    { $set: { isSeen: true } },
   );
 
   // 🔔 socket → only to user
@@ -1136,7 +1136,7 @@ export const getPinnedMessage = asyncHandler(async (req, res) => {
       new ApiResponse(
         200,
         { pinnedMessage: community.pinnedMessage },
-        "Pinned message fetched"
-      )
+        "Pinned message fetched",
+      ),
     );
 });

@@ -9,6 +9,7 @@ import TripGallery from "./TripGallery";
 import Wallet from "./wallet/Wallet";
 import TripPlaces from "./places/TripPlaces";
 import { getPublicTripPreview } from "@/api/trip";
+import Members from "./members/Members";
 
 const TABS = [
   { key: "itinerary", label: "Plan / Itinerary" },
@@ -29,6 +30,8 @@ const Trip = () => {
 
   // 🔓 public preview state (ONLY used when user is not a member)
   const [publicPreview, setPublicPreview] = useState(null);
+
+  console.log("trips:", trips);
 
   /* ---------------- MEMBER CHECK ---------------- */
   const isMemberTrip = Boolean(trips.byId[tripId]);
@@ -79,7 +82,7 @@ const Trip = () => {
 
   const dateRange = `${new Date(activeTrip.startDate).toLocaleDateString(
     "en-US",
-    { month: "long", day: "numeric" }
+    { month: "long", day: "numeric" },
   )} - ${new Date(activeTrip.endDate).toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
@@ -110,7 +113,7 @@ const Trip = () => {
             const restricted =
               !isMemberTrip &&
               ["wallet", "members", "gallery", "history", "settings"].includes(
-                tab.key
+                tab.key,
               );
 
             return (
@@ -153,7 +156,7 @@ const Trip = () => {
         {isMemberTrip && activeTab === "gallery" && (
           <TripGallery tripId={tripId} />
         )}
-        {isMemberTrip && activeTab === "members" && "Members content goes here"}
+        {isMemberTrip && activeTab === "members" && <Members />}
         {isMemberTrip && activeTab === "history" && "History content goes here"}
         {isMemberTrip &&
           activeTab === "settings" &&

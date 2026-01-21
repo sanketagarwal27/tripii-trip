@@ -17,8 +17,14 @@ import { updateCommunityRoom } from "@/redux/communitySlice";
 const RoomsTab = () => {
   const navigate = useNavigate();
   const community = useSelector((s) => s.community.profile);
-  const communityId = community._id;
-  const rooms = useSelector((s) => s.community.rooms || []);
+  const roomsState = useSelector((s) => s.community.rooms);
+  const communityId = community?._id;
+
+  const rooms =
+    communityId && roomsState?.communityId === communityId
+      ? roomsState.data
+      : [];
+
   const currentUser = useSelector((s) => s.auth?.user);
   const [joiningRoomId, setJoiningRoomId] = useState(null);
   const [expandedDescriptions, setExpandedDescriptions] = useState({});
@@ -40,7 +46,7 @@ const RoomsTab = () => {
           $addMember: {
             user: { _id: currentUser._id },
           },
-        })
+        }),
       );
       toast.success("Successfully joined the room!");
     } catch (error) {
@@ -56,7 +62,7 @@ const RoomsTab = () => {
     return room.members.some(
       (m) =>
         m.user?._id?.toString() === currentUser._id.toString() ||
-        m.user?.toString() === currentUser._id.toString()
+        m.user?.toString() === currentUser._id.toString(),
     );
   };
 
@@ -240,7 +246,14 @@ const RoomsTab = () => {
 
                 {/* Creator & Members */}
                 <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                  <div className="flex items-center gap-2">
+                  <div
+                    className="flex items-center gap-2"
+                    onClick={(e) => (
+                      e.preventDefault(),
+                      e.stopPropagation(),
+                      navigate(`/profile/${room?.createdBy?._id}`)
+                    )}
+                  >
                     <div
                       className="w-8 h-8 rounded-full bg-cover bg-center bg-gray-300"
                       style={{
@@ -268,6 +281,7 @@ const RoomsTab = () => {
                 </div>
 
                 {/* Action Button - Finished / Joined / Join */}
+                {/* Action Button - Finished / Joined / Join */}
                 {isFinished ? (
                   <div className="w-full mt-3 py-2.5 bg-gradient-to-r from-gray-100 to-gray-50 rounded-lg font-semibold text-center border-2 border-gray-300 relative overflow-hidden">
                     <div className="absolute inset-0 bg-gray-200 opacity-20"></div>
@@ -279,7 +293,7 @@ const RoomsTab = () => {
                   <div className="w-full mt-3 py-2.5 bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 rounded-lg font-semibold text-center border-2 border-green-200 shadow-sm">
                     <span className="text-sm">✓ You're a Member</span>
                   </div>
-                ) : (
+                ) : room?.visibility === "public" ? (
                   <button
                     onClick={(e) => handleJoinRoom(room._id, e)}
                     disabled={isJoining}
@@ -287,6 +301,13 @@ const RoomsTab = () => {
                   >
                     {isJoining ? "Joining..." : "Join Room"}
                   </button>
+                ) : (
+                  <span
+                    className="relative text-gray-600 text-sm tracking-wide block text-center"
+                    style={{ marginTop: "10px" }}
+                  >
+                    Private (Ask RoomAdmin)
+                  </span>
                 )}
               </div>
             </div>

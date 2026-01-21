@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styles from "./AdminPanel.module.css";
 import {
   FaChartLine,
@@ -23,6 +23,8 @@ import AwardRandomPoints from "./components/AwardRandomPoints";
 import UserManagement from "./components/UserManagement";
 import AppDashboard from "./components/AppDashboard";
 import ManageCommunities from "./components/ManageCommunities";
+import { getPendingBusinessListingsAdmin } from "@/api/admin";
+import VerifyMarketplace from "./components/businessSubmission/VerifyMarketplace";
 
 const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -95,6 +97,10 @@ const AdminPanel = () => {
       case "communities": {
         return <ManageCommunities />;
       }
+      case "business": {
+        return <VerifyMarketplace />;
+      }
+
       default:
         return (
           <div className={styles.contentCard}>
@@ -106,6 +112,15 @@ const AdminPanel = () => {
         );
     }
   };
+
+  const fetchBusinessForms = async () => {
+    const res = await getPendingBusinessListingsAdmin();
+    console.log("Pending Business Listings for Admin:", res);
+  };
+
+  useEffect(() => {
+    fetchBusinessForms();
+  }, []);
 
   return (
     <div className={styles.pageContainer}>

@@ -49,7 +49,7 @@ const SocketProvider = ({ children }) => {
   const selectedCommunity = useSelector((s) => s.community.selectedCommunity);
   const communityProfile = useSelector((s) => s.community.profile);
   const activeTripId = useSelector((s) => s.trip.activeTripId);
-  const galleryLoaded = useSelector((s) => !!s.trip.tripPhotos[activeTripId]); //This is so that I calls tripGallery related api in that jsx file , means redux may not have tripId in start when it's socket ask for.
+  const galleryLoaded = useSelector((s) => !!s.trip.tripPhotos[activeTripId]);
 
   // -----------------------
   // SYNC ON FOCUS
@@ -123,7 +123,7 @@ const SocketProvider = ({ children }) => {
     // -----------------------
     socket.on("community:message:new", (payload) => {
       const payloadCommunityId = String(
-        payload.community?._id || payload.community
+        payload.community?._id || payload.community,
       );
 
       dispatch(addCommunityMessage(payload));
@@ -160,7 +160,7 @@ const SocketProvider = ({ children }) => {
           setCommunityProfile({
             ...selectedCommunity,
             ...data,
-          })
+          }),
         );
       }
 
@@ -169,7 +169,7 @@ const SocketProvider = ({ children }) => {
           type: "settings_updated",
           payload: data,
           createdAt: new Date().toISOString(),
-        })
+        }),
       );
     });
 
@@ -192,9 +192,9 @@ const SocketProvider = ({ children }) => {
           updateCommunityMessage({
             _id: messageId,
             commentCount,
-          })
+          }),
         );
-      }
+      },
     );
 
     socket.on(
@@ -205,37 +205,56 @@ const SocketProvider = ({ children }) => {
             _id: messageId,
             helpful,
             helpfulCount,
-          })
+          }),
         );
-      }
+      },
     );
 
     // -----------------------
-    // ROOM EVENTS
+    // ROOM EVENTS - 🔥 FIXED
     // -----------------------
-    socket.on("room:userJoined", ({ roomId, user: joinedUser }) => {
-      dispatch(
-        addCommunityActivity({
-          type: "room_user_joined",
-          payload: { roomId, joinedUser },
-          createdAt: new Date().toISOString(),
-        })
-      );
-      dispatch(
-        addNotification({
-          type: "room:userJoined",
-          payload: { roomId, user: joinedUser },
-        })
-      );
+    socket.on(
+      "room:userJoined",
+      ({ roomId, user: joinedUser, role, joinedAt }) => {
+        // Add activity
+        dispatch(
+          addCommunityActivity({
+            type: "room_user_joined",
+            payload: { roomId, joinedUser },
+            createdAt: new Date().toISOString(),
+          }),
+        );
 
-      dispatch(
-        updateRoomMembers({
-          user: joinedUser,
-          role: "member",
-          joinedAt: new Date(),
-        })
-      );
-    });
+        // Add notification
+        dispatch(
+          addNotification({
+            type: "room:userJoined",
+            payload: { roomId, user: joinedUser },
+          }),
+        );
+
+        // 🔥 FIX: Update community rooms list
+        dispatch(
+          updateCommunityRoom({
+            _id: roomId,
+            $addMember: {
+              user: joinedUser,
+              role: role || "member",
+              joinedAt: joinedAt || new Date().toISOString(),
+            },
+          }),
+        );
+
+        // Update selected room (if viewing it)
+        dispatch(
+          updateRoomMembers({
+            user: joinedUser,
+            role: role || "member",
+            joinedAt: joinedAt || new Date(),
+          }),
+        );
+      },
+    );
 
     socket.on("room:created", (data) => {
       const { room, trip, activity } = data;
@@ -249,10 +268,10 @@ const SocketProvider = ({ children }) => {
       } else {
         dispatch(
           addCommunityActivity({
-            type: "room_created",
+            type: room?.roomtype === "Trip" ? "trip_created" : "room_created",
             payload: data,
             createdAt: new Date().toISOString(),
-          })
+          }),
         );
       }
 
@@ -317,7 +336,7 @@ const SocketProvider = ({ children }) => {
         removeTripPlan({
           tripId: activeTripId,
           planId,
-        })
+        }),
       );
     });
 
@@ -329,7 +348,7 @@ const SocketProvider = ({ children }) => {
           tripId: activeTripId,
           date,
           orderedPlanIds,
-        })
+        }),
       );
     });
 
@@ -353,7 +372,7 @@ const SocketProvider = ({ children }) => {
         addTripPhotos({
           tripId: activeTripId,
           photos: photos ?? [photo],
-        })
+        }),
       );
     });
 
@@ -364,7 +383,7 @@ const SocketProvider = ({ children }) => {
         addTripPhotos({
           tripId: activeTripId,
           photos,
-        })
+        }),
       );
     });
 
@@ -375,7 +394,7 @@ const SocketProvider = ({ children }) => {
         removeTripPhoto({
           tripId,
           photoId,
-        })
+        }),
       );
     });
 
@@ -396,7 +415,7 @@ const SocketProvider = ({ children }) => {
         updateWalletExpense({
           tripId,
           expense,
-        })
+        }),
       );
     });
 
@@ -407,7 +426,7 @@ const SocketProvider = ({ children }) => {
         removeWalletExpense({
           tripId,
           expenseId,
-        })
+        }),
       );
     });
 
@@ -421,9 +440,9 @@ const SocketProvider = ({ children }) => {
             tripId,
             settings,
             budget,
-          })
+          }),
         );
-      }
+      },
     );
 
     socket.on(EVENTS.WALLET_SETTLEMENT_GENERATED, ({ tripId, settlements }) => {
@@ -433,7 +452,7 @@ const SocketProvider = ({ children }) => {
         setSettlements({
           tripId,
           settlements,
-        })
+        }),
       );
     });
 
@@ -447,9 +466,9 @@ const SocketProvider = ({ children }) => {
             tripId,
             index,
             settlement,
-          })
+          }),
         );
-      }
+      },
     );
 
     // -----------------------
@@ -502,7 +521,14 @@ const SocketProvider = ({ children }) => {
       socket.off(EVENTS.WALLET_SETTLEMENT_GENERATED);
       socket.off(EVENTS.WALLET_SETTLEMENT_UPDATED);
     };
-  }, [user, dispatch, selectedCommunity, communityProfile, activeTripId]);
+  }, [
+    user,
+    dispatch,
+    selectedCommunity,
+    communityProfile,
+    activeTripId,
+    galleryLoaded,
+  ]);
 
   return <>{children}</>;
 };

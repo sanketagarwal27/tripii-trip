@@ -15,7 +15,7 @@ import { appendCommunityMessages } from "@/redux/communitySlice.js";
 export default function Community() {
   const { id } = useParams();
   const { loading } = useCommunityProfile(id);
-  const profile = useSelector((s) => s.community.profile);
+  const { profile, selectedCommunity } = useSelector((s) => s.community);
   const dispatch = useDispatch();
 
   // Refetch messages for polling fallback
@@ -55,7 +55,7 @@ export default function Community() {
   if (loading || !profile) {
     return (
       <center className="p-6" style={{ fontSize: "40px", fontWeight: "600" }}>
-        Loading Community...
+        Loading <p>{selectedCommunity?.name || "Community"}...</p>
       </center>
     );
   }

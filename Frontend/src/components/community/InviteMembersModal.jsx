@@ -5,10 +5,10 @@ import { addMembers } from "@/api/community";
 
 /* ---------------- AVATAR FALLBACK ---------------- */
 const Avatar = ({ user }) => {
-  if (user.profilePicture?.url) {
+  if (user?.profilePicture?.url) {
     return (
       <img
-        src={user.profilePicture.url}
+        src={user?.profilePicture?.url}
         className="w-8 h-8 rounded-full object-cover"
       />
     );
@@ -37,17 +37,17 @@ export default function InviteMembersModal({ communityId, onClose }) {
   /* ---------------- PREP SETS ---------------- */
   const memberIds = useMemo(
     () => new Set(communityMembers.map((m) => m.user?._id)),
-    [communityMembers]
+    [communityMembers],
   );
 
   const followerIds = useMemo(
     () => new Set((userProfile.followers || []).map((u) => u._id)),
-    [userProfile.followers]
+    [userProfile.followers],
   );
 
   const followingIds = useMemo(
     () => new Set((userProfile.following || []).map((u) => u._id)),
-    [userProfile.following]
+    [userProfile.following],
   );
 
   /* ---------------- BUILD CANDIDATES ---------------- */
@@ -69,8 +69,8 @@ export default function InviteMembersModal({ communityId, onClose }) {
           isFollower && isFollowing
             ? "both"
             : isFollower
-            ? "follower"
-            : "following",
+              ? "follower"
+              : "following",
         isMember: memberIds.has(u._id),
       });
     });
@@ -80,7 +80,7 @@ export default function InviteMembersModal({ communityId, onClose }) {
 
   /* ---------------- FILTER ---------------- */
   const filtered = candidates.filter((u) =>
-    u.username.toLowerCase().includes(query.toLowerCase())
+    u.username.toLowerCase().includes(query.toLowerCase()),
   );
 
   /* ---------------- GROUP ---------------- */
@@ -157,9 +157,9 @@ export default function InviteMembersModal({ communityId, onClose }) {
               <div className="flex items-center gap-3">
                 <img
                   src={
-                    u.profilePicture?.url ||
+                    u?.profilePicture?.url ||
                     `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                      u.username
+                      u.username,
                     )}&background=random`
                   }
                   alt={u.username}
@@ -216,9 +216,9 @@ export default function InviteMembersModal({ communityId, onClose }) {
                 >
                   <img
                     src={
-                      u.profilePicture?.url ||
+                      u?.profilePicture?.url ||
                       `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                        u.username
+                        u.username,
                       )}&background=random`
                     }
                     alt={u.username}

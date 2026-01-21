@@ -60,6 +60,12 @@ const roomSchema = new Schema(
       index: true,
     },
 
+    visibility: {
+      type: String,
+      enum: ["public", "private"],
+      default: "public",
+    },
+
     linkedTrip: { type: Schema.Types.ObjectId, ref: "Trip", default: null },
 
     isEphemeral: { type: Boolean, default: false },
@@ -110,7 +116,7 @@ const roomSchema = new Schema(
       },
     ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Indexes

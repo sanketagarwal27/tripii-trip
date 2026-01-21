@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { addRoom } from "@/redux/roomSlice";
-import { setCommunityRooms } from "@/redux/communitySlice";
+import { addCommunityRoom, setCommunityRooms } from "@/redux/communitySlice";
 import { createRoom } from "@/api/room";
 import { searchUsers } from "@/api/users";
 import useCommunityProfile from "@/hooks/useCommunityProfile";
@@ -57,6 +57,7 @@ const CreateRoom = () => {
   const [tripType, setTripType] = useState("national");
   const [location, setLocation] = useState("");
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [visibility, setVisibility] = useState("public");
   const [loading, setLoading] = useState(false);
 
   // Overlay State
@@ -68,7 +69,7 @@ const CreateRoom = () => {
 
   // Filter members (exclude current user)
   const communityMembers = members.filter(
-    (m) => m.user?._id !== currentUser?._id
+    (m) => m.user?._id !== currentUser?._id,
   );
 
   // Use following instead of followers
@@ -136,7 +137,7 @@ const CreateRoom = () => {
 
   const toggleTag = (tag) => {
     setRoomTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
     );
   };
 
@@ -144,7 +145,7 @@ const CreateRoom = () => {
     setSelectedMembers((prev) =>
       prev.includes(userId)
         ? prev.filter((id) => id !== userId)
-        : [...prev, userId]
+        : [...prev, userId],
     );
   };
 
@@ -177,6 +178,7 @@ const CreateRoom = () => {
     formData.append("roomTags", JSON.stringify(roomTags));
     formData.append("initialMembers", JSON.stringify(selectedMembers));
     formData.append("backgroundImage", backgroundImage);
+    formData.append("visibility", visibility);
 
     if (roomtype === "Trip") {
       formData.append("tripType", tripType);
@@ -186,19 +188,26 @@ const CreateRoom = () => {
     setLoading(true);
     try {
       const response = await createRoom(communityId, formData);
-      if (response.data.success) {
-        toast.success("Room created successfully!");
-        const newRoom = response.data.data.room;
-        dispatch(addRoom(newRoom));
-        dispatch(setCommunityRooms([newRoom, ...rooms]));
-        navigate(`/community/${communityId}`);
 
-        useCommunityProfile();
+      // 🔥 FIX: Check response structure properly
+      if (response?.data?.success) {
+        const newRoom = response.data.data.room;
+
+        // 🔥 FIX: Use addCommunityRoom instead of setCommunityRooms
+        dispatch(addCommunityRoom(newRoom));
+        dispatch(addRoom(newRoom)); // Update room slice
+
+        toast.success("Room created successfully!");
+
+        // 🔥 FIX: Navigate AFTER dispatch
+        navigate(`/community/${communityId}`);
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to create room");
+      console.error("Create room error:", err);
+      toast.error(err?.response?.data?.message || "Failed to create room");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const { firstDay, daysInMonth } = getDaysInMonth(currentMonth);
@@ -282,6 +291,47 @@ const CreateRoom = () => {
                       {type.label}
                     </span>
                     <p className="text-xs text-gray-600">{type.desc}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Room Visibility */}
+          <div className="bg-white rounded-xl p-6 border border-gray-300 shadow-sm">
+            <h3 className="font-bold text-gray-900 mb-4">Room Visibility</h3>
+
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                {
+                  value: "public",
+                  title: "Public Room",
+                  desc: "Anyone in the community can discover and join",
+                },
+                {
+                  value: "private",
+                  title: "Private Room",
+                  desc: "Only invited members can access this room",
+                },
+              ].map((option) => (
+                <label
+                  key={option.value}
+                  className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition ${
+                    visibility === option.value
+                      ? "border-[#15f0db] bg-[#15f0db]/10"
+                      : "border-gray-300"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="visibility"
+                    checked={visibility === option.value}
+                    onChange={() => setVisibility(option.value)}
+                    className="mt-1"
+                  />
+                  <div>
+                    <p className="font-bold text-gray-900">{option.title}</p>
+                    <p className="text-xs text-gray-600">{option.desc}</p>
                   </div>
                 </label>
               ))}
@@ -372,8 +422,8 @@ const CreateRoom = () => {
                       setCurrentMonth(
                         new Date(
                           currentMonth.getFullYear(),
-                          currentMonth.getMonth() - 1
-                        )
+                          currentMonth.getMonth() - 1,
+                        ),
                       )
                     }
                     className="p-2 hover:bg-gray-100 rounded"
@@ -386,8 +436,8 @@ const CreateRoom = () => {
                       setCurrentMonth(
                         new Date(
                           currentMonth.getFullYear(),
-                          currentMonth.getMonth() + 1
-                        )
+                          currentMonth.getMonth() + 1,
+                        ),
                       )
                     }
                     className="p-2 hover:bg-gray-100 rounded"
@@ -409,7 +459,7 @@ const CreateRoom = () => {
                     const dateStr = formatDate(
                       currentMonth.getFullYear(),
                       currentMonth.getMonth(),
-                      day
+                      day,
                     );
                     const inRange = isDateInRange(dateStr);
                     const selected = isDateSelected(dateStr);
@@ -421,8 +471,8 @@ const CreateRoom = () => {
                           selected
                             ? "bg-[#15f0db] text-white"
                             : inRange
-                            ? "bg-[#15f0db]/20"
-                            : "hover:bg-gray-100"
+                              ? "bg-[#15f0db]/20"
+                              : "hover:bg-gray-100"
                         }`}
                       >
                         {day}
@@ -642,7 +692,7 @@ const CreateRoom = () => {
                             className="accent-[#15f0db]"
                           />
                           <img
-                            src={user.profilePicture?.url || "/travel.jpg"}
+                            src={user?.profilePicture?.url || "/travel.jpg"}
                             alt={user.username}
                             className="w-10 h-10 rounded-full object-cover"
                             onError={(e) => {

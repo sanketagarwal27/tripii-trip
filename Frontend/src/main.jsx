@@ -7,6 +7,7 @@ import { PersistGate } from "redux-persist/integration/react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import "./index.css";
+import "leaflet/dist/leaflet.css";
 
 // Layouts
 import AppLayout from "./shared/AppLayout";
@@ -43,6 +44,8 @@ import { Toaster } from "react-hot-toast";
 import AuthWrapper from "./components/AuthWrapper"; // ✅ Import AuthWrapper
 import MarketPlace from "./components/marketPlace/MarketPlace";
 import MarketPlaceLayout from "./shared/MarketPlaceLayout";
+import BusinessListingForm from "./components/marketPlace/BusinessListingForm";
+import BusinessTypeSelection from "./components/marketPlace/BusinessTypeSelection";
 
 // Auth Logic
 function RequireAuth({ children }) {
@@ -136,10 +139,20 @@ function AppRouter() {
             />
 
             {/* MarketPlace Layout */}
-            <Route element={<MarketPlaceLayout />}>
-              <Route path="/marketplace/*" element={<MarketPlace />} />
+            <Route path="/marketplace" element={<MarketPlaceLayout />}>
+              <Route index element={<MarketPlace />} />
+
+              <Route path="list-business" element={<BusinessTypeSelection />} />
             </Route>
           </Route>
+          <Route
+            path="/marketplace/list-business/form"
+            element={
+              <RequireAuth>
+                <BusinessListingForm />
+              </RequireAuth>
+            }
+          />
         </Routes>
       </AuthWrapper>
     </BrowserRouter>

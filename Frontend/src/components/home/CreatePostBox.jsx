@@ -94,7 +94,7 @@ const CreatePostBox = () => {
       {/* TOP: PROFILE + TEXTAREA */}
       <div className="create-post-top">
         <img
-          src={userProfile.profilePicture.url || "/travel.jpg"}
+          src={userProfile?.profilePicture?.url || "/travel.jpg"}
           className="avatar"
         />
         <textarea

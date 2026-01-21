@@ -64,7 +64,7 @@ const ProfileSidebar = ({ user, onEditClick }) => {
       }
 
       dispatch(
-        setUserProfile({ ...userProfile, following: optimisticFollowing })
+        setUserProfile({ ...userProfile, following: optimisticFollowing }),
       );
 
       const res = await followOrUnfollow(user._id);
@@ -80,7 +80,7 @@ const ProfileSidebar = ({ user, onEditClick }) => {
   };
 
   const EditButtonText =
-    user.bio && user.fullName && user.profilePicture?.url && user.address
+    user.bio && user.fullName && user?.profilePicture?.url && user.address
       ? `Edit Profile`
       : `Complete Profile`;
 
@@ -91,7 +91,7 @@ const ProfileSidebar = ({ user, onEditClick }) => {
       {/* 1. Avatar with Dynamic Border Color */}
       <div className={styles.avatarContainer}>
         <img
-          src={user.profilePicture?.url || "/default-avatar.png"}
+          src={user?.profilePicture?.url || "/default-avatar.png"}
           alt={user.username}
           className={styles.avatar}
           style={{
