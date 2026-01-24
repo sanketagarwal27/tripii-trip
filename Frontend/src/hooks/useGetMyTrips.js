@@ -1,3 +1,4 @@
+// useGetMyTrips.js - Updated without TripActivities
 import { useEffect, useCallback, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getAllUserTripData } from "@/api/trip";
@@ -43,7 +44,6 @@ export default function useGetMyTrips() {
           trips: fetchedTrips,
           expenses,
           tripPlans,
-          tripActivities,
           tripChecklists,
           tripClosures,
           tripPlaces,
@@ -66,31 +66,30 @@ export default function useGetMyTrips() {
             page: finalPage,
             hasMore: more,
             totalTrips,
-          })
+          }),
         );
 
-        // Hydrate related data
+        // Hydrate related data (removed tripActivities)
         dispatch(
           hydrateTripData({
             expenses,
             tripPlans,
-            tripActivities,
             tripChecklists,
             tripClosures,
             tripPlaces,
             tripRoles,
             tripWallets,
-          })
+          }),
         );
       } catch (err) {
         dispatch(
-          setTripError(err?.response?.data?.message || "Failed to load trips.")
+          setTripError(err?.response?.data?.message || "Failed to load trips."),
         );
       } finally {
         dispatch(setTripLoading(false));
       }
     },
-    [dispatch, page, limit, search]
+    [dispatch, page, limit, search],
   );
 
   /* ---------------- INITIAL LOAD (ONCE) ---------------- */

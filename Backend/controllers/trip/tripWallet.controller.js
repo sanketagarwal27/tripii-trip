@@ -109,12 +109,6 @@ export const getTripWallet = asyncHandler(async (req, res) => {
   const { tripId } = req.params;
   const userId = req.user._id;
 
-  console.log("\n" + "=".repeat(50));
-  console.log("🔍 WALLET ACCESS DEBUG");
-  console.log("=".repeat(50));
-  console.log("📍 Trip ID:", tripId);
-  console.log("👤 User ID:", userId.toString());
-
   // 1️⃣ Fetch trip WITH POPULATED PARTICIPANTS
   const trip = await Trip.findById(tripId).populate(
     "participants.user",
@@ -125,9 +119,6 @@ export const getTripWallet = asyncHandler(async (req, res) => {
     console.log("❌ Trip not found");
     throw new ApiError(404, "Trip not found");
   }
-
-  console.log("✅ Trip found:", trip.title);
-  console.log("👑 Creator ID:", trip.createdBy.toString());
 
   // Check if user is participant
   const isCreator = trip.createdBy.toString() === userId.toString();
@@ -145,12 +136,6 @@ export const getTripWallet = asyncHandler(async (req, res) => {
 
     return isActive && matches;
   });
-
-  console.log("\n🔐 Access Check:");
-  console.log("   Is Creator:", isCreator);
-  console.log("   Is Participant:", isParticipant);
-  console.log("   Has Access:", isCreator || isParticipant);
-  console.log("=".repeat(50) + "\n");
 
   if (!isCreator && !isParticipant) {
     throw new ApiError(403, "Not a trip participant");
@@ -391,12 +376,16 @@ export const addExpense = asyncHandler(async (req, res) => {
   });
 
   /* ---------------- ACTIVITY ---------------- */
+
+  const actorUser = await User.findById(userId).select("username");
+
   await TripActivity.create({
     trip: tripId,
     type: "expense_added",
     actor: userId,
     targetId: expense._id,
     targetModel: "Expense",
+    description: `${actorUser.username} added expense "${expense.description}" worth ₹${expense.amount.toLocaleString()}`,
   });
 
   return res.status(201).json(new ApiResponse(201, expense, "Expense added"));
@@ -527,12 +516,14 @@ export const updateExpense = asyncHandler(async (req, res) => {
     expense,
   });
 
+  const actorUser = await User.findById(userId).select("username");
   await TripActivity.create({
     trip: trip._id,
     type: "expense_updated",
     actor: userId,
     targetId: expense._id,
     targetModel: "Expense",
+    description: `${actorUser.username} updated expense "${expense.title}" (₹${expense.amount.toLocaleString()})`,
   });
 
   res.json(new ApiResponse(200, expense, "Expense updated"));
@@ -620,12 +611,17 @@ export const deleteExpense = asyncHandler(async (req, res) => {
     expenseId,
   });
 
+  const actorUser = await User.findById(userId).select("username");
+  const expenseTitle = expense.title;
+  const expenseAmount = expense.amount;
+
   await TripActivity.create({
     trip: trip._id,
     type: "expense_deleted",
     actor: userId,
     targetId: expense._id,
     targetModel: "Expense",
+    description: `${actorUser.username} deleted expense "${expenseTitle}" (₹${expenseAmount.toLocaleString()})`,
   });
 
   res.json(new ApiResponse(200, null, "Expense deleted"));

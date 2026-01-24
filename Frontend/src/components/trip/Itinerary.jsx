@@ -44,15 +44,17 @@ const Itinerary = ({ publicPlans }) => {
   const activeTripId = useSelector((s) => s.trip.activeTripId);
 
   const reduxPlans = useSelector(
-    (s) => s.trip.tripPlans[activeTripId] || EMPTY_ARRAY
+    (s) => s.trip.tripPlans[activeTripId] || EMPTY_ARRAY,
   );
+
+  const tripRoles = useSelector((s) => s.trip.tripRoles[activeTripId] || []);
 
   const tripPlans = publicPlans ?? reduxPlans;
 
   const currentUserId = useSelector((s) => s.auth.user?._id || EMPTY_OBJECT);
 
   const activeTrip = useSelector(
-    (s) => s.trip.trips.byId[activeTripId] || EMPTY_OBJECT
+    (s) => s.trip.trips.byId[activeTripId] || EMPTY_OBJECT,
   );
 
   const navigate = useNavigate();
@@ -61,6 +63,8 @@ const Itinerary = ({ publicPlans }) => {
   const [localPlans, setLocalPlans] = useState([]);
   const [showCreate, setShowCreate] = useState(false);
   const [editingPlan, setEditingPlan] = useState(null);
+
+  console.log("Active TRip roles:", activeTrip);
 
   const canManageTrip = useMemo(() => {
     if (!currentUserId || !activeTrip) return false;
@@ -71,22 +75,18 @@ const Itinerary = ({ publicPlans }) => {
         ? activeTrip.createdBy._id
         : activeTrip.createdBy;
 
-    if (ownerId === currentUserId) return true;
+    if (ownerId?.toString() === currentUserId?.toString()) return true;
 
-    // Planner check
-    if (
-      Array.isArray(activeTrip.roles) &&
-      activeTrip.roles.some(
-        (r) =>
-          r.role === "planner" &&
-          (typeof r.user === "object" ? r.user._id : r.user) === currentUserId
-      )
-    ) {
-      return true;
-    }
-
-    return false;
-  }, [activeTrip, currentUserId]);
+    // ✅ Planner role check (CORRECT SOURCE)
+    return tripRoles.some((r) => {
+      const assignedId = r.assignedTo?._id || r.assignedTo;
+      return (
+        r.roleName === "Planner" &&
+        r.status === "active" &&
+        assignedId?.toString() === currentUserId?.toString()
+      );
+    });
+  }, [activeTrip, currentUserId, tripRoles]);
 
   /* ---------------- GROUP BY DATE ---------------- */
   const plansByDate = useMemo(() => {
@@ -98,7 +98,7 @@ const Itinerary = ({ publicPlans }) => {
     });
 
     Object.values(map).forEach((arr) =>
-      arr.sort((a, b) => a.sequence - b.sequence)
+      arr.sort((a, b) => a.sequence - b.sequence),
     );
 
     return Object.entries(map).sort(([a], [b]) => new Date(a) - new Date(b));
@@ -162,7 +162,7 @@ const Itinerary = ({ publicPlans }) => {
         tripId: activeTripId,
         date: shuffleDate,
         orderedPlanIds,
-      })
+      }),
     );
 
     try {
@@ -184,7 +184,7 @@ const Itinerary = ({ publicPlans }) => {
       removeTripPlan({
         tripId: activeTripId,
         planId,
-      })
+      }),
     );
 
     try {
@@ -392,7 +392,7 @@ const Itinerary = ({ publicPlans }) => {
                                       style={{ cursor: "pointer" }}
                                       onClick={() =>
                                         navigate(
-                                          `/profile/${plan?.createdBy?._id}`
+                                          `/profile/${plan?.createdBy?._id}`,
                                         )
                                       }
                                     >

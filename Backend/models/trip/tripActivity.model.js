@@ -14,6 +14,7 @@ const tripActivitySchema = new Schema(
         "expense_added",
         "expense_updated",
         "expense_deleted",
+        "member_added",
         "photo_uploaded",
         "settlement_payer_confirmed",
         "settlement_receiver_confirmed",
@@ -33,7 +34,7 @@ const tripActivitySchema = new Schema(
 
     description: String,
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const TripActivity = mongoose.model("TripActivity", tripActivitySchema);

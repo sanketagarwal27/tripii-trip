@@ -7,6 +7,7 @@ import {
   createTrip,
   getAllUserTripData,
   getPublicTripPreview,
+  getTripActivities,
 } from "../controllers/trip/trip.controller.js";
 
 // ================= ITINERARY =================
@@ -62,6 +63,7 @@ import {
   leaveTrip,
   publishTripToCommunity,
   removeTripMember,
+  removeTripRole,
   toggleTripVisibility,
   updateTripCover,
 } from "../controllers/trip/tripSetting.controller.js";
@@ -77,6 +79,7 @@ router.use(verifyJWT);
 router.post("/createTrip", upload.single("coverPhoto"), createTrip);
 router.get("/myTrips/data", getAllUserTripData);
 router.get("/public/:tripId", getPublicTripPreview);
+router.get("/trips/:tripId/activities", getTripActivities);
 
 // =================================================
 // ITINERARY
@@ -93,7 +96,7 @@ router.delete("/trips/deletePlan/:planId", deleteItineraryPlan);
 router.post(
   "/trips/:tripId/gallery/upload",
   upload.array("photos", 20),
-  uploadTripPhotosBatch
+  uploadTripPhotosBatch,
 );
 router.get("/trips/:tripId/gallery/local", getMyLocalGallery);
 router.get("/trips/:tripId/gallery/global", getGlobalTripGallery);
@@ -119,7 +122,7 @@ router.get("/trips/:tripId/wallet/expenses", getWalletExpenses);
 router.post("/trips/:tripId/wallet/settlements/generate", generateSettlements);
 router.post(
   "/trips/:tripId/wallet/settlements/:settlementId/confirm/:type",
-  confirmSettlement
+  confirmSettlement,
 );
 
 router.post("/trips/:tripId/wallet/accountants", assignAccountant);
@@ -147,11 +150,12 @@ router.post("/trips/:tripId/roles", assignTripRole);
 router.patch(
   "/trips/:tripId/cover",
   upload.single("coverPhoto"),
-  updateTripCover
+  updateTripCover,
 );
 
 router.post("/trips/:tripId/publish/:communityId", publishTripToCommunity);
 
 router.get("/trips/:tripId/capabilities", getTripCapabilities);
+router.delete("/trips/:tripId/roles/:roleId", removeTripRole);
 
 export default router;

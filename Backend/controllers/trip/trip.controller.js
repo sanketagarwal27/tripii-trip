@@ -93,7 +93,7 @@ export const createTrip = asyncHandler(async (req, res) => {
     if (missingFields.length > 0) {
       throw new ApiError(
         400,
-        `Missing required trip fields: ${missingFields.join(", ")}`
+        `Missing required trip fields: ${missingFields.join(", ")}`,
       );
     }
 
@@ -120,7 +120,7 @@ export const createTrip = asyncHandler(async (req, res) => {
           ],
         },
       ],
-      { session }
+      { session },
     );
 
     /* ---------------- 2️⃣ UPLOAD COVER PHOTO (OPTIONAL) ---------------- */
@@ -148,7 +148,7 @@ export const createTrip = asyncHandler(async (req, res) => {
           ],
         },
       ],
-      { session }
+      { session },
     );
 
     trip.wallet = [wallet._id];
@@ -158,7 +158,7 @@ export const createTrip = asyncHandler(async (req, res) => {
     await User.findByIdAndUpdate(
       userId,
       { $addToSet: { trips: trip._id } },
-      { session }
+      { session },
     );
 
     /* ---------------- 5️⃣ INJECT BASE CHECKLIST ---------------- */
@@ -194,7 +194,7 @@ export const createTrip = asyncHandler(async (req, res) => {
           description: `Trip created for ${location.city}`,
         },
       ],
-      { session }
+      { session },
     );
 
     /* ---------------- 7️⃣ SEND INVITES (PENDING) ---------------- */
@@ -216,7 +216,7 @@ export const createTrip = asyncHandler(async (req, res) => {
         });
 
         createdNotis.forEach((n) =>
-          emitToUser(n.recipient, "new_notification", n)
+          emitToUser(n.recipient, "new_notification", n),
         );
       }
     }
@@ -273,21 +273,16 @@ export const getAllUserTripData = asyncHandler(async (req, res) => {
   /* ------------------------------
    * 4️⃣ Fetch MEMBER data (FULL)
    * ------------------------------ */
-  const [
-    expenses,
-    tripActivities,
-    tripChecklists,
-    tripClosures,
-    tripRoles,
-    tripWallets,
-  ] = await Promise.all([
-    Expense.find({ trip: { $in: memberTripIds } }).lean(),
-    TripActivity.find({ trip: { $in: memberTripIds } }).lean(),
-    TripChecklist.find({ trip: { $in: memberTripIds } }).lean(),
-    TripClosure.find({ trip: { $in: memberTripIds } }).lean(),
-    TripRole.find({ trip: { $in: memberTripIds } }).lean(),
-    TripWallet.find({ trip: { $in: memberTripIds } }).lean(),
-  ]);
+  const [expenses, tripChecklists, tripClosures, tripRoles, tripWallets] =
+    await Promise.all([
+      Expense.find({ trip: { $in: memberTripIds } }).lean(),
+      TripChecklist.find({ trip: { $in: memberTripIds } }).lean(),
+      TripClosure.find({ trip: { $in: memberTripIds } }).lean(),
+      TripRole.find({ trip: { $in: memberTripIds } })
+        .populate("assignedTo", "username profilePicture.url")
+        .lean(),
+      TripWallet.find({ trip: { $in: memberTripIds } }).lean(),
+    ]);
 
   /* ------------------------------
    * 5️⃣ Fetch SHARED data (FOR MEMBERS)
@@ -321,7 +316,6 @@ export const getAllUserTripData = asyncHandler(async (req, res) => {
 
       // 🔐 MEMBERS ONLY
       expenses,
-      tripActivities,
       tripChecklists,
       tripClosures,
       tripRoles,
@@ -376,7 +370,61 @@ export const getPublicTripPreview = asyncHandler(async (req, res) => {
         tripPlans,
         tripPlaces,
       },
-      "Public trip preview fetched"
-    )
+      "Public trip preview fetched",
+    ),
   );
 });
+
+export const getTripActivities = async (req, res) => {
+  try {
+    const { tripId } = req.params;
+    const userId = req.user._id;
+
+    // Verify user has access to this trip
+    const trip = await Trip.findById(tripId);
+
+    if (!trip) {
+      return res.status(404).json({
+        success: false,
+        message: "Trip not found",
+      });
+    }
+
+    // Check if user is a participant
+    const isParticipant = trip.participants.some(
+      (p) => p.user.toString() === userId.toString() && p.status === "active",
+    );
+
+    if (!isParticipant) {
+      return res.status(403).json({
+        success: false,
+        message: "You do not have access to this trip",
+      });
+    }
+
+    // Fetch activities for this trip, sorted by newest first
+    const activities = await TripActivity.find({ trip: tripId })
+      .populate("actor", "username")
+      .sort({ createdAt: -1 }) // Newest first
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      data: {
+        trip: {
+          _id: trip._id,
+          title: trip.title,
+          startDate: trip.startDate,
+          endDate: trip.endDate,
+        },
+        activities,
+      },
+    });
+  } catch (error) {
+    console.error("Get trip activities error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch trip activities",
+    });
+  }
+};
