@@ -107,7 +107,7 @@ const AwardRandomPoints = () => {
       const response = await awardRandomPoints(
         selectedUser._id,
         xpPoints,
-        trustScore
+        trustScore,
       );
       if (!response.success) throw new Error("Awarding points failed");
 

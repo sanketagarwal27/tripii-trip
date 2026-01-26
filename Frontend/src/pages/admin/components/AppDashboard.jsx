@@ -9,7 +9,6 @@ import {
   FileText,
   CheckCircle2,
   XCircle,
-  // New Icons
   Building2,
   BadgeCheck,
   AlertCircle,
@@ -20,16 +19,41 @@ import {
 } from "lucide-react";
 import { getAppOverview } from "@/api/admin";
 
+/* -------------------- Page Loader -------------------- */
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-[60vh]">
+    <div className="h-12 w-12 animate-spin rounded-full border-4 border-teal-200 border-t-teal-500" />
+  </div>
+);
+
 const AppDashboard = () => {
   const [data, setData] = useState({});
+  const [pageLoading, setPageLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const getResponse = async () => {
-      const response = await getAppOverview();
-      setData(response.data);
+      try {
+        const response = await getAppOverview();
+        setData(response.data);
+      } catch (err) {
+        console.error("Dashboard fetch failed", err);
+        setError("Failed to load dashboard data.");
+      } finally {
+        setPageLoading(false);
+      }
     };
     getResponse();
   }, []);
+
+  /* -------------------- Loading -------------------- */
+  if (pageLoading) return <PageLoader />;
+
+  /* -------------------- Error -------------------- */
+  if (error)
+    return (
+      <div className="p-6 text-center text-red-600 font-semibold">{error}</div>
+    );
 
   return (
     <div className="p-6">
@@ -162,7 +186,6 @@ const AppDashboard = () => {
         <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
           Business Overview (By Type)
         </h3>
-        {/* Using grid-cols-4 for the 4 categories to fit nicely on large screens */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
             title="Accommodations"
@@ -198,7 +221,7 @@ const AppDashboard = () => {
   );
 };
 
-// Reusable Card Component
+/* -------------------- Reusable Stat Card -------------------- */
 const StatCard = ({ title, value, icon: Icon, color, bgColor }) => {
   return (
     <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200 flex items-center gap-4">
@@ -207,9 +230,8 @@ const StatCard = ({ title, value, icon: Icon, color, bgColor }) => {
       </div>
       <div>
         <p className="text-sm font-medium text-gray-500">{title}</p>
-        {/* Added a fallback for loading state just in case */}
         <h4 className="text-2xl font-bold text-gray-800 mt-0.5">
-          {value !== undefined ? value : "-"}
+          {value ?? "-"}
         </h4>
       </div>
     </div>
