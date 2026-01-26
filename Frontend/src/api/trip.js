@@ -177,11 +177,23 @@ export const uploadTripPhotosXHR = (tripId, formData, onProgress) =>
     xhr.open(
       "POST",
       `${API_BASE_URL}/api/trip/trips/${tripId}/gallery/upload`,
-      true
+      true,
     );
 
-    // ✅ Send auth cookies
+    // ✅ Send auth cookies - MUST be set BEFORE open() in some browsers
     xhr.withCredentials = true;
+
+    // ✅ Get token from localStorage or cookie and set Authorization header
+    const token =
+      localStorage.getItem("accessToken") ||
+      document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("accessToken="))
+        ?.split("=")[1];
+
+    if (token) {
+      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    }
 
     // ❌ Never set Content-Type manually for FormData
     // Browser sets multipart boundary automatically
@@ -195,13 +207,20 @@ export const uploadTripPhotosXHR = (tripId, formData, onProgress) =>
 
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
-        resolve(JSON.parse(xhr.responseText));
+        try {
+          resolve(JSON.parse(xhr.responseText));
+        } catch (e) {
+          reject(new Error("Invalid response format"));
+        }
       } else {
-        reject(new Error(`Upload failed: ${xhr.status}`));
+        reject(new Error(`Upload failed: ${xhr.status} - ${xhr.responseText}`));
       }
     };
 
     xhr.onerror = () => reject(new Error("Network error"));
+    xhr.ontimeout = () => reject(new Error("Upload timeout"));
+
+    xhr.timeout = 60000; // 60 seconds
 
     xhr.send(formData);
   });
@@ -221,3 +240,9 @@ export const getPublicTripPreview = (tripId) =>
   api.get(`/api/trip/public/${tripId}`, {
     withCredentials: true,
   });
+
+export const getTripActivities = (tripId) => {
+  return api.get(`/api/trip/trips/${tripId}/activities`, {
+    withCredentials: true,
+  });
+};

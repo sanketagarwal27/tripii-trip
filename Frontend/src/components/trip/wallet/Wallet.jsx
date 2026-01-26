@@ -48,7 +48,7 @@ export default function Wallet() {
             isAdmin: wallet.manager?.toString() === user._id,
             canAddExpense: wallet.settings?.expensePermission === "all",
           },
-        })
+        }),
       );
     })();
   }, [tripId, dispatch]);

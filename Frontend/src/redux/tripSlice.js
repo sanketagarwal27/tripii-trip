@@ -139,7 +139,7 @@ const tripSlice = createSlice({
           if (!target[tripId]) target[tripId] = [];
 
           const exists = target[tripId].some(
-            (existing) => existing._id === item._id
+            (existing) => existing._id === item._id,
           );
 
           if (!exists) {
@@ -171,11 +171,24 @@ const tripSlice = createSlice({
       /* ✅ Stable ordering (oldest → newest) */
       Object.keys(state.tripPlaces).forEach((tripId) => {
         state.tripPlaces[tripId].sort(
-          (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+          (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
         );
       });
 
-      mapByTrip(state.tripRoles, tripRoles);
+      tripRoles.forEach((role) => {
+        const tripId =
+          typeof role.trip === "object" ? role.trip._id : role.trip;
+
+        if (!state.tripRoles[tripId]) {
+          state.tripRoles[tripId] = [];
+        }
+
+        const exists = state.tripRoles[tripId].some((r) => r._id === role._id);
+
+        if (!exists) {
+          state.tripRoles[tripId].push(role);
+        }
+      });
 
       tripWallets.forEach((wallet) => {
         const tripId =
@@ -254,7 +267,7 @@ const tripSlice = createSlice({
       if (!state.tripPlans[tripId]) return;
 
       const idx = state.tripPlans[tripId].findIndex(
-        (p) => p._id === updatedPlan._id
+        (p) => p._id === updatedPlan._id,
       );
 
       if (idx !== -1) {
@@ -268,7 +281,7 @@ const tripSlice = createSlice({
       if (!state.tripPlans[tripId]) return;
 
       state.tripPlans[tripId] = state.tripPlans[tripId].filter(
-        (p) => p._id !== planId
+        (p) => p._id !== planId,
       );
     },
 
@@ -292,7 +305,7 @@ const tripSlice = createSlice({
 
       // ✅ Create a Set of existing photo IDs for O(1) lookup
       const existingIds = new Set(
-        (state.tripPhotos[tripId] || []).map((p) => p._id)
+        (state.tripPhotos[tripId] || []).map((p) => p._id),
       );
 
       // ✅ Only add truly new photos
@@ -312,7 +325,7 @@ const tripSlice = createSlice({
 
       // ✅ Sort by createdAt (newest first)
       state.tripPhotos[tripId].sort(
-        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
       );
     },
 
@@ -347,7 +360,7 @@ const tripSlice = createSlice({
       const { tripId, photoId } = action.payload;
       if (!state.tripPhotos[tripId]) return;
       state.tripPhotos[tripId] = state.tripPhotos[tripId].filter(
-        (p) => p._id !== photoId
+        (p) => p._id !== photoId,
       );
     },
     /**
@@ -361,7 +374,7 @@ const tripSlice = createSlice({
       const photo = state.tripPhotos[tripId].find((p) => p._id === photoId);
       if (photo) {
         state.tripPhotos[tripId] = state.tripPhotos[tripId].map((p) =>
-          p._id === photoId ? { ...p, visibility } : p
+          p._id === photoId ? { ...p, visibility } : p,
         );
       }
     },
@@ -371,7 +384,7 @@ const tripSlice = createSlice({
       if (!state.tripPhotos[tripId]) return;
 
       state.tripPhotos[tripId] = state.tripPhotos[tripId].map((p) =>
-        p._id === photoId ? { ...p, ...updates } : p
+        p._id === photoId ? { ...p, ...updates } : p,
       );
     },
 
@@ -398,8 +411,96 @@ const tripSlice = createSlice({
       if (!state.tripPlaces[tripId]) return;
 
       state.tripPlaces[tripId] = state.tripPlaces[tripId].filter(
-        (p) => p._id !== placeId
+        (p) => p._id !== placeId,
       );
+    },
+
+    updateTripField(state, action) {
+      const { tripId, field, value } = action.payload;
+      if (state.trips.byId[tripId]) {
+        state.trips.byId[tripId][field] = value;
+      }
+    },
+
+    updateTrip(state, action) {
+      const trip = action.payload;
+      if (state.trips.byId[trip._id]) {
+        state.trips.byId[trip._id] = {
+          ...state.trips.byId[trip._id],
+          ...trip,
+        };
+      }
+    },
+
+    removeTripParticipant(state, action) {
+      const { tripId, userId } = action.payload;
+      const trip = state.trips.byId[tripId];
+
+      if (trip?.participants) {
+        const participantIndex = trip.participants.findIndex((p) => {
+          const pUserId = p.user?._id || p.user;
+          return pUserId?.toString() === userId?.toString();
+        });
+
+        if (participantIndex !== -1) {
+          trip.participants[participantIndex].status = "removed";
+          trip.participants[participantIndex].removedAt =
+            new Date().toISOString();
+        }
+      }
+    },
+
+    updateParticipantStatus(state, action) {
+      const { tripId, userId, status } = action.payload;
+      const trip = state.trips.byId[tripId];
+
+      if (trip?.participants) {
+        const participant = trip.participants.find((p) => {
+          const pUserId = p.user?._id || p.user;
+          return pUserId?.toString() === userId?.toString();
+        });
+
+        if (participant) {
+          participant.status = status;
+          if (status === "left") {
+            participant.leftAt = new Date().toISOString();
+          }
+        }
+      }
+    },
+
+    addTripRole(state, action) {
+      const { tripId, role } = action.payload;
+
+      if (!state.tripRoles[tripId]) {
+        state.tripRoles[tripId] = [];
+      }
+
+      const exists = state.tripRoles[tripId].some((r) => r._id === role._id);
+      if (!exists) {
+        state.tripRoles[tripId].push(role);
+      }
+    },
+
+    removeTripRole(state, action) {
+      const { tripId, roleId } = action.payload;
+
+      if (state.tripRoles[tripId]) {
+        state.tripRoles[tripId] = state.tripRoles[tripId].filter(
+          (r) => r._id !== roleId,
+        );
+      }
+    },
+
+    removeUserRoles(state, action) {
+      const { tripId, userId } = action.payload;
+
+      if (state.tripRoles[tripId]) {
+        state.tripRoles[tripId] = state.tripRoles[tripId].filter((role) => {
+          const assignedId = role.assignedTo?._id || role.assignedTo;
+          return assignedId?.toString() !== userId?.toString();
+        });
+      }
     },
   },
 });
@@ -430,6 +531,14 @@ export const {
   updateTripPhoto,
   addTripPlace,
   removeTripPlace,
+
+  updateTripField,
+  updateTrip,
+  removeTripParticipant,
+  updateParticipantStatus,
+  addTripRole,
+  removeTripRole,
+  removeUserRoles,
 } = tripSlice.actions;
 
 export default tripSlice.reducer;

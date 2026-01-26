@@ -22,6 +22,7 @@ import {
 } from "../../socket/server.js";
 import { TripWallet } from "../../models/trip/tripWallet.model.js";
 import { optimizeImageBuffer } from "../../utils/sharpImage.js";
+import { TripActivity } from "../../models/trip/tripActivity.model.js";
 
 /**
  * Small local helper to sort members for display.
@@ -618,147 +619,147 @@ export const getSuggestedRooms = asyncHandler(async (req, res) => {
    =========================== */
 // In your room.controller.js - joinRoom function
 
-export const joinRoom = asyncHandler(async (req, res) => {
-  const { roomId } = req.params;
-  const userId = req.user._id;
+// export const joinRoom = asyncHandler(async (req, res) => {
+//   const { roomId } = req.params;
+//   const userId = req.user._id;
 
-  const room = await Room.findById(roomId).select(
-    "parentCommunity members roomtype linkedTrip name",
-  );
+//   const room = await Room.findById(roomId).select(
+//     "parentCommunity members roomtype linkedTrip name",
+//   );
 
-  if (!room) throw new ApiError(404, "Room not found");
+//   if (!room) throw new ApiError(404, "Room not found");
 
-  const membership = await CommunityMembership.findOne({
-    community: room.parentCommunity,
-    user: userId,
-  });
+//   const membership = await CommunityMembership.findOne({
+//     community: room.parentCommunity,
+//     user: userId,
+//   });
 
-  if (!membership)
-    throw new ApiError(403, "Only community members can join this room");
+//   if (!membership)
+//     throw new ApiError(403, "Only community members can join this room");
 
-  const alreadyMember = room.members.some(
-    (m) => m.user.toString() === userId.toString(),
-  );
+//   const alreadyMember = room.members.some(
+//     (m) => m.user.toString() === userId.toString(),
+//   );
 
-  if (alreadyMember) throw new ApiError(409, "Already a member of this room");
+//   if (alreadyMember) throw new ApiError(409, "Already a member of this room");
 
-  // Add to room
-  const newMember = {
-    user: userId,
-    role: "member",
-    joinedAt: new Date(),
-  };
+//   // Add to room
+//   const newMember = {
+//     user: userId,
+//     role: "member",
+//     joinedAt: new Date(),
+//   };
 
-  room.members.push(newMember);
-  await room.save();
+//   room.members.push(newMember);
+//   await room.save();
 
-  await User.findByIdAndUpdate(userId, {
-    $addToSet: { rooms: roomId },
-  });
+//   await User.findByIdAndUpdate(userId, {
+//     $addToSet: { rooms: roomId },
+//   });
 
-  // 🔥 TRIP SYNC
-  if (room.roomtype === "Trip" && room.linkedTrip) {
-    await Trip.findByIdAndUpdate(room.linkedTrip, {
-      $addToSet: {
-        participants: {
-          user: userId,
-          joinedAt: new Date(),
-          joinedVia: "room",
-          status: "active",
-        },
-      },
-    });
+//   // 🔥 TRIP SYNC
+//   if (room.roomtype === "Trip" && room.linkedTrip) {
+//     await Trip.findByIdAndUpdate(room.linkedTrip, {
+//       $addToSet: {
+//         participants: {
+//           user: userId,
+//           joinedAt: new Date(),
+//           joinedVia: "room",
+//           status: "active",
+//         },
+//       },
+//     });
 
-    await User.findByIdAndUpdate(userId, {
-      $addToSet: { trips: room.linkedTrip },
-    });
+//     await User.findByIdAndUpdate(userId, {
+//       $addToSet: { trips: room.linkedTrip },
+//     });
 
-    const wallet = await TripWallet.findOne({ trip: room.linkedTrip });
-    if (wallet) {
-      await TripWallet.findByIdAndUpdate(wallet._id, {
-        $addToSet: {
-          participants: {
-            user: userId,
-            personalBudget: 0,
-            totalPaid: 0,
-            totalOwed: 0,
-            totalOwes: 0,
-          },
-        },
-      });
-    }
-  }
+//     const wallet = await TripWallet.findOne({ trip: room.linkedTrip });
+//     if (wallet) {
+//       await TripWallet.findByIdAndUpdate(wallet._id, {
+//         $addToSet: {
+//           participants: {
+//             user: userId,
+//             personalBudget: 0,
+//             totalPaid: 0,
+//             totalOwed: 0,
+//             totalOwes: 0,
+//           },
+//         },
+//       });
+//     }
+//   }
 
-  const userData = await User.findById(userId)
-    .select("username profilePicture.url")
-    .lean();
+//   const userData = await User.findById(userId)
+//     .select("username profilePicture.url")
+//     .lean();
 
-  // 🔥 FIX: Emit with all necessary fields
-  emitToRoom(roomId.toString(), "room:userJoined", {
-    roomId: room._id,
-    user: {
-      _id: userData._id,
-      username: userData.username,
-      profilePicture: userData.profilePicture,
-    },
-    role: "member",
-    joinedAt: newMember.joinedAt,
-  });
+//   // 🔥 FIX: Emit with all necessary fields
+//   emitToRoom(roomId.toString(), "room:userJoined", {
+//     roomId: room._id,
+//     user: {
+//       _id: userData._id,
+//       username: userData.username,
+//       profilePicture: userData.profilePicture,
+//     },
+//     role: "member",
+//     joinedAt: newMember.joinedAt,
+//   });
 
-  // Notify other members
-  for (const member of room.members) {
-    if (member.user.toString() !== userId.toString()) {
-      try {
-        await sendNotification({
-          recipient: member.user,
-          sender: userId,
-          type: "member_joined_room",
-          message: `${userData.username} joined ${room.name}`,
-          room: room._id,
-          community: room.parentCommunity,
-          metadata: { roomId: room._id },
-        });
-      } catch (err) {
-        // non-blocking
-      }
-    }
-  }
+//   // Notify other members
+//   for (const member of room.members) {
+//     if (member.user.toString() !== userId.toString()) {
+//       try {
+//         await sendNotification({
+//           recipient: member.user,
+//           sender: userId,
+//           type: "member_joined_room",
+//           message: `${userData.username} joined ${room.name}`,
+//           room: room._id,
+//           community: room.parentCommunity,
+//           metadata: { roomId: room._id },
+//         });
+//       } catch (err) {
+//         // non-blocking
+//       }
+//     }
+//   }
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, { user: userData }, "Joined room successfully"));
-});
+//   return res
+//     .status(200)
+//     .json(new ApiResponse(200, { user: userData }, "Joined room successfully"));
+// });
 
 /* ===========================
    LEAVE ROOM
    =========================== */
-export const leaveRoom = asyncHandler(async (req, res) => {
-  const { roomId } = req.params;
-  const userId = req.user._id;
+// export const leaveRoom = asyncHandler(async (req, res) => {
+//   const { roomId } = req.params;
+//   const userId = req.user._id;
 
-  const room = await Room.findById(roomId).select("members");
-  if (!room) throw new ApiError(404, "Room not found");
+//   const room = await Room.findById(roomId).select("members");
+//   if (!room) throw new ApiError(404, "Room not found");
 
-  const memberIndex = room.members.findIndex(
-    (m) => m.user.toString() === userId.toString(),
-  );
-  if (memberIndex === -1) throw new ApiError(404, "You are not a member");
+//   const memberIndex = room.members.findIndex(
+//     (m) => m.user.toString() === userId.toString(),
+//   );
+//   if (memberIndex === -1) throw new ApiError(404, "You are not a member");
 
-  if (room.members[memberIndex].role === "owner") {
-    throw new ApiError(400, "Owner cannot leave.");
-  }
+//   if (room.members[memberIndex].role === "owner") {
+//     throw new ApiError(400, "Owner cannot leave.");
+//   }
 
-  room.members.splice(memberIndex, 1);
-  await room.save();
+//   room.members.splice(memberIndex, 1);
+//   await room.save();
 
-  await User.findByIdAndUpdate(userId, { $pull: { rooms: roomId } });
+//   await User.findByIdAndUpdate(userId, { $pull: { rooms: roomId } });
 
-  emitToRoom(roomId.toString(), "room:memberLeft", { roomId, userId });
+//   emitToRoom(roomId.toString(), "room:memberLeft", { roomId, userId });
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, {}, "Left room successfully"));
-});
+//   return res
+//     .status(200)
+//     .json(new ApiResponse(200, {}, "Left room successfully"));
+// });
 
 /* ===========================
    SEND ROOM MESSAGE
@@ -1018,9 +1019,309 @@ export const searchRooms = asyncHandler(async (req, res) => {
   );
 });
 
-const canManageRoom = (member) =>
-  member && ["owner", "moderator"].includes(member.role);
+/* ===========================
+   HELPER: CAN MANAGE ROOM
+   =========================== */
+const canManageRoom = (membership) => {
+  return membership && ["owner", "moderator"].includes(membership.role);
+};
 
+/* ===========================
+   HELPER: ADD USER TO TRIP
+   =========================== */
+const addUserToTrip = async (userId, tripId, session = null) => {
+  const trip = await Trip.findById(tripId).session(session);
+  if (!trip) return;
+
+  // Check if user is already a participant
+  const isParticipant = trip.participants.some(
+    (p) => p.user.toString() === userId.toString(),
+  );
+
+  if (isParticipant) return;
+
+  // Add to trip participants
+  trip.participants.push({
+    user: userId,
+    joinedAt: new Date(),
+    joinedVia: "room",
+    status: "active",
+    canRejoin: true,
+  });
+
+  await trip.save({ session });
+
+  // Add trip to user's trips
+  await User.findByIdAndUpdate(
+    userId,
+    { $addToSet: { trips: tripId } },
+    { session },
+  );
+
+  // Add to trip wallet
+  const wallet = await TripWallet.findOne({ trip: tripId }).session(session);
+  if (wallet) {
+    const hasWalletParticipant = wallet.participants.some(
+      (p) => p.user.toString() === userId.toString(),
+    );
+
+    if (!hasWalletParticipant) {
+      wallet.participants.push({
+        user: userId,
+        personalBudget: 0,
+        totalPaid: 0,
+        totalOwed: 0,
+        totalOwes: 0,
+      });
+      await wallet.save({ session });
+    }
+  }
+
+  // Log activity
+  await TripActivity.create(
+    [
+      {
+        trip: tripId,
+        type: "member_joined",
+        actor: userId,
+        description: "Joined via room",
+      },
+    ],
+    { session },
+  );
+};
+
+/* ===========================
+   HELPER: REMOVE USER FROM TRIP
+   =========================== */
+const removeUserFromTrip = async (userId, tripId, session = null) => {
+  const trip = await Trip.findById(tripId).session(session);
+  if (!trip) return;
+
+  // Find participant index
+  const participantIndex = trip.participants.findIndex(
+    (p) => p.user.toString() === userId.toString(),
+  );
+
+  if (participantIndex === -1) return;
+
+  const participant = trip.participants[participantIndex];
+
+  // Don't remove trip creator
+  if (trip.createdBy.toString() === userId.toString()) {
+    return;
+  }
+
+  // Update participant status instead of removing
+  participant.status = "left";
+  participant.leftAt = new Date();
+
+  await trip.save({ session });
+
+  // Remove trip from user
+  await User.findByIdAndUpdate(
+    userId,
+    { $pull: { trips: tripId } },
+    { session },
+  );
+
+  // Update wallet - mark as inactive but keep records
+  const wallet = await TripWallet.findOne({ trip: tripId }).session(session);
+  if (wallet) {
+    const walletParticipant = wallet.participants.find(
+      (p) => p.user.toString() === userId.toString(),
+    );
+    // Keep the participant data for financial records
+    if (walletParticipant) {
+      // Optionally add an 'active' flag to wallet participant schema
+    }
+  }
+
+  // Log activity
+  await TripActivity.create(
+    [
+      {
+        trip: tripId,
+        type: "member_left",
+        actor: userId,
+        description: "Left via room",
+      },
+    ],
+    { session },
+  );
+};
+
+/* ===========================
+   JOIN ROOM
+   =========================== */
+export const joinRoom = asyncHandler(async (req, res) => {
+  const { roomId } = req.params;
+  const userId = req.user._id;
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const room = await Room.findById(roomId)
+      .select("parentCommunity members roomtype linkedTrip name")
+      .session(session);
+
+    if (!room) throw new ApiError(404, "Room not found");
+
+    const membership = await CommunityMembership.findOne({
+      community: room.parentCommunity,
+      user: userId,
+    }).session(session);
+
+    if (!membership) {
+      throw new ApiError(403, "Only community members can join this room");
+    }
+
+    const alreadyMember = room.members.some(
+      (m) => m.user.toString() === userId.toString(),
+    );
+
+    if (alreadyMember) {
+      throw new ApiError(409, "Already a member of this room");
+    }
+
+    // Add to room
+    const newMember = {
+      user: userId,
+      role: "member",
+      joinedAt: new Date(),
+    };
+
+    room.members.push(newMember);
+    await room.save({ session });
+
+    // Add room to user
+    await User.findByIdAndUpdate(
+      userId,
+      { $addToSet: { rooms: roomId } },
+      { session },
+    );
+
+    // 🔥 TRIP SYNC - Add to trip if it's a trip room
+    if (room.roomtype === "Trip" && room.linkedTrip) {
+      await addUserToTrip(userId, room.linkedTrip, session);
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    // Get user data for response
+    const userData = await User.findById(userId)
+      .select("username profilePicture.url")
+      .lean();
+
+    // Emit socket event
+    emitToRoom(roomId.toString(), "room:userJoined", {
+      roomId: room._id,
+      user: {
+        _id: userData._id,
+        username: userData.username,
+        profilePicture: userData.profilePicture,
+      },
+      role: "member",
+      joinedAt: newMember.joinedAt,
+    });
+
+    // Notify other members (non-blocking)
+    for (const member of room.members) {
+      if (member.user.toString() !== userId.toString()) {
+        try {
+          await sendNotification({
+            recipient: member.user,
+            sender: userId,
+            type: "member_joined_room",
+            message: `${userData.username} joined ${room.name}`,
+            room: room._id,
+            community: room.parentCommunity,
+            metadata: { roomId: room._id },
+          });
+        } catch (err) {
+          console.error("Failed to send notification:", err);
+        }
+      }
+    }
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, { user: userData }, "Joined room successfully"),
+      );
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
+  }
+});
+
+/* ===========================
+   LEAVE ROOM
+   =========================== */
+export const leaveRoom = asyncHandler(async (req, res) => {
+  const { roomId } = req.params;
+  const userId = req.user._id;
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const room = await Room.findById(roomId)
+      .select("members roomtype linkedTrip name")
+      .session(session);
+
+    if (!room) throw new ApiError(404, "Room not found");
+
+    const memberIndex = room.members.findIndex(
+      (m) => m.user.toString() === userId.toString(),
+    );
+
+    if (memberIndex === -1) {
+      throw new ApiError(404, "You are not a member");
+    }
+
+    if (room.members[memberIndex].role === "owner") {
+      throw new ApiError(400, "Owner cannot leave the room");
+    }
+
+    // Remove from room
+    room.members.splice(memberIndex, 1);
+    await room.save({ session });
+
+    // Remove room from user
+    await User.findByIdAndUpdate(
+      userId,
+      { $pull: { rooms: roomId } },
+      { session },
+    );
+
+    // 🔥 TRIP SYNC - Remove from trip if it's a trip room
+    if (room.roomtype === "Trip" && room.linkedTrip) {
+      await removeUserFromTrip(userId, room.linkedTrip, session);
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    // Emit socket event
+    emitToRoom(roomId.toString(), "room:memberLeft", { roomId, userId });
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, "Left room successfully"));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
+  }
+});
+
+/* ===========================
+   UPDATE ROOM SETTINGS
+   =========================== */
 export const updateRoomSettings = asyncHandler(async (req, res) => {
   const { roomId } = req.params;
   const userId = req.user._id;
@@ -1033,155 +1334,174 @@ export const updateRoomSettings = asyncHandler(async (req, res) => {
     removeExternalLinks,
   } = req.body;
 
-  const room = await Room.findById(roomId);
-  if (!room) throw new ApiError(404, "Room not found");
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  const myMembership = room.members.find(
-    (m) => m.user.toString() === userId.toString(),
-  );
+  try {
+    const room = await Room.findById(roomId).session(session);
+    if (!room) throw new ApiError(404, "Room not found");
 
-  const myRole = myMembership.role; // owner | moderator
+    const myMembership = room.members.find(
+      (m) => m.user.toString() === userId.toString(),
+    );
 
-  if (!canManageRoom(myMembership)) {
-    throw new ApiError(403, "You are not allowed to manage this room");
-  }
+    const myRole = myMembership?.role;
 
-  /* ---------------- ADD MEMBERS ---------------- */
-  if (Array.isArray(addMembers)) {
-    const existing = new Set(room.members.map((m) => m.user.toString()));
+    if (!canManageRoom(myMembership)) {
+      throw new ApiError(403, "You are not allowed to manage this room");
+    }
 
-    for (const uid of addMembers) {
-      if (!mongoose.Types.ObjectId.isValid(uid)) continue;
+    /* ---------------- ADD MEMBERS ---------------- */
+    if (Array.isArray(addMembers) && addMembers.length > 0) {
+      const existing = new Set(room.members.map((m) => m.user.toString()));
 
-      const user = await User.findById(uid).select("_id rooms");
-      if (!user) continue;
+      for (const uid of addMembers) {
+        if (!mongoose.Types.ObjectId.isValid(uid)) continue;
 
-      const exists = await User.exists({ _id: uid });
-      if (!exists) continue; // 🚨 prevents corruption
+        const user = await User.findById(uid)
+          .select("_id rooms")
+          .session(session);
 
-      if (!existing.has(uid)) {
-        room.members.push({
-          user: uid,
-          role: "member",
-          joinedAt: new Date(),
-        });
+        if (!user) continue;
 
-        if (!user.rooms.includes(room._id)) {
-          user.rooms.push(room._id);
-          await user.save({ validateBeforeSave: false });
+        if (!existing.has(uid)) {
+          // Add to room
+          room.members.push({
+            user: uid,
+            role: "member",
+            joinedAt: new Date(),
+          });
+
+          // Add room to user
+          if (!user.rooms.includes(room._id)) {
+            user.rooms.push(room._id);
+            await user.save({ session, validateBeforeSave: false });
+          }
+
+          // 🔥 TRIP SYNC - Add to trip if it's a trip room
+          if (room.roomtype === "Trip" && room.linkedTrip) {
+            await addUserToTrip(uid, room.linkedTrip, session);
+          }
         }
       }
     }
-  }
 
-  /* ---------------- REMOVE MEMBERS ---------------- */
-  if (Array.isArray(removeMembers)) {
-    const removedUserIds = [];
+    /* ---------------- REMOVE MEMBERS ---------------- */
+    if (Array.isArray(removeMembers) && removeMembers.length > 0) {
+      const removedUserIds = [];
 
-    room.members = room.members.filter((m) => {
-      const targetUserId = m.user.toString();
+      room.members = room.members.filter((m) => {
+        const targetUserId = m.user.toString();
 
-      // Owner can never be removed
-      if (m.role === "owner") return true;
-
-      // Not selected for removal
-      if (!removeMembers.includes(targetUserId)) return true;
-
-      // ===============================
-      // PERMISSION RULES
-      // ===============================
-
-      // 🔒 Moderator restrictions
-      if (myMembership.role === "moderator") {
-        // ❌ moderator cannot remove themselves
-        if (targetUserId === userId.toString()) return true;
-
-        // ❌ moderator cannot remove other moderators
-        if (m.role === "moderator") return true;
-
-        // ❌ moderator cannot remove owner (already covered, but explicit)
+        // Owner can never be removed
         if (m.role === "owner") return true;
+
+        // Not selected for removal
+        if (!removeMembers.includes(targetUserId)) return true;
+
+        // PERMISSION RULES
+        if (myRole === "moderator") {
+          // Moderator cannot remove themselves
+          if (targetUserId === userId.toString()) return true;
+          // Moderator cannot remove other moderators
+          if (m.role === "moderator") return true;
+          // Moderator cannot remove owner
+          if (m.role === "owner") return true;
+        }
+
+        if (myRole === "owner") {
+          // Owner cannot remove themselves
+          if (targetUserId === userId.toString()) return true;
+        }
+
+        // ALLOWED → REMOVE
+        removedUserIds.push(targetUserId);
+        return false;
+      });
+
+      // Sync reverse relation
+      if (removedUserIds.length) {
+        await User.updateMany(
+          { _id: { $in: removedUserIds } },
+          { $pull: { rooms: room._id } },
+          { session },
+        );
+
+        // 🔥 TRIP SYNC - Remove from trip if it's a trip room
+        if (room.roomtype === "Trip" && room.linkedTrip) {
+          for (const removedUserId of removedUserIds) {
+            await removeUserFromTrip(removedUserId, room.linkedTrip, session);
+          }
+        }
       }
+    }
 
-      // 🔒 Owner restriction
-      if (myMembership.role === "owner") {
-        // ❌ owner cannot remove themselves
-        if (targetUserId === userId.toString()) return true;
-      }
+    /* ---------------- CHANGE ROLES ---------------- */
+    if (Array.isArray(changeRoles)) {
+      changeRoles.forEach(({ userId: targetUserId, role }) => {
+        const member = room.members.find(
+          (m) => m.user.toString() === targetUserId,
+        );
 
-      // ===============================
-      // ALLOWED → REMOVE
-      // ===============================
-      removedUserIds.push(targetUserId);
-      return false;
-    });
+        if (!member) return;
 
-    // ✅ sync reverse relation
-    if (removedUserIds.length) {
-      await User.updateMany(
-        { _id: { $in: removedUserIds } },
-        { $pull: { rooms: room._id } },
+        // Owner role is immutable
+        if (member.role === "owner") return;
+
+        // Moderator cannot change roles at all
+        if (myRole === "moderator") return;
+
+        // Owner can change member <-> moderator
+        member.role = role;
+      });
+    }
+
+    /* ---------------- ADD / UPDATE EXTERNAL LINKS ---------------- */
+    if (Array.isArray(addExternalLinks)) {
+      addExternalLinks.forEach(({ name, url }) => {
+        const existing = room.externalLinks.find((l) => l.name === name);
+
+        if (existing) {
+          existing.url = url;
+          existing.addedBy = userId;
+          existing.addedAt = new Date();
+        } else {
+          room.externalLinks.push({
+            name,
+            url,
+            addedBy: userId,
+            addedAt: new Date(),
+          });
+        }
+      });
+    }
+
+    /* ---------------- REMOVE EXTERNAL LINKS ---------------- */
+    if (Array.isArray(removeExternalLinks)) {
+      room.externalLinks = room.externalLinks.filter(
+        (l) => !removeExternalLinks.includes(l.name),
       );
     }
+
+    await room.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    // Populate members & creator to match getRoomDetails
+    const populatedRoom = await Room.findById(room._id)
+      .populate("createdBy", "username profilePicture.url")
+      .populate("members.user", "username profilePicture.url")
+      .lean();
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, populatedRoom, "Room updated successfully"));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
   }
-
-  /* ---------------- CHANGE ROLES ---------------- */
-  if (Array.isArray(changeRoles)) {
-    changeRoles.forEach(({ userId: targetUserId, role }) => {
-      const member = room.members.find(
-        (m) => m.user.toString() === targetUserId,
-      );
-
-      if (!member) return;
-
-      // Owner role is immutable
-      if (member.role === "owner") return;
-
-      // Moderator cannot change roles at all
-      if (myRole === "moderator") return;
-
-      // Owner can change member <-> moderator
-      member.role = role;
-    });
-  }
-
-  /* ---------------- ADD / UPDATE EXTERNAL LINKS ---------------- */
-  if (Array.isArray(addExternalLinks)) {
-    addExternalLinks.forEach(({ name, url }) => {
-      const existing = room.externalLinks.find((l) => l.name === name);
-
-      if (existing) {
-        existing.url = url;
-        existing.addedBy = userId;
-        existing.addedAt = new Date();
-      } else {
-        room.externalLinks.push({
-          name,
-          url,
-          addedBy: userId,
-          addedAt: new Date(),
-        });
-      }
-    });
-  }
-
-  /* ---------------- REMOVE EXTERNAL LINKS ---------------- */
-  if (Array.isArray(removeExternalLinks)) {
-    room.externalLinks = room.externalLinks.filter(
-      (l) => !removeExternalLinks.includes(l.name),
-    );
-  }
-
-  await room.save();
-  // populate members & creator to match getRoomDetails
-  const populatedRoom = await Room.findById(room._id)
-    .populate("createdBy", "username profilePicture.url")
-    .populate("members.user", "username profilePicture.url")
-    .lean();
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, populatedRoom, "Room updated successfully"));
 });
 
 // helper function for grtting room status

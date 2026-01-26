@@ -7,6 +7,8 @@ import { ApiResponse } from "../../utils/ApiResponse.js";
 import { TripRole } from "../../models/trip/tripRole.model.js";
 import { EVENTS } from "../../socket/events.js";
 import { emitToTrip } from "../../socket/server.js";
+import { User } from "../../models/user/user.model.js";
+import { TripActivity } from "../../models/trip/tripActivity.model.js";
 
 const toMinutes = (timeStr) => {
   if (!timeStr) return null;
@@ -124,10 +126,28 @@ export const createTripPlan = asyncHandler(async (req, res) => {
 
   const finalPlan = await TripPlan.findById(plan._id).populate(
     "createdBy",
-    "username"
+    "username",
   );
 
   emitToTrip(tripId, EVENTS.ITINERARY_CREATED, { plan: finalPlan });
+
+  /* ---------------- ACTIVITY (ENHANCED) ---------------- */
+  const actorUser = await User.findById(userId).select("username");
+  const planDate = new Date(date).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+  const timeStr = time?.start ? ` at ${time.start}` : "";
+  const locationStr = location?.name ? ` in ${location.name}` : "";
+
+  await TripActivity.create({
+    trip: tripId,
+    type: "plan_added",
+    actor: userId,
+    targetId: plan._id,
+    targetModel: "TripPlan",
+    description: `${actorUser.username} added "${title}" to itinerary for ${planDate}${timeStr}${locationStr}`,
+  });
 
   return res
     .status(201)
@@ -135,8 +155,8 @@ export const createTripPlan = asyncHandler(async (req, res) => {
       new ApiResponse(
         201,
         { plan: updatedPlan },
-        "Trip plan created successfully"
-      )
+        "Trip plan created successfully",
+      ),
     );
 });
 
@@ -217,7 +237,7 @@ export const addAiTripPlans = asyncHandler(async (req, res) => {
   if (!allowed) {
     throw new ApiError(
       403,
-      "Only captain or planner can add AI itinerary plans"
+      "Only captain or planner can add AI itinerary plans",
     );
   }
 
@@ -231,7 +251,7 @@ export const addAiTripPlans = asyncHandler(async (req, res) => {
   if (tripEnd < endOfToday) {
     throw new ApiError(
       400,
-      "Trip has already ended. Itinerary cannot be modified."
+      "Trip has already ended. Itinerary cannot be modified.",
     );
   }
 
@@ -279,6 +299,20 @@ export const addAiTripPlans = asyncHandler(async (req, res) => {
     // 🔁 Normalize after each day
     await normalizeSequences(tripId, date);
   }
+
+  /* ---------------- ACTIVITY (ENHANCED) ---------------- */
+  const actorUser = await User.findById(userId).select("username");
+  const planCount = createdPlans.length;
+  const dayCount = days.length;
+
+  await TripActivity.create({
+    trip: tripId,
+    type: "plan_added",
+    actor: userId,
+    targetModel: "TripPlan",
+    description: `${actorUser.username} added ${planCount} AI-generated plans across ${dayCount} days`,
+  });
+
   emitToTrip(tripId, EVENTS.ITINERARY_AI_ADDED, {
     plans: createdPlans,
   });
@@ -289,8 +323,8 @@ export const addAiTripPlans = asyncHandler(async (req, res) => {
       new ApiResponse(
         201,
         { plans: createdPlans },
-        "AI trip plans added successfully"
-      )
+        "AI trip plans added successfully",
+      ),
     );
 });
 
@@ -346,8 +380,31 @@ export const updateItineraryPlan = asyncHandler(async (req, res) => {
   // ✅ Populate ONLY the updated plan
   const populatedPlan = await TripPlan.findById(plan._id).populate(
     "createdBy",
-    "username"
+    "username",
   );
+
+  /* ---------------- ACTIVITY (ENHANCED) ---------------- */
+  const actorUser = await User.findById(userId).select("username");
+
+  // Build change summary
+  const changes = [];
+  if (updates.title) changes.push("title");
+  if (updates.description) changes.push("description");
+  if (updates.date) changes.push("date");
+  if (updates.time) changes.push("time");
+  if (updates.location) changes.push("location");
+
+  const changeStr =
+    changes.length > 0 ? ` (updated ${changes.join(", ")})` : "";
+
+  await TripActivity.create({
+    trip: trip._id,
+    type: "plan_updated",
+    actor: userId,
+    targetId: plan._id,
+    targetModel: "TripPlan",
+    description: `${actorUser.username} updated plan "${plan.title}"${changeStr}`,
+  });
 
   // ✅ Emit correct payload shape
   emitToTrip(trip._id, EVENTS.ITINERARY_UPDATED, {
@@ -357,7 +414,11 @@ export const updateItineraryPlan = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(
-      new ApiResponse(200, populatedPlan, "Itinerary plan updated successfully")
+      new ApiResponse(
+        200,
+        populatedPlan,
+        "Itinerary plan updated successfully",
+      ),
     );
 });
 
@@ -389,7 +450,7 @@ export const deleteItineraryPlan = asyncHandler(async (req, res) => {
   if (!allowed) {
     throw new ApiError(
       403,
-      "Only captain or planner can delete itinerary plans"
+      "Only captain or planner can delete itinerary plans",
     );
   }
 
@@ -423,9 +484,26 @@ export const deleteItineraryPlan = asyncHandler(async (req, res) => {
 
   emitToTrip(trip._id, EVENTS.ITINERARY_DELETED, { planId });
 
+  /* ---------------- ACTIVITY (ENHANCED) ---------------- */
+  const actorUser = await User.findById(userId).select("username");
+  const planTitle = plan.title;
+  const planDate = new Date(deletedDate).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+
+  await TripActivity.create({
+    trip: trip._id,
+    type: "plan_deleted",
+    actor: userId,
+    targetId: planId,
+    targetModel: "TripPlan",
+    description: `${actorUser.username} removed "${planTitle}" from ${planDate} itinerary`,
+  });
+
   return res
     .status(200)
     .json(
-      new ApiResponse(200, { planId }, "Itinerary plan deleted successfully")
+      new ApiResponse(200, { planId }, "Itinerary plan deleted successfully"),
     );
 });
