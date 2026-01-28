@@ -58,6 +58,7 @@ const CommunityCard = ({ community, onClick, isMember = false }) => {
               setShowTags(true);
             }}
             className="communitycard-tags absolute top-3 left-3 flex items-center gap-1 bg-black/50 px-2 py-1 rounded-md text-[10px] font-medium"
+            style={{ color: "white" }}
           >
             <span className="material-symbols-outlined text-xs">label</span>
             {tags.length === 1 ? tags[0] : `${tags.length} tags`}

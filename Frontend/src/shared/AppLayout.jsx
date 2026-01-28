@@ -19,18 +19,16 @@ const AppLayout = () => {
   useBootstrapAuth();
   useGetMyTrips();
 
-  // ⏳ minimum splash time
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowSplash(false);
-    }, 2000); //  seconds
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, []);
 
-  // 🔥 show loader until BOTH conditions are satisfied
   if (loading || showSplash) {
     return (
       <div
@@ -53,7 +51,8 @@ const AppLayout = () => {
     <div>
       <Navbar />
       <GlobalUploadBar />
-      <div>
+      {/* Add padding bottom on mobile for bottom nav */}
+      <div className="pb-16 lg:pb-0">
         <Outlet />
       </div>
     </div>

@@ -39,7 +39,7 @@ const CreateCommunityOverlay = ({ isOpen, onClose }) => {
 
   const toggleTag = (tag) => {
     setTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
     );
   };
 
@@ -106,7 +106,10 @@ const CreateCommunityOverlay = ({ isOpen, onClose }) => {
       />
 
       {/* MODAL OUTER WRAPPER (fixed, centered) */}
-      <div className="fixed inset-0 z-50 flex justify-center items-start pt-10 px-4 createcommunity">
+      <div
+        className="fixed inset-0 z-50 flex justify-center items-start pt-10 px-4 createcommunity"
+        style={{ marginTop: "80px" }}
+      >
         {/* WHITE MODAL — shorter height, scrollable inside */}
         <div className="bg-white dark:bg-card-dark w-full max-w-lg rounded-xl shadow-xl overflow-hidden">
           {/* INNER SCROLLABLE AREA */}
