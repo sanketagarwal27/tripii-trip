@@ -1140,22 +1140,264 @@ body {
   color: #777;
 }
 
+/* ==================== MOBILE RESPONSIVE STYLES ==================== */
+
+/* Mobile adjustments for Left Sidebar */
+@media (max-width: 1024px) {
+  .leftsidebar {
+    width: 100%;
+    margin-top: 0;
+    padding: 16px;
+    position: static;
+    border-right: none;
+    border-bottom: 1px solid rgb(187, 187, 187);
+  }
+
+  .ls-inner {
+    gap: 16px;
+  }
+
+  .ls-card {
+    width: 100%;
+  }
+
+  .ls-community-img {
+    width: 48px;
+    height: 48px;
+  }
+
+  .ls-community-name {
+    font-size: 15px;
+  }
+}
+
+/* Mobile adjustments for Right Sidebar */
+@media (max-width: 1024px) {
+  .rightsidebar {
+    position: static;
+    width: 100%;
+    height: auto;
+    top: auto;
+    right: auto;
+  }
+
+  .rightsidebar-inner {
+    overflow-y: visible;
+    padding-right: 0;
+    padding: 16px;
+  }
+
+  .rs-card {
+    margin-bottom: 16px;
+  }
+
+  .rs-avatar {
+    width: 72px;
+    height: 72px;
+  }
+
+  .rs-name {
+    font-size: 16px;
+  }
+
+  .rs-handle {
+    font-size: 13px;
+  }
+
+  .rs-place-img {
+    width: 80px;
+    height: 80px;
+  }
+
+  .rs-place-name {
+    font-size: 15px;
+  }
+}
+
+/* Mobile adjustments for Feed */
+@media (max-width: 1024px) {
+  .feed {
+    margin-top: 10px;
+    width: 100%;
+    padding-bottom: 80px; /* Space for bottom nav */
+  }
+
+  .create-post-box {
+    width: 100%;
+    padding: 0px;
+  }
+
+  .create-post-top textarea {
+    height: 60px;
+    font-size: 14px;
+  }
+
+  .avatar {
+    width: 36px;
+    height: 36px;
+  }
+
+  .post-btn {
+    padding: 6px 16px;
+    font-size: 14px;
+  }
+}
+
+/* Mobile adjustments for Post Card */
+@media (max-width: 1024px) {
+  .postcard {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 5px;
+  }
+
+  .postcard-avatar {
+    width: 36px;
+    height: 36px;
+  }
+
+  .postcard-username {
+    font-size: 13px;
+  }
+
+  .postcard-time {
+    font-size: 11px;
+  }
+
+  .postcard-caption {
+    font-size: 14px;
+  }
+
+  .postcard-actions {
+    gap: 12px;
+  }
+
+  .postcard-action-btn {
+    font-size: 13px;
+  }
+
+  .carousel-arrow {
+    padding: 6px;
+  }
+
+  .carousel-arrow.left {
+    left: 8px;
+  }
+
+  .carousel-arrow.right {
+    right: 8px;
+  }
+
+  .thumb {
+    width: 50px;
+    height: 50px;
+  }
+
+  .main-preview-image {
+    max-height: 300px;
+  }
+
+  .thumbnail-img {
+    width: 70px;
+    height: 70px;
+  }
+}
+
+/* Adjust layout when bottom nav is present */
+@media (max-width: 1024px) {
+  body {
+    padding-bottom: 60px;
+  }
+}
+
+/* Hide desktop navbar on mobile */
+@media (max-width: 1024px) {
+  .navbar {
+    display: none !important;
+  }
+}
+
 /* commentpage */
 
+/* commentpage */
 .commentpage {
   width: 58vw;
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* margin-left: 20vw; */
+  /* margin-top: 80px; */
 }
 
-/* Community */
+.commentpage-community {
+  width: 58vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-left: 20vw;
+  margin-top: 80px;
+}
 
+.commentpage-container {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* MOBILE RESPONSIVE CSS FOR COMMENT PAGE */
+@media (max-width: 768px) {
+  .commentpage {
+    width: 100% !important;
+    padding: 0 16px !important;
+    margin-top: 20px !important;
+  }
+
+  .commentpage-container {
+    width: 100% !important;
+    margin-top: 0px !important;
+    padding: 0 !important;
+  }
+
+  /* Input Section - Stack on mobile */
+  .commentpage-input-section {
+    flex-direction: column !important;
+    gap: 12px !important;
+    align-items: stretch !important;
+  }
+
+  .commentpage-user-avatar {
+    display: none !important;
+  }
+
+  /* Comment avatars - smaller on mobile */
+  .commentpage-comment-avatar {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .commentpage-reply-avatar {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  /* Reply box - less margin on mobile */
+  .commentpage-reply-box {
+    margin-left: 40px !important;
+  }
+
+  /* Reply items - adjust spacing */
+  .commentpage-reply-item {
+    margin-left: 40px !important;
+    padding-left: 16px !important;
+  }
+}
+
+/* Community Hub - Desktop */
 .communityhub {
   display: flex;
   flex-direction: column;
-  margin-left: 60px;
+  margin-left: 21vw;
   width: 75vw;
+  margin-top: 80px;
 }
 
 .communitycard {
@@ -1189,53 +1431,286 @@ body {
   margin-right: 10px;
 }
 
-.createcommunity {
-  margin-top: 100px;
+.layout-container {
+  /* max-w-[1600px] */
+  max-width: 1600px;
+
+  /* mx-auto */
+  margin-left: auto;
+  margin-right: auto;
+
+  /* px-4 (default/mobile) */
+  padding-left: 30px;
+  padding-right: 16px;
 }
 
-.communitycard-tags {
-  color: white;
+/* ==================== MOBILE - PHONE (up to 640px) ==================== */
+@media (max-width: 640px) {
+  /* Hide "Community Hub" title on mobile */
+  .communityhub-title {
+    display: none !important;
+  }
+
+  /* Hide "Create" text, show only icon on mobile */
+  .communityhub-create-text {
+    display: none !important;
+  }
+
+  .communityhub-create-btn {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    flex-shrink: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .communityhub-create-btn span.material-symbols-outlined {
+    font-size: 20px !important;
+  }
+
+  .communityhub-header > div {
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+  }
+
+  /* Community Hub Container */
+  .communityhub {
+    width: 100vw !important;
+    margin-left: 0 !important;
+    padding: 16px !important;
+    margin-top: -20px;
+  }
+
+  /* Header */
+  .communityhub-header {
+    flex-direction: row !important;
+    margin-bottom: 0px !important;
+    padding-right: 0 !important;
+    margin-top: 10px !important;
+  }
+
+  .communityhub-header h1 {
+    font-size: 24px !important;
+  }
+
+  /* Search Part */
+  .communityhub-searchpart {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0px !important;
+    justify-content: space-between;
+    width: 100% !important;
+  }
+
+  .communityhub-searchpart > div:first-child {
+    display: flex !important;
+    height: 40px !important;
+    padding: 2px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .communityhub-searchpart > div:first-child button {
+    padding: 6px 10px !important;
+    font-size: 11px !important;
+  }
+
+  .communityhub-searchpart select {
+    width: 100% !important;
+  }
+
+  .communityhub-searchpart label {
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  .communityhub-searchpart input {
+    font-size: 13px !important;
+  }
+
+  .communityhub-searchpart button:last-child {
+    align-self: flex-end !important;
+  }
+
+  .communityhub-backbutton {
+    width: 100% !important;
+    justify-content: center !important;
+    margin-right: 0 !important;
+    margin-bottom: 8px !important;
+  }
+
+  /* Community Cards - 1 per row on mobile, full width with proper spacing */
+  .communitycard {
+    width: 100% !important;
+    height: 220px !important;
+    margin-bottom: 10px !important;
+  }
+
+  /* Grid spacing - Fix overlapping issue */
+  .flex.flex-wrap.gap-7 {
+    gap: 20px !important;
+    row-gap: 20px !important;
+  }
+
+  /* Section spacing */
+  section {
+    margin-top: 24px !important;
+  }
+
+  section h2 {
+    font-size: 18px !important;
+    margin-bottom: 20px !important;
+  }
+
+  /* Main content area */
+  main[style*="marginLeft"] {
+    margin-left: 0 !important;
+    margin-top: 60px !important;
+    height: calc(100vh - 60px) !important;
+    padding: 0 !important;
+  }
+
+  /* Layout container */
+  .layout-container {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    width: 100% !important;
+    margin-top: -60px !important;
+  }
+
+  /* Grid adjustments */
+  .grid.grid-cols-1.xl\\:grid-cols-3 {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
 }
 
-/* 🔥 Thin themed horizontal scrollbar */
-.reaction-scrollbar {
-  scrollbar-width: thin; /* Firefox */
-  scrollbar-color: rgba(0, 255, 229, 0.2) transparent;
+/* ==================== TABLET - MEDIUM (641px to 1024px) ==================== */
+@media (min-width: 641px) and (max-width: 1024px) {
+  /* Community Hub Container */
+  .communityhub {
+    width: 100vw !important;
+    margin-left: 0 !important;
+    padding: 24px !important;
+  }
+
+  /* Header */
+  .communityhub-header {
+    flex-direction: row !important;
+    margin-bottom: 24px !important;
+    padding-right: 0 !important;
+  }
+
+  .communityhub-header h1 {
+    font-size: 28px !important;
+  }
+
+  /* Search Part */
+  .communityhub-searchpart {
+    width: 100% !important;
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+  }
+
+  .communityhub-searchpart > div:first-child {
+    flex: 1 1 auto !important;
+    min-width: 200px !important;
+  }
+
+  .communityhub-searchpart select {
+    flex: 1 1 auto !important;
+    min-width: 150px !important;
+  }
+
+  .communityhub-searchpart label {
+    flex: 1 1 auto !important;
+    min-width: 200px !important;
+  }
+
+  .communityhub-searchpart button:last-child {
+    flex: 1 1 auto !important;
+    min-width: 120px !important;
+  }
+
+  /* Community Cards - 2 per row on small tablet, 3 per row on larger tablet */
+  .communitycard {
+    width: calc(50% - 14px) !important;
+    height: 200px !important;
+    margin-bottom: 10px;
+  }
+
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .communitycard {
+      width: calc(33.333% - 19px) !important;
+      margin-bottom: 10px;
+      height: 200px !important;
+    }
+  }
+
+  /* Grid spacing */
+  .flex.flex-wrap.gap-7 {
+    gap: 28px !important;
+  }
+
+  /* Section spacing */
+  section {
+    margin-top: 40px !important;
+  }
+
+  section h2 {
+    margin-bottom: 24px !important;
+  }
+
+  /* Main content area */
+  main[style*="marginLeft"] {
+    margin-left: 0 !important;
+    margin-top: 70px !important;
+    height: calc(100vh - 70px) !important;
+    padding: 0 !important;
+  }
+
+  /* Layout container */
+  .layout-container {
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+    margin-top: -60px !important;
+    max-width: 100% !important;
+  }
+
+  /* Grid adjustments */
+  .grid.grid-cols-1.xl\\:grid-cols-3 {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+  }
 }
 
-/* WebKit (Chrome, Edge, Safari) */
-.reaction-scrollbar::-webkit-scrollbar {
-  height: 4px; /* 👈 controls thickness */
+/* ==================== LARGE TABLET (1025px to 1280px) ==================== */
+@media (min-width: 1025px) and (max-width: 1280px) {
+  .communityhub {
+    width: 100vw !important;
+    margin-left: 40px !important;
+  }
+
+  /* Community Cards - 3 per row */
+  .communitycard {
+    width: calc(33.333% - 19px) !important;
+    height: 200px !important;
+    margin-bottom: 10px;
+  }
 }
 
-.reaction-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
+/* ==================== DESKTOP (1281px+) ==================== */
+@media (min-width: 1281px) {
+  /* Hide mobile menu toggle on desktop */
+  .mobile-menu-toggle {
+    display: none !important;
+  }
 
-.reaction-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 255, 229, 0.2); /* primary but transparent */
-  border-radius: 999px;
-}
-
-.reaction-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(0, 255, 229, 0.4);
-}
-
-.commentItem-comments {
-  display: flex;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  max-width: 40vw;
-  padding-bottom: 10px;
-}
-
-.commentItem-comments::-webkit-scrollbar {
-  height: 4px;
-}
-
-.commentItem-comments::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.25);
-  border-radius: 999px;
+  .sidebar-overlay {
+    display: none !important;
+  }
 }
 
 /* Room */
@@ -1609,4 +2084,1937 @@ body {
   color: rgb(0, 198, 178);
 }
 
-/* ApplyToTripOverlay */
+/* ========================================
+   MOBILE RESPONSIVE STYLES - FIXED VERSION
+======================================== */
+
+/* Prevent horizontal scroll globally */
+html,
+body {
+  max-width: 100vw !important;
+  overflow-x: hidden !important;
+}
+
+/* Base mobile styles - FULL WIDTH FIX */
+@media (max-width: 1024px) {
+  .layout-container {
+    margin-left: 0 !important;
+    margin-top: 12px !important;
+    padding: 0 !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+  }
+
+  body {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+  }
+
+  main {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    padding: 0 !important;
+  }
+
+  /* Force all direct children to respect viewport */
+  main > * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+}
+
+/* Mobile: Hide right sidebar by default */
+@media (max-width: 1280px) {
+  .right-sidebar-desktop {
+    display: none;
+  }
+}
+
+/* Mobile: Create Post Box */
+@media (max-width: 768px) {
+  .create-post-box {
+    width: 100% !important;
+    padding: 10px !important;
+    margin-bottom: 12px !important;
+    box-sizing: border-box !important;
+  }
+
+  .create-post-top {
+    gap: 8px !important;
+  }
+
+  .create-post-top textarea {
+    height: 50px !important;
+    font-size: 13px !important;
+    padding: 8px !important;
+  }
+
+  .avatar {
+    width: 32px !important;
+    height: 32px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .create-post-actions {
+    margin-top: 8px !important;
+  }
+
+  .create-post-actions button,
+  .create-post-actions label {
+    padding: 6px !important;
+  }
+
+  .post-btn {
+    padding: 6px 16px !important;
+    font-size: 13px !important;
+  }
+}
+
+/* Mobile: Post Card */
+@media (max-width: 768px) {
+  .postcard {
+    width: 100% !important;
+    padding: 10px !important;
+    margin-bottom: 8px !important;
+    box-sizing: border-box !important;
+  }
+
+  .postcard-avatar {
+    width: 32px !important;
+    height: 32px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .postcard-username {
+    font-size: 12px !important;
+  }
+
+  .postcard-community,
+  .postcard-time {
+    font-size: 10px !important;
+  }
+
+  .postcard-caption {
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+    word-break: break-word !important;
+  }
+
+  .postcard-actions {
+    gap: 10px !important;
+    font-size: 12px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .postcard-action-btn {
+    font-size: 12px !important;
+    gap: 4px !important;
+  }
+
+  .carousel-arrow {
+    padding: 4px !important;
+  }
+
+  .thumb {
+    width: 45px !important;
+    height: 45px !important;
+  }
+
+  .postcard-media {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+}
+
+/* Mobile: Community Header - FULL WIDTH */
+@media (max-width: 768px) {
+  .community-header-mobile {
+    height: 140px !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+
+  .community-header-mobile h1 {
+    font-size: 16px !important;
+    line-height: 1.2 !important;
+  }
+
+  .community-header-mobile p {
+    font-size: 11px !important;
+    margin-top: 2px !important;
+  }
+
+  .community-header-mobile button {
+    font-size: 12px !important;
+    padding: 6px 14px !important;
+    white-space: nowrap !important;
+  }
+
+  .community-header-mobile .p-4 {
+    padding: 12px !important;
+  }
+
+  .community-header-mobile .max-w-\[70\%\] {
+    max-width: 60% !important;
+  }
+}
+
+/* Mobile: Tabs - FULL WIDTH */
+@media (max-width: 768px) {
+  .community-tabs-wrapper {
+    padding: 8px 12px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
+  }
+
+  .community-tabs-wrapper button {
+    font-size: 12px !important;
+    padding: 6px 12px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  .sort-dropdown-mobile {
+    font-size: 11px !important;
+    padding: 4px 8px !important;
+  }
+
+  .sort-dropdown-container {
+    flex-shrink: 0 !important;
+  }
+
+  /* FIX: Remove left padding from tab content */
+  .community-tabs-wrapper + div {
+    padding: 0 !important;
+  }
+
+  /* Remove padding from Discussion tab container */
+  .flex.flex-col.gap-2 {
+    padding: 0 !important;
+  }
+}
+
+/* Mobile: About Button */
+.about-button-mobile {
+  display: none;
+}
+
+@media (max-width: 1280px) {
+  .about-button-mobile {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    color: #374151;
+  }
+
+  .about-button-mobile:hover {
+    background: #f9fafb;
+  }
+
+  .about-button-mobile.active {
+    background: rgba(0, 255, 229, 0.1);
+    color: rgb(0, 255, 229);
+    border-color: rgb(0, 255, 229);
+  }
+
+  .about-button-mobile .material-symbols-outlined {
+    font-size: 16px !important;
+  }
+}
+
+/* Mobile: About Modal Overlay */
+.about-modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  animation: fadeIn 0.2s;
+}
+
+.about-modal-overlay.open {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Mobile: About Modal Content - IMPROVED STYLING */
+.about-modal-content {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #1f2937 !important;
+  border-radius: 16px 16px 0 0;
+  max-height: 85vh;
+  overflow-y: auto;
+  z-index: 1001;
+  animation: slideUp 0.3s ease-out;
+  padding: 20px;
+  color: #ffffff !important;
+}
+
+/* AGGRESSIVE COLOR OVERRIDES FOR ALL ELEMENTS */
+.about-modal-content,
+.about-modal-content * {
+  color: #e5e7eb !important;
+  border-color: #4b5563 !important;
+}
+
+.about-modal-content h1,
+.about-modal-content h2,
+.about-modal-content h3,
+.about-modal-content h4,
+.about-modal-content .font-bold {
+  color: #ffffff !important;
+}
+
+.about-modal-content p,
+.about-modal-content span,
+.about-modal-content div {
+  color: #d1d5db !important;
+}
+
+/* Override specific text classes */
+.about-modal-content .text-xs,
+.about-modal-content .text-sm,
+.about-modal-content .text-md,
+.about-modal-content .text-base {
+  color: #d1d5db !important;
+}
+
+.about-modal-content .text-gray-600,
+.about-modal-content .text-gray-500,
+.about-modal-content .text-text-muted-light,
+.about-modal-content .text-gray-800 {
+  color: #9ca3af !important;
+}
+
+/* Font weights should remain but with proper colors */
+.about-modal-content .font-semibold,
+.about-modal-content .font-medium {
+  color: #ffffff !important;
+}
+
+/* Button colors */
+.about-modal-content button {
+  color: #ffffff !important;
+}
+
+/* Blue buttons (like Add Members, Create Room) */
+.about-modal-content button[class*="bg-blue"],
+.about-modal-content .text-blue-600,
+.about-modal-content .text-blue-700 {
+  color: #60a5fa !important;
+}
+
+.about-modal-content button[class*="bg-blue"]:hover {
+  background: #2563eb !important;
+}
+
+/* White backgrounds should be dark */
+.about-modal-content .bg-white,
+.about-modal-content [class*="bg-white"],
+.about-modal-content .rounded-lg {
+  background: #374151 !important;
+  background-color: #374151 !important;
+}
+
+.about-modal-content .bg-gray-50 {
+  background: #374151 !important;
+}
+
+/* Hover states */
+.about-modal-content .hover\:bg-white:hover,
+.about-modal-content .hover\:bg-gray-50:hover {
+  background: #4b5563 !important;
+}
+
+/* Timeline/Activity colored icons */
+.about-modal-content .text-cyan-500 {
+  color: #06b6d4 !important;
+}
+
+.about-modal-content .text-green-500,
+.about-modal-content .text-green-600 {
+  color: #10b981 !important;
+}
+
+.about-modal-content .text-yellow-500 {
+  color: #eab308 !important;
+}
+
+.about-modal-content .text-orange-500 {
+  color: #f97316 !important;
+}
+
+.about-modal-content .text-red-500,
+.about-modal-content .text-red-600 {
+  color: #ef4444 !important;
+}
+
+/* Icons */
+.about-modal-content .material-symbols-outlined,
+.about-modal-content svg {
+  color: #e5e7eb !important;
+}
+
+/* Links */
+.about-modal-content a {
+  color: #60a5fa !important;
+}
+
+.about-modal-content a:hover {
+  color: #93c5fd !important;
+}
+
+/* Status badges */
+.about-modal-content [class*="rounded-full"] {
+  border-color: transparent !important;
+}
+
+/* Ensure room cards are visible */
+.about-modal-content li,
+.about-modal-content ul {
+  color: inherit !important;
+}
+
+/* Override inline styles with !important */
+.about-modal-content [style*="backgroundColor"] {
+  background-color: #374151 !important;
+}
+
+.about-modal-content [style*="background-color"] {
+  background-color: #374151 !important;
+}
+
+.about-modal-content [style*="color: red"] {
+  color: #ef4444 !important;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.about-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #4b5563;
+}
+
+.about-modal-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff !important;
+}
+
+.about-modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #9ca3af !important;
+}
+
+.about-modal-close:hover {
+  color: #ffffff !important;
+}
+
+/* Mobile: Community Post Adjustments */
+@media (max-width: 768px) {
+  .group.relative.rounded-xl {
+    padding: 10px !important;
+    box-sizing: border-box !important;
+  }
+
+  .group.relative.rounded-xl .flex.gap-3 {
+    gap: 8px !important;
+  }
+
+  .group.relative.rounded-xl .w-8.h-8 {
+    width: 28px !important;
+    height: 28px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .group.relative.rounded-xl .text-\[16px\] {
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+    word-break: break-word !important;
+  }
+
+  .group.relative.rounded-xl .text-xs {
+    font-size: 10px !important;
+  }
+
+  .group.relative.rounded-xl .flex.items-center.gap-3 {
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .group.relative.rounded-xl .flex.items-center.gap-1 {
+    gap: 6px !important;
+  }
+
+  .group.relative.rounded-xl .w-8.shrink-0 {
+    width: 24px !important;
+  }
+
+  .group.relative.rounded-xl .w-8.shrink-0 button {
+    padding: 2px !important;
+  }
+
+  .group.relative.rounded-xl .w-8.shrink-0 span.text-sm {
+    font-size: 11px !important;
+  }
+}
+
+/* Mobile: Emoji Picker Adjustments */
+@media (max-width: 640px) {
+  .emoji-picker-container {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    max-width: 100% !important;
+    border-radius: 16px 16px 0 0 !important;
+  }
+}
+
+/* Grid Layout - Force single column on mobile - FULL WIDTH */
+@media (max-width: 1280px) {
+  .grid.grid-cols-1.xl\:grid-cols-3 {
+    grid-template-columns: 1fr !important;
+    gap: 0 !important;
+    padding: 0 !important;
+  }
+
+  .xl\:col-span-2,
+  .xl\:col-span-1 {
+    grid-column: span 1 !important;
+  }
+
+  .grid.grid-cols-1.xl\:grid-cols-3 > * {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+}
+
+/* Mobile: Poll Styles */
+@media (max-width: 768px) {
+  .mt-3.p-4.bg-white button {
+    font-size: 13px;
+    padding: 10px;
+  }
+
+  .mt-3.space-y-3.p-4.bg-background-light input {
+    font-size: 13px;
+  }
+}
+
+/* Scrollbar Hide for Tabs */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Tab container - prevent overflow */
+@media (max-width: 768px) {
+  .flex.w-full.overflow-x-auto {
+    display: flex !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+
+  .flex.w-full.overflow-x-auto::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .flex.gap-2.p-3 {
+    padding: 8px 12px !important;
+    overflow-x: visible !important;
+  }
+}
+
+/* Ensure responsiveness for all screen sizes */
+@media (max-width: 640px) {
+  body {
+    font-size: 13px !important;
+  }
+
+  .material-symbols-outlined {
+    font-size: 18px !important;
+  }
+
+  * {
+    max-width: 100vw !important;
+  }
+
+  div[class*="col-span"],
+  div[class*="grid"] {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  .absolute.-top-2.left-4 {
+    font-size: 10px !important;
+    padding: 2px 8px !important;
+  }
+
+  .relative button .material-symbols-outlined {
+    font-size: 20px !important;
+  }
+
+  .mt-3.p-4.bg-white button {
+    font-size: 12px !important;
+    padding: 8px !important;
+  }
+}
+
+/* Sort Dropdown Menu */
+.sort-dropdown-menu {
+  position: fixed;
+  z-index: 999;
+  color: #111827;
+  height: max-content;
+  width: max-content;
+  padding: 8px;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.sort-dropdown-menu button {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: none;
+  background: transparent;
+  color: #374151;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.sort-dropdown-menu button:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.sort-dropdown-menu button.active {
+  background-color: rgba(0, 255, 229, 0.1);
+  color: rgb(0, 255, 229);
+  font-weight: 600;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mobile: Sort Dropdown Positioning */
+@media (max-width: 768px) {
+  .sort-dropdown-container {
+    position: relative;
+  }
+
+  .sort-dropdown-menu {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 4px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 50;
+    min-width: 160px;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .about-modal-content {
+    background: #1f2937 !important;
+  }
+
+  .about-modal-content,
+  .about-modal-content * {
+    color: #e5e7eb !important;
+  }
+
+  .about-modal-content h1,
+  .about-modal-content h2,
+  .about-modal-content h3,
+  .about-modal-content h4 {
+    color: #ffffff !important;
+  }
+
+  .about-modal-content p,
+  .about-modal-content span {
+    color: #d1d5db !important;
+  }
+
+  .about-modal-content .text-text-muted-light,
+  .about-modal-content .text-gray-500 {
+    color: #9ca3af !important;
+  }
+
+  .about-modal-content button {
+    color: #e5e7eb !important;
+  }
+
+  .about-modal-content .bg-white {
+    background: #374151 !important;
+  }
+
+  .about-modal-header {
+    border-bottom-color: #4b5563;
+  }
+
+  .about-button-mobile {
+    background: #1f2937;
+    border-color: #374151;
+    color: #e5e7eb;
+  }
+
+  .about-button-mobile:hover {
+    background: #374151;
+  }
+
+  .sort-dropdown-menu {
+    background: #1f2937;
+    border-color: #374151;
+  }
+
+  .sort-dropdown-menu button {
+    color: #e5e7eb;
+  }
+
+  .sort-dropdown-menu button:hover {
+    background: #374151;
+    color: #ffffff;
+  }
+}
+
+/* Light mode - Keep desktop as-is, mobile gets dark theme */
+@media (max-width: 768px) {
+  /* Mobile always gets dark About modal regardless of system theme */
+  .about-modal-content {
+    background: #1f2937 !important;
+  }
+
+  .about-modal-content,
+  .about-modal-content * {
+    color: #e5e7eb !important;
+  }
+
+  .about-modal-content h1,
+  .about-modal-content h2,
+  .about-modal-content h3,
+  .about-modal-content h4 {
+    color: #ffffff !important;
+  }
+
+  .about-modal-content p,
+  .about-modal-content span {
+    color: #d1d5db !important;
+  }
+
+  .about-modal-header {
+    border-bottom-color: #4b5563 !important;
+  }
+
+  .about-modal-content .bg-white,
+  .about-modal-content [class*="bg-white"] {
+    background: #374151 !important;
+  }
+}
+
+/* Padding adjustments for full width */
+@media (max-width: 768px) {
+  .p-4 {
+    padding: 12px !important;
+  }
+
+  .px-4 {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+}
+
+/* ========================================
+   COMMUNITY POST MOBILE STYLES - FULL WIDTH
+======================================== */
+
+@media (max-width: 768px) {
+  /* Main post container - full width */
+  .group.relative.rounded-xl.p-4 {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin-left: calc(-1 * (100vw - 100%) / 2) !important;
+    margin-right: calc(-1 * (100vw - 100%) / 2) !important;
+    border-radius: 0 !important;
+    padding: 12px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Post header - user info */
+  .group.relative.rounded-xl .flex.items-center.justify-between {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  .group.relative.rounded-xl .flex.items-center.gap-2 {
+    gap: 6px !important;
+    font-size: 11px !important;
+  }
+
+  /* Avatar in post */
+  .group.relative.rounded-xl .w-8.h-8.rounded-full {
+    width: 32px !important;
+    height: 32px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Username */
+  .group.relative.rounded-xl .font-bold.text-\[16px\] {
+    font-size: 14px !important;
+  }
+
+  /* Timestamp */
+  .group.relative.rounded-xl .text-xs {
+    font-size: 11px !important;
+  }
+
+  /* Post content text */
+  .group.relative.rounded-xl .text-\[16px\].leading-relaxed {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    word-break: break-word !important;
+  }
+
+  /* Helpful button column */
+  .group.relative.rounded-xl .flex.flex-col.items-center.gap-1.w-8 {
+    width: 28px !important;
+  }
+
+  .group.relative.rounded-xl .flex.flex-col.items-center button {
+    padding: 4px !important;
+  }
+
+  .group.relative.rounded-xl
+    .flex.flex-col.items-center
+    .material-symbols-outlined {
+    font-size: 20px !important;
+  }
+
+  .group.relative.rounded-xl .flex.flex-col.items-center span.text-sm {
+    font-size: 12px !important;
+  }
+
+  /* Three dot menu */
+  .group.relative.rounded-xl .relative button .material-symbols-outlined {
+    font-size: 20px !important;
+  }
+
+  /* Poll container */
+  .group.relative.rounded-xl .mt-3.p-4 {
+    padding: 12px !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Poll question */
+  .group.relative.rounded-xl .mt-3.p-4 h4 {
+    font-size: 15px !important;
+  }
+
+  /* Poll options */
+  .group.relative.rounded-xl .mt-3.p-4 button {
+    font-size: 13px !important;
+    padding: 10px !important;
+  }
+
+  /* Poll option text */
+  .group.relative.rounded-xl .mt-3.p-4 button span.font-medium {
+    font-size: 13px !important;
+  }
+
+  /* Poll percentage */
+  .group.relative.rounded-xl .mt-3.p-4 button span.text-sm {
+    font-size: 12px !important;
+  }
+
+  /* Poll metadata */
+  .group.relative.rounded-xl .mt-3.p-4 .text-xs {
+    font-size: 11px !important;
+  }
+
+  /* Images and media */
+  .group.relative.rounded-xl .mt-3.max-w-full {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .group.relative.rounded-xl .mt-3.max-w-full img {
+    max-width: 100% !important;
+    height: auto !important;
+    width: 100% !important;
+  }
+
+  /* Action bar (React, Comment buttons) */
+  .group.relative.rounded-xl .flex.items-center.gap-3.mt-3 {
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+  }
+
+  /* React button */
+  .group.relative.rounded-xl .flex.items-center.gap-3 button {
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+
+  .group.relative.rounded-xl
+    .flex.items-center.gap-3
+    .material-symbols-outlined {
+    font-size: 16px !important;
+  }
+
+  /* Comment count */
+  .group.relative.rounded-xl .flex.items-center.gap-1.text-xs {
+    font-size: 12px !important;
+  }
+
+  /* Reaction pills */
+  .group.relative.rounded-xl .flex.gap-2 button {
+    font-size: 12px !important;
+    padding: 4px 8px !important;
+  }
+
+  /* Pinned badge */
+  .group.relative.rounded-xl .absolute.-top-2 {
+    font-size: 10px !important;
+    padding: 3px 8px !important;
+    left: 12px !important;
+  }
+
+  /* Three dot menu dropdown */
+  .group.relative.rounded-xl .absolute.right-0.top-8 {
+    right: 8px !important;
+    min-width: 140px !important;
+  }
+
+  .group.relative.rounded-xl .absolute.right-0.top-8 button {
+    font-size: 13px !important;
+    padding: 10px 12px !important;
+  }
+
+  .group.relative.rounded-xl
+    .absolute.right-0.top-8
+    .material-symbols-outlined {
+    font-size: 16px !important;
+  }
+
+  /* Content wrapper - ensure full width */
+  .group.relative.rounded-xl .flex-1.min-w-0 {
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Reaction scrollbar */
+  .reaction-scrollbar {
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+
+  .reaction-scrollbar::-webkit-scrollbar {
+    display: none !important;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 480px) {
+  .group.relative.rounded-xl.p-4 {
+    padding: 10px !important;
+  }
+
+  .group.relative.rounded-xl .font-bold.text-\[16px\] {
+    font-size: 13px !important;
+  }
+
+  .group.relative.rounded-xl .text-\[16px\].leading-relaxed {
+    font-size: 13px !important;
+  }
+
+  .group.relative.rounded-xl .mt-3.p-4 {
+    padding: 10px !important;
+  }
+}
+
+/* Ensure parent container doesn't restrict width */
+@media (max-width: 768px) {
+  .flex.flex-col.gap-2,
+  .xl\:col-span-2,
+  .flex.flex-col.gap-6 {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Discussion tab container */
+  .flex.flex-col.gap-2 > * {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
+
+/* ========================================
+   DESKTOP - WORD WRAPPING FIX FOR ALL COMMENTS
+======================================== */
+
+/* Apply to both home comments and community comments */
+.commentpage .communityItem p.text-mid,
+.commentpage .communityItem p.text-sm,
+.commentpage-community .communityItem p.text-mid,
+.commentpage-community .communityItem p.text-sm,
+.commentpage-community .communityItem .flex.flex-col.flex-1 p {
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  white-space: pre-wrap !important;
+}
+
+/* Ensure flex containers don't restrict width on desktop */
+.commentpage .communityItem .flex.flex-col.flex-1,
+.commentpage-community .communityItem .flex.flex-col.flex-1 {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* Desktop nested replies - proper width */
+.commentpage .communityItem .relative.flex.gap-4,
+.commentpage-community .communityItem .relative.flex.gap-4 {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Desktop - images and media should be properly sized */
+.commentpage-community .communityItem img.rounded-lg {
+  max-width: 100%;
+  height: auto;
+  max-height: 400px;
+}
+
+/* ========================================
+   DESKTOP - EMOJI PICKER POSITIONING FIX
+======================================== */
+
+/* Desktop: Position emoji picker next to React button */
+@media (min-width: 769px) {
+  .commentpage-community .communityItem .absolute.z-10.mt-2 {
+    position: absolute !important;
+    bottom: auto !important;
+    left: 0 !important;
+    right: auto !important;
+    top: 100% !important;
+    margin-top: 8px !important;
+    z-index: 1000 !important;
+  }
+
+  /* If there's a relative parent for positioning */
+  .commentpage-community .communityItem .flex.items-center.gap-4 {
+    position: relative;
+  }
+
+  /* Ensure emoji picker doesn't go off-screen */
+  .commentpage-community .communityItem .absolute.z-10.mt-2 > div {
+    max-width: 350px;
+  }
+}
+
+/* ========================================
+   COMMENT PAGE MOBILE STYLES - FULL WIDTH
+======================================== */
+
+@media (max-width: 768px) {
+  /* Main comment page container */
+  .commentpage-community {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow-x: hidden !important;
+    margin-top: 12px !important;
+  }
+
+  .commentpage-community > div {
+    width: 100% !important;
+    max-width: 100vw !important;
+    margin: 0 !important;
+    padding: 0 12px !important;
+  }
+
+  /* Back button */
+  .commentpage-community button.flex.mb-3 {
+    margin-left: 0 !important;
+    padding: 8px 0 !important;
+    font-size: 14px !important;
+  }
+
+  /* Message header card - FULL WIDTH */
+  .commentpage-community > div > .rounded-xl.shadow-sm.mb-4 {
+    border-radius: 0 !important;
+    margin-left: -12px !important;
+    margin-right: -12px !important;
+    width: 100vw !important;
+    padding: 12px !important;
+    box-shadow: none !important;
+  }
+
+  .commentpage-community .rounded-xl.shadow-sm .size-10 {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .commentpage-community .rounded-xl.shadow-sm p.font-semibold {
+    font-size: 14px !important;
+  }
+
+  .commentpage-community .rounded-xl.shadow-sm p.text-xs {
+    font-size: 11px !important;
+  }
+
+  .commentpage-community .rounded-xl.shadow-sm p.text-base {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+  }
+
+  /* Message media */
+  .commentpage-community .w-full.rounded-xl {
+    border-radius: 8px !important;
+    max-height: 300px !important;
+  }
+
+  /* Poll in message header */
+  .commentpage-community .mt-3.p-4.bg-gray-50 {
+    padding: 12px !important;
+    margin-top: 12px !important;
+  }
+
+  .commentpage-community .mt-3.p-4.bg-gray-50 p.font-semibold {
+    font-size: 14px !important;
+  }
+
+  .commentpage-community .mt-3.p-4.bg-gray-50 span {
+    font-size: 12px !important;
+  }
+}
+
+/* ========================================
+   COMMENT INPUT MOBILE STYLES
+======================================== */
+
+@media (max-width: 768px) {
+  /* Comment input container - FULL WIDTH */
+  .commentpage-community .flex.items-start.p-4.gap-4.bg-white {
+    border-radius: 0 !important;
+    margin-left: -12px !important;
+    margin-right: -12px !important;
+    width: 100vw !important;
+    padding: 12px !important;
+    gap: 10px !important;
+    box-shadow: none !important;
+    margin-bottom: 2px !important;
+  }
+
+  .commentpage-community .flex.items-start .size-10 {
+    width: 36px !important;
+    height: 36px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Comment textarea */
+  .commentpage-community .flex.items-start textarea {
+    font-size: 14px !important;
+    padding: 10px !important;
+  }
+
+  /* Image/GIF preview in input */
+  .commentpage-community .relative.mt-2 img {
+    max-height: 150px !important;
+  }
+
+  /* Toolbar buttons */
+  .commentpage-community .flex.items-center.justify-between.mt-3 {
+    margin-top: 10px !important;
+  }
+
+  .commentpage-community .flex.gap-3 button {
+    font-size: 12px !important;
+  }
+
+  .commentpage-community .flex.gap-3 svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  /* Post button */
+  .commentpage-community .min-w-\[84px\] {
+    min-width: 70px !important;
+    padding: 0 12px !important;
+    font-size: 13px !important;
+    height: 36px !important;
+  }
+}
+
+/* ========================================
+   COMMENT ITEM MOBILE STYLES - PROPER SIZING
+======================================== */
+
+@media (max-width: 768px) {
+  /* Comments list container - FULL WIDTH */
+  .commentpage-community .p-4.bg-white.rounded-xl.shadow-sm.space-y-3 {
+    border-radius: 0 !important;
+    margin-left: -12px !important;
+    margin-right: -12px !important;
+    width: 100vw !important;
+    padding: 12px !important;
+    box-shadow: none !important;
+  }
+
+  .commentpage-community .p-4.bg-white h3 {
+    font-size: 16px !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* Individual comment item - ENSURE PROPER WIDTH */
+  .commentpage-community .communityItem {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
+
+  .commentpage-community .communityItem .flex.w-full.gap-3 {
+    padding: 10px 0 !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .commentpage-community .communityItem .size-10 {
+    width: 40px !important;
+    height: 40px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Comment author and time */
+  .commentpage-community .communityItem p.font-semibold {
+    font-size: 14px !important;
+  }
+
+  .commentpage-community .communityItem p.text-xs {
+    font-size: 12px !important;
+  }
+
+  /* Comment content - FIX TEXT OVERFLOW */
+  .commentpage-community .communityItem p.text-mid {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    white-space: pre-wrap !important;
+    max-width: 100% !important;
+  }
+
+  /* Ensure flex-1 column takes proper width */
+  .commentpage-community .communityItem .flex.flex-col.flex-1 {
+    min-width: 0 !important;
+    width: 100% !important;
+    flex: 1 1 auto !important;
+  }
+
+  /* Comment media - PROPER SIZING */
+  .commentpage-community .communityItem img.rounded-lg {
+    max-height: 300px !important;
+    max-width: 100% !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 100px !important;
+  }
+
+  /* Delete icon */
+  .commentpage-community .communityItem svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  /* Reaction emojis */
+  .commentpage-community .community-comment-emojis {
+    gap: 6px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .commentpage-community .community-comment-emojis button {
+    padding: 6px 10px !important;
+    font-size: 13px !important;
+  }
+
+  /* Reply and React buttons */
+  .commentpage-community .communityItem .flex.items-center.gap-4 {
+    gap: 14px !important;
+    padding-top: 10px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .commentpage-community .communityItem .flex.items-center.gap-4 button {
+    font-size: 12px !important;
+  }
+
+  /* Reply box */
+  .commentpage-community .communityItem .mt-3.ml-0 {
+    margin-top: 10px !important;
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  .commentpage-community .communityItem .mt-3.ml-0 p.text-xs {
+    font-size: 11px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .commentpage-community .communityItem .mt-3.ml-0 textarea {
+    font-size: 14px !important;
+    padding: 10px !important;
+    width: 100% !important;
+  }
+
+  /* Reply media previews - PROPER SIZING */
+  .commentpage-community .communityItem .relative.mt-2 img {
+    max-height: 200px !important;
+    min-height: 80px !important;
+    width: auto !important;
+  }
+
+  .commentpage-community .communityItem .relative.mt-2 button {
+    padding: 5px !important;
+  }
+
+  /* Reply toolbar */
+  .commentpage-community
+    .communityItem
+    .flex.justify-between.items-center.mt-2 {
+    margin-top: 10px !important;
+  }
+
+  .commentpage-community .communityItem .flex.justify-between .flex.gap-3 svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .commentpage-community .communityItem .flex.justify-between button {
+    font-size: 12px !important;
+    padding: 8px 12px !important;
+  }
+
+  /* View replies button */
+  .commentpage-community
+    .communityItem
+    button.text-xs.font-semibold.text-gray-500 {
+    font-size: 12px !important;
+    margin-top: 10px !important;
+  }
+
+  /* ========================================
+     NESTED REPLIES - BALANCED SIZING
+  ======================================== */
+
+  /* Level 1 replies - Reduce margin but keep content readable */
+  .commentpage-community .communityItem .relative.flex.gap-4 {
+    padding: 10px 0 10px 10px !important;
+    padding-left: 20px !important;
+    margin-left: 36px !important;
+    gap: 10px !important;
+    width: calc(100% - 36px) !important;
+    max-width: calc(100% - 36px) !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Ensure nested comment content wraps properly */
+  .commentpage-community
+    .communityItem
+    .relative.flex.gap-4
+    .flex.flex-col.flex-1 {
+    min-width: 0 !important;
+    width: 100% !important;
+    overflow: visible !important;
+  }
+
+  /* Nested comment text - READABLE SIZE */
+  .commentpage-community .communityItem .relative.flex.gap-4 p.text-mid,
+  .commentpage-community .communityItem .relative.flex.gap-4 p.text-sm {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    white-space: pre-wrap !important;
+    max-width: 100% !important;
+  }
+
+  /* Nested reply images/GIFs - PROPER SIZING */
+  .commentpage-community .communityItem .relative.flex.gap-4 img.rounded-lg {
+    max-height: 250px !important;
+    max-width: 100% !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 80px !important;
+  }
+
+  /* Reply connector lines */
+  .commentpage-community .communityItem .border-l.border-gray-300 {
+    border-left-width: 2px !important;
+  }
+
+  .commentpage-community .communityItem .absolute.-bottom-3.left-0 {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  /* Nested reply avatar - balanced size */
+  .commentpage-community .communityItem .relative.flex.gap-4 img.size-10,
+  .commentpage-community .communityItem .relative.flex.gap-4 > a > img {
+    width: 36px !important;
+    height: 36px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Nested reply action icons */
+  .commentpage-community .communityItem .relative.flex.gap-4 svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+}
+
+/* Extra small devices - optimize but keep readable */
+@media (max-width: 480px) {
+  .commentpage-community > div {
+    padding: 0 10px !important;
+  }
+
+  .commentpage-community .rounded-xl.shadow-sm.mb-4,
+  .commentpage-community .flex.items-start.p-4.gap-4,
+  .commentpage-community .p-4.bg-white.rounded-xl.shadow-sm {
+    margin-left: -10px !important;
+    margin-right: -10px !important;
+    padding: 12px !important;
+  }
+
+  /* Keep avatars readable on small screens */
+  .commentpage-community .communityItem .size-10,
+  .commentpage-community .size-10 {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .commentpage-community .communityItem p.font-semibold,
+  .commentpage-community p.font-semibold {
+    font-size: 13px !important;
+  }
+
+  .commentpage-community .communityItem p.text-mid,
+  .commentpage-community p.text-base {
+    font-size: 14px !important;
+  }
+
+  /* Reduce nested reply indentation slightly on very small screens */
+  .commentpage-community .communityItem .relative.flex.gap-4 {
+    margin-left: 32px !important;
+    padding-left: 16px !important;
+    width: calc(100% - 32px) !important;
+    max-width: calc(100% - 32px) !important;
+    gap: 8px !important;
+  }
+
+  /* Keep nested avatars visible */
+  .commentpage-community .communityItem .relative.flex.gap-4 img.size-10,
+  .commentpage-community .communityItem .relative.flex.gap-4 > a > img {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  /* Keep nested images/GIFs readable */
+  .commentpage-community .communityItem .relative.flex.gap-4 img.rounded-lg {
+    max-height: 220px !important;
+    min-height: 70px !important;
+  }
+
+  /* Keep text readable */
+  .commentpage-community .communityItem .relative.flex.gap-4 p.text-sm,
+  .commentpage-community .communityItem .relative.flex.gap-4 p.text-mid {
+    font-size: 13px !important;
+  }
+}
+
+/* Emoji picker positioning on mobile */
+@media (max-width: 640px) {
+  .commentpage-community .communityItem .absolute.z-10.mt-2,
+  .commentpage-community .relative.mt-2 {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 9999 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Main comment page container */
+  .commentpage-community {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow-x: hidden !important;
+    margin-top: 12px !important;
+  }
+
+  .commentpage-community > div {
+    width: 100% !important;
+    max-width: 100vw !important;
+    margin: 0 !important;
+    padding: 0 12px !important;
+  }
+
+  /* Back button */
+  .commentpage-community button.flex.mb-3 {
+    margin-left: 0 !important;
+    padding: 8px 0 !important;
+    font-size: 14px !important;
+  }
+
+  /* Message header card - FULL WIDTH */
+  .commentpage-community > div > .rounded-xl.shadow-sm.mb-4 {
+    border-radius: 0 !important;
+    margin-left: -12px !important;
+    margin-right: -12px !important;
+    width: 100vw !important;
+    padding: 12px !important;
+    box-shadow: none !important;
+  }
+
+  .commentpage-community .rounded-xl.shadow-sm .size-10 {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .commentpage-community .rounded-xl.shadow-sm p.font-semibold {
+    font-size: 14px !important;
+  }
+
+  .commentpage-community .rounded-xl.shadow-sm p.text-xs {
+    font-size: 11px !important;
+  }
+
+  .commentpage-community .rounded-xl.shadow-sm p.text-base {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+  }
+
+  /* Message media */
+  .commentpage-community .w-full.rounded-xl {
+    border-radius: 8px !important;
+    max-height: 300px !important;
+  }
+
+  /* Poll in message header */
+  .commentpage-community .mt-3.p-4.bg-gray-50 {
+    padding: 12px !important;
+    margin-top: 12px !important;
+  }
+
+  .commentpage-community .mt-3.p-4.bg-gray-50 p.font-semibold {
+    font-size: 14px !important;
+  }
+
+  .commentpage-community .mt-3.p-4.bg-gray-50 span {
+    font-size: 12px !important;
+  }
+}
+
+/* ========================================
+   COMMENT INPUT MOBILE STYLES
+======================================== */
+
+@media (max-width: 768px) {
+  /* Comment input container - FULL WIDTH */
+  .commentpage-community .flex.items-start.p-4.gap-4.bg-white {
+    border-radius: 0 !important;
+    margin-left: -12px !important;
+    margin-right: -12px !important;
+    width: 100vw !important;
+    padding: 12px !important;
+    gap: 10px !important;
+    box-shadow: none !important;
+    margin-bottom: 2px !important;
+  }
+
+  .commentpage-community .flex.items-start .size-10 {
+    width: 36px !important;
+    height: 36px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Comment textarea */
+  .commentpage-community .flex.items-start textarea {
+    font-size: 14px !important;
+    padding: 10px !important;
+  }
+
+  /* Image/GIF preview in input */
+  .commentpage-community .relative.mt-2 img {
+    max-height: 150px !important;
+  }
+
+  /* Toolbar buttons */
+  .commentpage-community .flex.items-center.justify-between.mt-3 {
+    margin-top: 10px !important;
+  }
+
+  .commentpage-community .flex.gap-3 button {
+    font-size: 12px !important;
+  }
+
+  .commentpage-community .flex.gap-3 svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  /* Post button */
+  .commentpage-community .min-w-\[84px\] {
+    min-width: 70px !important;
+    padding: 0 12px !important;
+    font-size: 13px !important;
+    height: 36px !important;
+  }
+}
+
+/* ========================================
+   COMMENT ITEM MOBILE STYLES - FIXED WIDTH ISSUES
+======================================== */
+
+@media (max-width: 768px) {
+  /* Comments list container - FULL WIDTH */
+  .commentpage-community .p-4.bg-white.rounded-xl.shadow-sm.space-y-3 {
+    border-radius: 0 !important;
+    margin-left: -12px !important;
+    margin-right: -12px !important;
+    width: 100vw !important;
+    padding: 12px !important;
+    box-shadow: none !important;
+  }
+
+  .commentpage-community .p-4.bg-white h3 {
+    font-size: 16px !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* Individual comment item - ENSURE PROPER WIDTH */
+  .commentpage-community .communityItem {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
+
+  .commentpage-community .communityItem .flex.w-full.gap-3 {
+    padding: 10px 0 !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .commentpage-community .communityItem .size-10 {
+    width: 36px !important;
+    height: 36px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Comment author and time */
+  .commentpage-community .communityItem p.font-semibold {
+    font-size: 13px !important;
+  }
+
+  .commentpage-community .communityItem p.text-xs {
+    font-size: 11px !important;
+  }
+
+  /* Comment content - FIX TEXT OVERFLOW */
+  .commentpage-community .communityItem p.text-mid {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    white-space: pre-wrap !important;
+    max-width: 100% !important;
+  }
+
+  /* Ensure flex-1 column takes proper width */
+  .commentpage-community .communityItem .flex.flex-col.flex-1 {
+    min-width: 0 !important;
+    width: 100% !important;
+    flex: 1 1 auto !important;
+  }
+
+  /* Comment media */
+  .commentpage-community .communityItem img.rounded-lg {
+    max-height: 250px !important;
+    max-width: 100% !important;
+  }
+
+  /* Delete icon */
+  .commentpage-community .communityItem svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  /* Reaction emojis */
+  .commentpage-community .community-comment-emojis {
+    gap: 6px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .commentpage-community .community-comment-emojis button {
+    padding: 4px 8px !important;
+    font-size: 12px !important;
+  }
+
+  /* Reply and React buttons */
+  .commentpage-community .communityItem .flex.items-center.gap-4 {
+    gap: 12px !important;
+    padding-top: 8px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .commentpage-community .communityItem .flex.items-center.gap-4 button {
+    font-size: 11px !important;
+  }
+
+  /* Reply box */
+  .commentpage-community .communityItem .mt-3.ml-0 {
+    margin-top: 10px !important;
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  .commentpage-community .communityItem .mt-3.ml-0 p.text-xs {
+    font-size: 11px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .commentpage-community .communityItem .mt-3.ml-0 textarea {
+    font-size: 13px !important;
+    padding: 8px !important;
+    width: 100% !important;
+  }
+
+  /* Reply media previews */
+  .commentpage-community .communityItem .relative.mt-2 img {
+    max-height: 120px !important;
+  }
+
+  .commentpage-community .communityItem .relative.mt-2 button {
+    padding: 4px !important;
+  }
+
+  /* Reply toolbar */
+  .commentpage-community
+    .communityItem
+    .flex.justify-between.items-center.mt-2 {
+    margin-top: 8px !important;
+  }
+
+  .commentpage-community .communityItem .flex.justify-between .flex.gap-3 svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .commentpage-community .communityItem .flex.justify-between button {
+    font-size: 11px !important;
+    padding: 6px 10px !important;
+  }
+
+  /* View replies button */
+  .commentpage-community
+    .communityItem
+    button.text-xs.font-semibold.text-gray-500 {
+    font-size: 11px !important;
+    margin-top: 8px !important;
+  }
+
+  /* ========================================
+     NESTED REPLIES - FIX WIDTH CALCULATION
+  ======================================== */
+
+  /* Level 1 replies - Reduce margin to give more space */
+  .commentpage-community .communityItem .relative.flex.gap-4 {
+    padding: 8px 0 8px 8px !important;
+    padding-left: 16px !important;
+    margin-left: 28px !important;
+    gap: 8px !important;
+    width: calc(100% - 28px) !important;
+    max-width: calc(100% - 28px) !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Ensure nested comment content wraps properly */
+  .commentpage-community
+    .communityItem
+    .relative.flex.gap-4
+    .flex.flex-col.flex-1 {
+    min-width: 0 !important;
+    width: 100% !important;
+    overflow: visible !important;
+  }
+
+  /* Nested comment text */
+  .commentpage-community .communityItem .relative.flex.gap-4 p.text-mid,
+  .commentpage-community .communityItem .relative.flex.gap-4 p.text-sm {
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    white-space: pre-wrap !important;
+    max-width: 100% !important;
+  }
+
+  /* Reply connector lines */
+  .commentpage-community .communityItem .border-l.border-gray-300 {
+    border-left-width: 2px !important;
+  }
+
+  .commentpage-community .communityItem .absolute.-bottom-3.left-0 {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  /* Nested reply avatar - smaller to save space */
+  .commentpage-community .communityItem .relative.flex.gap-4 img {
+    width: 32px !important;
+    height: 32px !important;
+    flex-shrink: 0 !important;
+  }
+}
+
+/* Extra small devices - further optimize for very long messages */
+@media (max-width: 480px) {
+  .commentpage-community > div {
+    padding: 0 8px !important;
+  }
+
+  .commentpage-community .rounded-xl.shadow-sm.mb-4,
+  .commentpage-community .flex.items-start.p-4.gap-4,
+  .commentpage-community .p-4.bg-white.rounded-xl.shadow-sm {
+    margin-left: -8px !important;
+    margin-right: -8px !important;
+    padding: 10px !important;
+  }
+
+  .commentpage-community .communityItem .size-10,
+  .commentpage-community .size-10 {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .commentpage-community .communityItem p.font-semibold,
+  .commentpage-community p.font-semibold {
+    font-size: 12px !important;
+  }
+
+  .commentpage-community .communityItem p.text-mid,
+  .commentpage-community p.text-base {
+    font-size: 13px !important;
+  }
+
+  /* Reduce nested reply indentation even more on very small screens */
+  .commentpage-community .communityItem .relative.flex.gap-4 {
+    margin-left: 24px !important;
+    padding-left: 12px !important;
+    width: calc(100% - 24px) !important;
+    max-width: calc(100% - 24px) !important;
+    gap: 6px !important;
+  }
+
+  /* Even smaller avatar for nested replies on tiny screens */
+  .commentpage-community .communityItem .relative.flex.gap-4 img {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  /* Ensure text still wraps properly */
+  .commentpage-community .communityItem .relative.flex.gap-4 p.text-sm,
+  .commentpage-community .communityItem .relative.flex.gap-4 p.text-mid {
+    font-size: 12px !important;
+  }
+}
+
+/* Emoji picker positioning on mobile */
+@media (max-width: 640px) {
+  .commentpage-community .communityItem .absolute.z-10.mt-2,
+  .commentpage-community .relative.mt-2 {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 9999 !important;
+  }
+}

@@ -22,19 +22,19 @@ const CommunityHeader = ({ profile }) => {
         ...updated,
         isMember: true,
         currentUserRole: "member",
-      })
+      }),
     );
 
     dispatch(
-      setMyCommunities([updated, ...my.filter((c) => c._id !== updated._id)])
+      setMyCommunities([updated, ...my.filter((c) => c._id !== updated._id)]),
     );
     dispatch(
-      setSuggestedCommunities(suggested.filter((c) => c._id !== updated._id))
+      setSuggestedCommunities(suggested.filter((c) => c._id !== updated._id)),
     );
   };
 
   return (
-    <div className="w-full h-48 sm:h-64 rounded-xl overflow-hidden relative">
+    <div className="w-full h-48 sm:h-64 md:h-64 rounded-xl overflow-hidden relative community-header-mobile">
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{
@@ -43,19 +43,22 @@ const CommunityHeader = ({ profile }) => {
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
 
-      <div className="relative z-10 p-4 sm:p-6 flex items-end justify-between">
+      <div className="relative z-10 p-4 sm:p-6 flex items-end justify-between h-full">
         <div className="text-white max-w-[70%]">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
             {profile.name}
           </h1>
+          <p className="text-xs sm:text-sm mt-1 opacity-90">
+            {profile.memberCount || 0} members
+          </p>
         </div>
 
         {!isMember && (
           <button
             onClick={handleJoin}
-            className="rounded-full px-4 py-2 bg-primary text-white font-bold"
+            className="rounded-full px-3 sm:px-4 py-1.5 sm:py-2 bg-primary text-white font-bold text-sm sm:text-base"
           >
-            Join Community
+            Join
           </button>
         )}
       </div>

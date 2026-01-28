@@ -267,7 +267,10 @@ const CommentPage = () => {
 
   return (
     <div className="commentpage">
-      <div className="mx-auto" style={{ width: "70%", marginTop: "80px" }}>
+      <div
+        className="commentpage-container mx-auto"
+        style={{ width: "70%", marginTop: "80px" }}
+      >
         <button
           onClick={() => navigate(-1)}
           className="flex mb-3 items-center gap-2 text-gray-700 hover:text-primary transition"
@@ -303,10 +306,10 @@ const CommentPage = () => {
         </div>
 
         {/* MAIN INPUT */}
-        <div className="flex items-start p-4 gap-4 bg-white rounded-xl shadow-sm mb-4">
+        <div className="commentpage-input-section flex items-start p-4 gap-4 bg-white rounded-xl shadow-sm mb-4">
           <img
             src={userProfile?.profilePicture?.url || "/travel.jpg"}
-            className="size-10 rounded-full object-cover"
+            className="commentpage-user-avatar size-10 rounded-full object-cover"
           />
 
           <textarea
@@ -401,7 +404,7 @@ const CommentItem = ({
         <Link to={`/profile/${comment.author._id}`}>
           <img
             src={comment.author?.profilePicture?.url || "/travel.jpg"}
-            className="size-10 rounded-full object-cover mt-1"
+            className="commentpage-comment-avatar size-10 rounded-full object-cover mt-1"
           />
         </Link>
 
@@ -483,7 +486,7 @@ const CommentItem = ({
 
           {/* INLINE REPLY BOX */}
           {isActiveReply && (
-            <div className="mt-2 ml-12">
+            <div className="commentpage-reply-box mt-2 ml-12">
               <p className="text-xs text-gray-500 mb-1">
                 Replying to{" "}
                 <span className="font-semibold">{comment.author.username}</span>
@@ -538,7 +541,7 @@ const CommentItem = ({
           return (
             <div
               key={r._id}
-              className="relative flex gap-3 p-1.5 pl-6 ml-12 border-l border-gray-500/60"
+              className="commentpage-reply-item relative flex gap-3 p-1.5 pl-6 ml-12 border-l border-gray-500/60"
             >
               {/* CURVED LINE FOR THE LAST REPLY */}
               {isLast && (
@@ -547,7 +550,7 @@ const CommentItem = ({
               <Link to={`/profile/${r.author._id}`}>
                 <img
                   src={r.author.profilePicture?.url || "/travel.jpg"}
-                  className="size-9 rounded-full object-cover mt-0.5"
+                  className="commentpage-reply-avatar size-9 rounded-full object-cover mt-0.5"
                 />
               </Link>
 

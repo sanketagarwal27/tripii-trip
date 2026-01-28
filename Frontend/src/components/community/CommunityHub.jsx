@@ -81,7 +81,7 @@ const CommunityHub = () => {
 
   // SORT SUGGESTED COMMUNITIES
   const topSuggested = [...suggested].sort(
-    (a, b) => b.memberCount - a.memberCount
+    (a, b) => b.memberCount - a.memberCount,
   );
 
   return (
@@ -95,7 +95,9 @@ const CommunityHub = () => {
       {/* HEADER SECTION */}
       <div className="communityhub-header">
         <div className="flex items-center justify-between w-full">
-          <h1 className="text-3xl font-black tracking-tight">Community Hub</h1>
+          <h1 className="text-3xl font-black tracking-tight communityhub-title">
+            Community Hub
+          </h1>
 
           <div className="communityhub-searchpart">
             <div className="flex items-center bg-card-light dark:bg-card-dark rounded-lg p-1">
@@ -149,32 +151,34 @@ const CommunityHub = () => {
               </select>
             )}
 
-            <label className="flex min-w-40 h-12 w-full sm:w-auto max-w-64">
-              <div
-                className="flex items-center px-3 w-full h-full rounded-lg bg-card-light dark:bg-card-dark 
-                focus-within:ring-2 focus-within:ring-primary"
-              >
-                <span className="material-symbols-outlined text-text-light/60 text-base pr-2">
-                  search
-                </span>
+            {searchMode === "name" && (
+              <label className="flex min-w-40 h-12 w-full sm:w-auto max-w-64 communityhub-searchbar">
+                <div
+                  className="flex items-center px-3 w-full h-full rounded-lg bg-card-light dark:bg-card-dark 
+                  focus-within:ring-2 focus-within:ring-primary"
+                >
+                  <span className="material-symbols-outlined text-text-light/60 text-base pr-2">
+                    search
+                  </span>
 
-                <input
-                  value={search}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  placeholder={`Search by ${searchMode}...`}
-                  className="w-full bg-transparent text-sm focus:outline-none"
-                />
-              </div>
-            </label>
+                  <input
+                    value={search}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    placeholder={`Search by ${searchMode}...`}
+                    className="w-full bg-transparent text-sm focus:outline-none"
+                  />
+                </div>
+              </label>
+            )}
 
             <button
               onClick={() => setShowOverlay(true)}
-              className="flex items-center gap-2 h-12 px-4 bg-primary rounded-lg text-white text-sm font-semibold"
+              className="flex items-center gap-2 h-12 px-4 bg-primary rounded-lg text-white text-sm font-semibold communityhub-create-btn"
             >
               <span className="material-symbols-outlined text-base">
                 add_circle
               </span>
-              Create
+              <span className="communityhub-create-text">Create</span>
             </button>
           </div>
         </div>

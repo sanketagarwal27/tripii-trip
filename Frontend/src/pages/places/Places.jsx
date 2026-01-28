@@ -129,7 +129,7 @@ const Places = () => {
       <div
         onClick={resetSearch}
         style={{
-          position: "absolute",
+          position: "relative",
           top: "90px",
           left: "20px",
           zIndex: 2,
@@ -141,12 +141,13 @@ const Places = () => {
           backdropFilter: "blur(10px)",
           borderRadius: "12px",
           cursor: "pointer",
+          width: "fit-content",
         }}
       >
         <span style={{ fontWeight: 700, color: "#fff" }}>Back</span>
       </div>
 
-      <div style={{ marginTop: "70px" }}>
+      <div style={{ marginTop: "40px" }}>
         <HeroSection place={placeData.place} imageUrl={placeData.heroImage} />
         <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
         <div className={styles.contentArea}>

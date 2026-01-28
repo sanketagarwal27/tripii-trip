@@ -750,23 +750,49 @@ export const deleteComment = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Not allowed to delete this comment");
   }
 
-  await CommComment.findByIdAndDelete(commentId);
+  // 🔥 Recursively collect all child comment IDs
+  const collectChildCommentIds = async (parentId) => {
+    const childComments = await CommComment.find({
+      parentComment: parentId,
+    }).select("_id");
+    let allChildIds = childComments.map((c) => c._id);
 
+    // Recursively get children of children
+    for (const child of childComments) {
+      const nestedChildren = await collectChildCommentIds(child._id);
+      allChildIds = allChildIds.concat(nestedChildren);
+    }
+
+    return allChildIds;
+  };
+
+  // Get all descendant comment IDs
+  const childCommentIds = await collectChildCommentIds(commentId);
+  const allCommentIds = [commentId, ...childCommentIds];
+  const totalDeletedCount = allCommentIds.length;
+
+  // 🔥 Delete parent comment and all children in one operation
+  await CommComment.deleteMany({ _id: { $in: allCommentIds } });
+
+  // 🔥 Update message comment count by the total number of deleted comments
   const updatedMessage = await MessageInComm.findByIdAndUpdate(
     comment.message,
-    { $inc: { commentCount: -1 } },
+    { $inc: { commentCount: -totalDeletedCount } },
     { new: true },
   ).select("_id commentCount community");
 
-  emitToCommunity(comment.community.toString(), "community:comment:deleted", {
-    commentId,
-    messageId: comment.message,
+  // Emit deletion events for all deleted comments
+  allCommentIds.forEach((id) => {
+    emitToCommunity(comment.community.toString(), "community:comment:deleted", {
+      commentId: id.toString(),
+      messageId: comment.message,
+    });
+    emitToMessage(comment.message.toString(), "community:comment:deleted", {
+      commentId: id.toString(),
+      messageId: comment.message,
+    });
   });
-  // In deleteComment function, add this line after CommComment.findByIdAndDelete:
-  emitToMessage(comment.message.toString(), "community:comment:deleted", {
-    commentId,
-    messageId: comment.message,
-  });
+
   if (updatedMessage) {
     emitToCommunity(
       comment.community.toString(),
@@ -778,7 +804,15 @@ export const deleteComment = asyncHandler(async (req, res) => {
     );
   }
 
-  return res.status(200).json(new ApiResponse(200, {}, "Comment deleted"));
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { deletedCount: totalDeletedCount },
+        `Comment and ${totalDeletedCount - 1} nested comments deleted`,
+      ),
+    );
 });
 
 // export const toggleCommentHelpful = asyncHandler(async (req, res) => {

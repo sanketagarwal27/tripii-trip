@@ -97,7 +97,7 @@ export default function CommComment() {
     // Handler for reactions
     const onReaction = ({ commentId, reactions }) => {
       setComments((prev) =>
-        prev.map((c) => (c._id === commentId ? { ...c, reactions } : c))
+        prev.map((c) => (c._id === commentId ? { ...c, reactions } : c)),
       );
     };
 
@@ -106,7 +106,7 @@ export default function CommComment() {
       setComments((prev) => {
         // Mark for fade-out
         const updated = prev.map((c) =>
-          c._id === commentId ? { ...c, _remove: true } : c
+          c._id === commentId ? { ...c, _remove: true } : c,
         );
         // Remove after animation
         setTimeout(() => {
@@ -166,7 +166,7 @@ export default function CommComment() {
   const rootComments = comments.filter((c) => !c.parentComment);
 
   return (
-    <div className="commentpage">
+    <div className="commentpage-community">
       <div className="mx-auto" style={{ width: "100%", marginLeft: "5vw" }}>
         <button
           onClick={() => navigate(-1)}

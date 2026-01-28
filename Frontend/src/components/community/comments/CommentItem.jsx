@@ -191,7 +191,7 @@ const CommentItem = ({
             </div>
           )}
 
-          <div className="flex items-center gap-4 pt-2">
+          <div className="flex items-center gap-4 pt-2 relative">
             {comment.depth < 3 && (
               <button
                 onClick={() => setShowReplyBox((s) => !s)}
@@ -201,21 +201,23 @@ const CommentItem = ({
               </button>
             )}
 
-            <button
-              onClick={() => setShowReactionPicker((s) => !s)}
-              className="text-xs font-semibold text-gray-500 hover:text-primary transition relative"
-            >
-              REACT
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowReactionPicker((s) => !s)}
+                className="text-xs font-semibold text-gray-500 hover:text-primary transition"
+              >
+                REACT
+              </button>
 
-            {showReactionPicker && (
-              <div className="absolute z-10 mt-2">
-                <EmojiPickerPopover
-                  onSelect={(emoji) => handleReact(emoji)}
-                  onClose={() => setShowReactionPicker(false)}
-                />
-              </div>
-            )}
+              {showReactionPicker && (
+                <div className="absolute z-10 mt-2">
+                  <EmojiPickerPopover
+                    onSelect={(emoji) => handleReact(emoji)}
+                    onClose={() => setShowReactionPicker(false)}
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           {showReplyBox && (

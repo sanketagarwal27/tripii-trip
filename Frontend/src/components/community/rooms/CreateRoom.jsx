@@ -231,14 +231,20 @@ const CreateRoom = () => {
 
   if (!profile?.canCreateRoom) {
     return (
-      <div className="p-10 text-center text-red-600 font-semibold">
+      <div
+        className="p-10 text-center text-red-600 font-semibold"
+        style={{ marginTop: "80px" }}
+      >
         You are not allowed to create rooms in this community.
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div
+      className="min-h-screen bg-gray-50 py-8 px-4"
+      style={{ marginLeft: "15vw", marginTop: "60px" }}
+    >
       <div className="max-w-4xl mx-auto">
         <button
           onClick={() => navigate(-1)}
