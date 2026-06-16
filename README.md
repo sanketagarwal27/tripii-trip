@@ -64,14 +64,14 @@ I built a custom server-side caching mechanism to solve the problem of high late
 
 ---
 
-## Verified Pull Requests (My Work)
+## Verified Pull Requests and Commits (My Work)
 
 To see the specific engineering work I contributed to the main project, you can view some of my Pull Requests here:
 
 - **[PR #2]:** [Added the Chatbot Feature](https://github.com/himanshuiitd-ism/tripii-trip/pull/2)
 - **[PR #5]:** [Started implementing the Caching feature and data to places](https://github.com/himanshuiitd-ism/tripii-trip/pull/5)
 - **[PR #8]:** [Resolved Some Merge Conflicts and Completed Place Feature with Caching](https://github.com/himanshuiitd-ism/tripii-trip/pull/8)
-
+- **[Commit]:** [Made admin panel to manage users, communities, reward points and verify contributions made by users](https://github.com/sanketagarwal27/tripii-trip/commit/aef9ccdacb67320bf58b6240de340719a5762cd4)
 ---
 
 ## Getting Started
