@@ -1,0 +1,68 @@
+services:
+  # ─────────────────────────────────────────────
+  # TripiiTrip — Node.js API (Web Service)
+  # ─────────────────────────────────────────────
+  - type: web
+    name: tripii-trip-backend
+    runtime: node
+    region: oregon  # Change to your preferred region (e.g. frankfurt, singapore)
+    plan: free      # Upgrade to starter/standard for always-on
+    rootDir: Backend
+    buildCommand: npm install
+    startCommand: node index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000   # Render sets PORT automatically; this is just a fallback
+      - key: MONGO_URI
+        sync: false    # Set manually in Render dashboard → secret
+      - key: ACCESS_TOKEN_SECRET
+        sync: false
+      - key: REFRESH_TOKEN_SECRET
+        sync: false
+      - key: ACCESS_TOKEN_EXPIRY
+        value: 1d
+      - key: REFRESH_TOKEN_EXPIRY
+        value: 7d
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY_FOR_OVERVIEW
+        sync: false
+      - key: GEMINI_API_KEY_FOR_SAFETY
+        sync: false
+      - key: AI_MODE
+        value: gemini
+      - key: NEWSAPI_API_KEY
+        sync: false
+      - key: UNSPLASH_ACCESS_KEY
+        sync: false
+      - key: UNSPLASH_SECRET_KEY
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: REDIS_URL
+        sync: false    # Optional — leave blank to disable job queues
+      - key: FRONTEND_URL
+        value: https://tripii-trip-black.vercel.app
+      - key: DISABLE_OTP
+        value: "false"
+      - key: MAX_FILE_SIZE
+        value: "20971520"

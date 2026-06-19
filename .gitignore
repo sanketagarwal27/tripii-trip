@@ -1,1 +1,17 @@
 node_modules
+
+# Environment variables - NEVER commit these
+.env
+.env.local
+.env.production
+.env.staging
+**/.env
+**/.env.local
+**/.env.production
+**/.env.staging
+
+# Secrets
+*.pem
+*.key
+*.p12
+*.pfx

@@ -1,33 +1,18 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <meta name="description" content="Tripii – Plan, share, and experience trips together with friends." />
+    <title>Tripii – Plan Your Trips Together</title>
+
+    <!-- Google Sign-In SDK — loaded once, before the app bundle -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx">
-  window.onload = function () {
-    google.accounts.id.initialize({
-      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-      callback: (response) => {
-        fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/google`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ credential: response.credential }),
-        })
-          .then((r) => r.json())
-          .then((d) => console.log("Google Login Success:", d))
-          .catch((e) => console.log(e));
-      },
-    });
-  };
-</script>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
-
+    <!-- App entry point (type="module" cannot contain inline code — it is ignored by the browser) -->
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

@@ -1,9 +1,10 @@
-// index.js or app.js (main server file)
+// index.js — main server entry
 import express, { urlencoded } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import http from "http";
+import helmet from "helmet";
 
 // Database
 import connectDB from "./utils/db.js";
@@ -22,13 +23,60 @@ import businessRoutes from "./routes/business.routes.js";
 
 dotenv.config();
 
+/* -------------------------------------------------------
+   STARTUP ENVIRONMENT VARIABLE VALIDATION
+   Fail fast with a clear message rather than mysterious
+   runtime errors deep inside controller logic.
+-------------------------------------------------------- */
+const REQUIRED_ENV_VARS = [
+  "MONGO_URI",
+  "ACCESS_TOKEN_SECRET",
+  "REFRESH_TOKEN_SECRET",
+  "CLOUDINARY_CLOUD_NAME",
+  "CLOUDINARY_API_KEY",
+  "CLOUDINARY_API_SECRET",
+  "GOOGLE_CLIENT_ID",
+  "GOOGLE_CLIENT_SECRET",
+  "GEMINI_API_KEY",
+  "SMTP_HOST",
+  "SMTP_PORT",
+  "SMTP_USER",
+  "SMTP_PASS",
+];
+
+const missingVars = REQUIRED_ENV_VARS.filter((key) => !process.env[key]);
+if (missingVars.length > 0) {
+  console.error(
+    `[STARTUP ERROR] Missing required environment variables:\n  ${missingVars.join("\n  ")}`
+  );
+  process.exit(1);
+}
+
 const app = express();
 const server = http.createServer(app);
 
-/* ✅ CORS MUST BE FIRST - ENHANCED */
+/* -------------------------------------------------------
+   SECURITY HEADERS — helmet must come before routes
+-------------------------------------------------------- */
+app.use(
+  helmet({
+    crossOriginEmbedderPolicy: false, // Allow Cloudinary images to load
+    contentSecurityPolicy: false,     // Set manually in vercel.json for frontend
+  })
+);
+
+/* -------------------------------------------------------
+   CORS — must come before other middleware
+-------------------------------------------------------- */
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.FRONTEND_URL,
+  "https://tripii-trip-black.vercel.app",
+].filter(Boolean); // remove undefined/empty strings
+
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://tripii-trip-black.vercel.app"],
+    origin: allowedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
@@ -36,10 +84,12 @@ app.use(
   })
 );
 
-// ✅ Handle preflight requests globally
-app.options("/", cors());
+// Handle preflight requests for ALL routes (was wrongly set to "/" only)
+app.options("*", cors());
 
-/* ✅ THEN other middleware */
+/* -------------------------------------------------------
+   BODY PARSING & COOKIES
+-------------------------------------------------------- */
 app.use(express.json());
 app.use(cookieParser());
 app.use(urlencoded({ extended: true }));
@@ -50,7 +100,7 @@ const PORT = process.env.PORT || 8000;
 
 app.get("/", (req, res) => {
   res.status(200).json({
-    message: "I'm coming from backend",
+    message: "TripiiTrip API is running",
     success: true,
   });
 });
@@ -68,6 +118,26 @@ app.use("/api/businesslisting", businessRoutes);
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({ status: "ok" });
+});
+
+/* -------------------------------------------------------
+   GLOBAL ERROR HANDLER
+   Must be the LAST middleware. Catches all errors passed
+   via next(err) — returns consistent JSON, never HTML.
+-------------------------------------------------------- */
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  const statusCode = err.statusCode || err.status || 500;
+  const message = err.message || "Internal Server Error";
+
+  // Don't expose stack traces in production
+  const response = {
+    success: false,
+    message,
+    ...(process.env.NODE_ENV !== "production" && { stack: err.stack }),
+  };
+
+  res.status(statusCode).json(response);
 });
 
 server.listen(PORT, () => {

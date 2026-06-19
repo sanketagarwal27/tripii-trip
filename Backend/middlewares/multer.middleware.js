@@ -1,9 +1,12 @@
 import multer from "multer";
+import { ApiError } from "../utils/ApiError.js";
+
+const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE) || 20 * 1024 * 1024; // default 20MB
 
 // In your multer configuration file
 export const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
+  limits: { fileSize: MAX_FILE_SIZE },
   fileFilter: (req, file, cb) => {
     if (
       file.mimetype.startsWith("image/") ||

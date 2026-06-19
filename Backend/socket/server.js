@@ -13,12 +13,19 @@ const communityRooms = {};
 const typingMap = {};
 
 export function initSocket(server) {
+  // Build allowed origins dynamically — matching the Express CORS config
+  const allowedOrigins = [
+    "http://localhost:5173",
+    process.env.FRONTEND_URL,
+    "https://tripii-trip-black.vercel.app",
+  ].filter(Boolean);
+
   io = new Server(server, {
     cors: {
-      origin: "http://localhost:5173",
+      origin: allowedOrigins,
       credentials: true,
     },
-    transports: ["websocket"],
+    transports: ["websocket", "polling"],
   });
 
   io.on(EVENTS.CONNECTION, (socket) => {
@@ -49,7 +56,6 @@ export const emitToRoom = (roomId, event, payload) => {
   io.to(`room:${roomId}`).emit(event, payload);
 };
 
-// 👇 ADD THIS FUNCTION
 export const emitToMessage = (messageId, event, data) => {
   if (!io || !messageId) return;
   io.to(`message:${String(messageId)}`).emit(event, data);

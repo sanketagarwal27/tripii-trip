@@ -3,6 +3,7 @@ import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { User } from "../../models/user/user.model.js";
 import crypto from "crypto";
+import bcrypt from "bcryptjs";
 import { AdminOtp } from "../../models/user/adminOtp.model.js";
 import sendEmail from "../../utils/sendEmail.js";
 
@@ -20,13 +21,14 @@ export const requestOtp = asyncHandler(async (req, res) => {
   // 2. Generate OTP
   const otp = crypto.randomInt(100000, 999999).toString();
 
-  // 3. Save OTP to DB
+  // 3. Hash OTP and save to DB
   await AdminOtp.deleteMany({ adminId: req.user._id });
 
+  const hashedOtp = await bcrypt.hash(otp, 10);
   await AdminOtp.create({
     adminId: req.user._id,
     targetUserId: userId,
-    otpCode: otp, //Hash it before storing in production
+    otpCode: hashedOtp,
   });
   // 4. Send OTP via Email
   await sendEmail({
@@ -65,13 +67,17 @@ export const promoteUserToAdmin = asyncHandler(async (req, res) => {
   if (!otp) throw new ApiError(400, "OTP is required");
 
   // 1. Find the OTP Record
-  const validOtpRecord = await AdminOtp.findOne({
-    adminId: req.user._id, // Must belong to requesting admin
-    targetUserId: userId, // Must be for the specific user being promoted
-    otpCode: otp, // Must match the code
+  const otpRecord = await AdminOtp.findOne({
+    adminId: req.user._id,
+    targetUserId: userId,
   });
 
-  if (!validOtpRecord) {
+  if (!otpRecord) {
+    throw new ApiError(400, "Invalid or expired OTP");
+  }
+
+  const isOtpValid = await bcrypt.compare(otp, otpRecord.otpCode);
+  if (!isOtpValid) {
     throw new ApiError(400, "Invalid or expired OTP");
   }
 
@@ -83,7 +89,7 @@ export const promoteUserToAdmin = asyncHandler(async (req, res) => {
   await userToPromote.save();
 
   // 3. Cleanup: Delete the used OTP
-  await AdminOtp.findByIdAndDelete(validOtpRecord._id);
+  await AdminOtp.findByIdAndDelete(otpRecord._id);
 
   res
     .status(200)
@@ -154,13 +160,17 @@ export const permanentDeleteUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "OTP is required for permanent deletion");
   }
   // 1. Find the OTP Record
-  const validOtpRecord = await AdminOtp.findOne({
-    adminId: req.user._id, // Must belong to requesting admin
-    targetUserId: userId, // Must be for the specific user being promoted
-    otpCode: otp, // Must match the code
+  const otpRecord = await AdminOtp.findOne({
+    adminId: req.user._id,
+    targetUserId: userId,
   });
 
-  if (!validOtpRecord) {
+  if (!otpRecord) {
+    throw new ApiError(400, "Invalid or expired OTP");
+  }
+
+  const isOtpValid = await bcrypt.compare(otp, otpRecord.otpCode);
+  if (!isOtpValid) {
     throw new ApiError(400, "Invalid or expired OTP");
   }
   // 2. Perform Deletion
@@ -172,6 +182,12 @@ export const permanentDeleteUser = asyncHandler(async (req, res) => {
   if (user.role === "admin") {
     throw new ApiError(400, "Cannot delete an admin user");
   }
+
+  // Permanently delete the user
+  await user.deleteOne();
+
+  // Cleanup: Delete the used OTP
+  await AdminOtp.findByIdAndDelete(otpRecord._id);
 
   await sendEmail({
     email: user.email,

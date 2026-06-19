@@ -9,13 +9,12 @@ export const socket = io(BACKEND, {
   transports: ["websocket", "polling"],
 });
 
-if (typeof window !== "undefined") {
-  window.socket = socket;
-}
+// Removed window.socket exposure — exposing the socket on window
+// allows any third-party script to emit arbitrary socket events.
 
 export const connectSocket = () => {
   if (!socket.connected) {
-    // 🔥 Update userId on connect
+    // Update userId on connect — used by the server to map socket → user
     const userId = localStorage.getItem("userId");
     if (userId) {
       socket.auth = { userId };

@@ -14,6 +14,10 @@ import {
 } from "../controllers/user/user.controller.js";
 
 import { verifyJWT } from "../middlewares/auth.middleware.js";
+import {
+  userApiLimiter,
+  profileEditLimiter,
+} from "../middlewares/rateLimit.middleware.js";
 
 const router = express.Router();
 
@@ -22,13 +26,13 @@ router.options("/login", (req, res) => res.sendStatus(204));
 /* -------------------------------------------------------
    AUTH ROUTES — EXISTING (UNCHANGED)
 ---------------------------------------------------------*/
-router.post("/google", googleLogin); // FIXED
+router.post("/google", userApiLimiter, googleLogin);
 
 router.post("/send-otp", (req, res) => res.send("Disabled in MVP"));
 router.post("/verify-otp", (req, res) => res.send("Disabled in MVP"));
 
-router.post("/register", register);
-router.post("/login", login);
+router.post("/register", userApiLimiter, register);
+router.post("/login", userApiLimiter, login);
 router.post("/logout", verifyJWT, logout);
 
 /* -------------------------------------------------------
@@ -54,6 +58,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 router.put(
   "/edit-profile",
   verifyJWT,
+  profileEditLimiter,
   upload.single("profilePicture"),
   editProfile
 );

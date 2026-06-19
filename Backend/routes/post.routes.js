@@ -1,6 +1,7 @@
 import express from "express";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
+import { postCreationLimiter } from "../middlewares/rateLimit.middleware.js";
 
 import {
   addComment,
@@ -23,12 +24,14 @@ router.use(verifyJWT);
 
 router.post(
   "/createPost",
+  postCreationLimiter,
   upload.array("media"), // REQUIRED
   createNormalPost
 );
 
 router.post(
   "/createTripPost",
+  postCreationLimiter,
   upload.fields([
     { name: "cover", maxCount: 1 },
     { name: "media", maxCount: 20 },

@@ -66,8 +66,6 @@ export const register = asyncHandler(async (req, res) => {
 });
 
 export const login = asyncHandler(async (req, res) => {
-  console.log("BODY RECEIVED:", req.body);
-
   const { identifier, password } = req.body;
 
   if (!identifier || !password) {
@@ -264,7 +262,7 @@ export const followOrUnfollow = asyncHandler(async (req, res) => {
 });
 
 export const searchUsersWithPagination = asyncHandler(async (req, res) => {
-  const { userId } = req.user;
+  const userId = req.user._id;
   const { query, page = 1, limit = 10 } = req.query;
 
   if (!query || query.trim() === "") {

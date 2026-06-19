@@ -498,8 +498,9 @@ export const deletePost = asyncHandler(async (req, res) => {
 export const getFeedPosts = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
-  const { page = 1, limit = 100 } = req.query;
-  const skip = (Math.max(1, parseInt(page)) - 1) * parseInt(limit);
+  const { page = 1, limit: rawLimit = 10 } = req.query;
+  const limit = Math.min(parseInt(rawLimit) || 10, 50); // cap at 50 per page
+  const skip = (Math.max(1, parseInt(page)) - 1) * limit;
 
   const posts = await Post.find()
     .sort({ createdAt: -1 })
