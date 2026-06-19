@@ -84,8 +84,8 @@ app.use(
   })
 );
 
-// Handle preflight requests for ALL routes (was wrongly set to "/" only)
-app.options("*", cors());
+// Handle preflight for ALL routes — regex form required by newer path-to-regexp
+app.options(/.*/, cors());
 
 /* -------------------------------------------------------
    BODY PARSING & COOKIES

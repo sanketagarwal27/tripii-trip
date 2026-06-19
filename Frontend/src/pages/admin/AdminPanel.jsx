@@ -23,8 +23,8 @@ import AwardRandomPoints from "./components/AwardRandomPoints";
 import UserManagement from "./components/UserManagement";
 import AppDashboard from "./components/AppDashboard";
 import ManageCommunities from "./components/ManageCommunities";
-import { getPendingBusinessListingsAdmin } from "@/api/admin";
-import VerifyMarketplace from "./components/businessSubmission/VerifyMarketplace";
+// import { getPendingBusinessListingsAdmin } from "@/api/admin"; // MARKETPLACE — disabled
+// import VerifyMarketplace from "./components/businessSubmission/VerifyMarketplace"; // MARKETPLACE — disabled
 
 const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -49,11 +49,8 @@ const AdminPanel = () => {
       label: "Manage Businesses",
       icon: <BriefcaseBusiness size={18} />,
     },
-    {
-      id: "marketplace",
-      label: "Manage Marketplace",
-      icon: <Store size={18} />,
-    },
+    // MARKETPLACE — disabled, not yet ready for production
+    // { id: "marketplace", label: "Manage Marketplace", icon: <Store size={18} /> },
     {
       id: "points",
       label: "Award Points",
@@ -97,9 +94,8 @@ const AdminPanel = () => {
       case "communities": {
         return <ManageCommunities />;
       }
-      case "business": {
-        return <VerifyMarketplace />;
-      }
+      // MARKETPLACE — disabled
+      // case "business": return <VerifyMarketplace />;
 
       default:
         return (

@@ -1,7 +1,18 @@
 import NewsAPI from "newsapi";
 import { ApiError } from "../../utils/ApiError.js";
 
-const newsapi = new NewsAPI(process.env.NEWSAPI_API_KEY);
+// Lazy-initialize: don't crash at module load if the key is missing.
+// The error will only surface when the news endpoint is actually called.
+let newsapi = null;
+const getNewsApiClient = () => {
+  if (!newsapi) {
+    if (!process.env.NEWSAPI_API_KEY) {
+      throw new ApiError(503, "News service is not configured (NEWSAPI_API_KEY missing)");
+    }
+    newsapi = new NewsAPI(process.env.NEWSAPI_API_KEY);
+  }
+  return newsapi;
+};
 
 const TRAVEL_KEYWORDS = [
   "travel",
@@ -47,7 +58,9 @@ const SPORTS_WORDS = [
 export const getNewsFromApi = async (place) => {
   if (!place) throw new ApiError(400, "Place name missing");
 
-  const response = await newsapi.v2.everything({
+  const client = getNewsApiClient();
+
+  const response = await client.v2.everything({
     q: place,
     searchIn: "title,description",
     language: "en",

@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { loginRequest, registerRequest, googleLoginRequest } from "@/api/auth";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { setAuthUser } from "@/redux/authslice";
+import toast from "react-hot-toast";
 
 export default function AuthPage() {
   const [tab, setTab] = useState("signin");
@@ -18,46 +19,75 @@ export default function AuthPage() {
   const dispatch = useDispatch();
   const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
+  // Track whether the GSI SDK script has fully loaded
+  const gsiReady = useRef(false);
+
   /* -------------------------------------------------------
-      GOOGLE SDK LOADER
+      GOOGLE SDK LOADER — runs once on mount
+      When the script loads we set gsiReady so the render
+      effect below can pick it up.
   ---------------------------------------------------------*/
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID) return;
 
-    if (document.getElementById("google-sdk")) return; // prevent multiple loads
+    const initAndRender = () => {
+      if (!window.google) return;
+      gsiReady.current = true;
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleResponse,
+      });
+      renderGoogleButton();
+    };
+
+    // Script already loaded (e.g. hot-reload)
+    if (window.google) {
+      initAndRender();
+      return;
+    }
+
+    if (document.getElementById("google-sdk")) {
+      // Script tag exists but hasn't fired onload yet — wait for it
+      document.getElementById("google-sdk").addEventListener("load", initAndRender);
+      return;
+    }
 
     const script = document.createElement("script");
     script.src = "https://accounts.google.com/gsi/client";
     script.id = "google-sdk";
     script.async = true;
     script.defer = true;
-
-    script.onload = () => {
-      if (window.google) {
-        window.google.accounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          callback: handleGoogleResponse,
-        });
-        window.google.accounts.id.renderButton(
-          document.getElementById("googleBtn"),
-          {
-            theme: "outline",
-            size: "large",
-            width: "100%",
-            shape: "pill",
-          }
-        );
-      }
-    };
-
+    script.onload = initAndRender;
     document.body.appendChild(script);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* -------------------------------------------------------
+      Re-render the Google button every time the user
+      switches back to the Sign In tab.
+  ---------------------------------------------------------*/
+  useEffect(() => {
+    if (tab === "signin") {
+      // The div is freshly mounted — render into it
+      renderGoogleButton();
+    }
+  }, [tab]);
+
+  function renderGoogleButton() {
+    if (!window.google?.accounts?.id) return;
+    const el = document.getElementById("googleBtn");
+    if (!el) return;
+    window.google.accounts.id.renderButton(el, {
+      theme: "outline",
+      size: "large",
+      width: "100%",
+      shape: "pill",
+    });
+  }
 
   const onChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
-  /* ------------------------ SIGN IN - 🔥 UPDATED ------------------------ */
-  // ✅ UPDATED: handleSignIn function
+  /* ------------------------ SIGN IN ------------------------ */
   const handleSignIn = async (e) => {
     e.preventDefault();
     try {
@@ -69,64 +99,37 @@ export default function AuthPage() {
       };
 
       const res = await loginRequest(payload);
-      console.log("Login success:", res.data);
 
       const { user, accessToken, refreshToken } = res.data.data;
 
-      // ✅ Store in localStorage
       localStorage.setItem("userId", user._id);
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
 
-      console.log("✅ Stored tokens in localStorage");
-
-      // ✅ Dispatch to Redux
       dispatch(setAuthUser({ user, accessToken, refreshToken }));
-
-      // Redirect
       navigate("/");
     } catch (err) {
-      console.error("Login error:", err.response?.data || err);
       toast.error(err.response?.data?.message || "Login failed");
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ UPDATED: handleGoogleResponse function
+  /* ------------------------ GOOGLE LOGIN ------------------------ */
   async function handleGoogleResponse(response) {
     try {
       setLoading(true);
 
       const res = await googleLoginRequest(response.credential);
-      console.log("Google Login success:", res);
-
       const { user, accessToken, refreshToken } = res.data.data;
 
-      // ✅ Store in localStorage
       localStorage.setItem("userId", user._id);
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
 
-      console.log("✅ Stored tokens in localStorage:", {
-        userId: user._id,
-        hasAccessToken: !!accessToken,
-        hasRefreshToken: !!refreshToken,
-      });
-
-      // ✅ Dispatch to Redux
-      dispatch(
-        setAuthUser({
-          user,
-          accessToken,
-          refreshToken,
-        })
-      );
-
-      // Redirect to homepage
+      dispatch(setAuthUser({ user, accessToken, refreshToken }));
       navigate("/");
     } catch (err) {
-      console.error("Google Login Error:", err.response?.data || err);
       toast.error(err.response?.data?.message || "Google login failed");
     } finally {
       setLoading(false);
@@ -145,13 +148,13 @@ export default function AuthPage() {
         password: form.password,
       };
 
-      const res = await registerRequest(payload);
-      console.log("Signup success:", res.data);
+      await registerRequest(payload);
 
+      toast.success("Account created! Please sign in.");
       setTab("signin");
       setForm((p) => ({ ...p, identifier: form.username }));
     } catch (err) {
-      console.error("Signup error:", err.response?.data || err);
+      toast.error(err.response?.data?.message || "Sign up failed");
     } finally {
       setLoading(false);
     }
@@ -284,8 +287,8 @@ export default function AuthPage() {
                   </div>
                 </div>
 
-                {/* GOOGLE BUTTON */}
-                <div id="googleBtn" className="w-full" />
+                {/* GOOGLE BUTTON — always rendered, never conditionally removed */}
+                <div id="googleBtn" className="w-full min-h-[44px]" />
               </form>
             )}
 
@@ -347,6 +350,30 @@ export default function AuthPage() {
                 >
                   {loading ? "Please wait..." : "Create Account"}
                 </button>
+
+                {/* Divider */}
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300" />
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white text-gray-500">
+                      Or sign in with
+                    </span>
+                  </div>
+                </div>
+
+                {/* Prompt to switch to Sign In for Google */}
+                <p className="text-center text-sm text-gray-500">
+                  Already have an account?{" "}
+                  <button
+                    type="button"
+                    onClick={() => setTab("signin")}
+                    className="text-[#40E0D0] font-semibold hover:underline"
+                  >
+                    Sign in with Google
+                  </button>
+                </p>
               </form>
             )}
           </div>

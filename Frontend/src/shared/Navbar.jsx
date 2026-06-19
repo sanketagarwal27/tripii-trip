@@ -72,7 +72,7 @@ const Navbar = () => {
   const isContribution = pathname.startsWith("/contribute");
   const isAdminPanel = pathname.startsWith("/admin");
   const isProfile = pathname.startsWith("/profile");
-  const isMarketplace = pathname.startsWith("/marketplace");
+  // const isMarketplace = pathname.startsWith("/marketplace"); // MARKETPLACE — disabled
   const isHome =
     pathname === "/" ||
     (!isCommunity &&
@@ -81,8 +81,7 @@ const Navbar = () => {
       !isSunday &&
       !isContribution &&
       !isAdminPanel &&
-      !isProfile &&
-      !isMarketplace);
+      !isProfile);
 
   /* ✅ FIXED LOGOUT HANDLER */
   const handleLogout = async () => {
@@ -136,12 +135,8 @@ const Navbar = () => {
       action: () => navigate("/places"),
       isActive: isPlaces,
     },
-    {
-      icon: ShoppingBag,
-      label: "Marketplace",
-      action: () => navigate("/marketplace"),
-      isActive: isMarketplace,
-    },
+    // MARKETPLACE — disabled, not yet ready for production
+    // { icon: ShoppingBag, label: "Marketplace", action: () => navigate("/marketplace"), isActive: isMarketplace },
     {
       icon: Award,
       label: "Contribute",
@@ -207,12 +202,13 @@ const Navbar = () => {
             Places
           </button>
 
-          <button
+          {/* MARKETPLACE — disabled, not yet ready for production */}
+          {/* <button
             className={isMarketplace ? "nav-active" : ""}
             onClick={() => navigate("/marketplace")}
           >
             MarketPlace
-          </button>
+          </button> */}
 
           <button
             className={isContribution ? "nav-active" : ""}

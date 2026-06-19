@@ -42,10 +42,11 @@ import Spot from "./pages/contribution/components/Spot";
 import { ContributionProvider } from "./context/ContributionContext";
 import { Toaster } from "react-hot-toast";
 import AuthWrapper from "./components/AuthWrapper"; // ✅ Import AuthWrapper
-import MarketPlace from "./components/marketPlace/MarketPlace";
-import MarketPlaceLayout from "./shared/MarketPlaceLayout";
-import BusinessListingForm from "./components/marketPlace/BusinessListingForm";
-import BusinessTypeSelection from "./components/marketPlace/BusinessTypeSelection";
+// MARKETPLACE — disabled, not yet ready for production
+// import MarketPlace from "./components/marketPlace/MarketPlace";
+// import MarketPlaceLayout from "./shared/MarketPlaceLayout";
+// import BusinessListingForm from "./components/marketPlace/BusinessListingForm";
+// import BusinessTypeSelection from "./components/marketPlace/BusinessTypeSelection";
 
 // Auth Logic
 function RequireAuth({ children }) {
@@ -137,22 +138,21 @@ function AppRouter() {
                 user?.role === "admin" ? <AdminPanel /> : <Navigate to={"/"} />
               }
             />
-
             {/* MarketPlace Layout */}
-            <Route path="/marketplace" element={<MarketPlaceLayout />}>
+            {/* <Route path="/marketplace" element={<MarketPlaceLayout />}>
               <Route index element={<MarketPlace />} />
 
               <Route path="list-business" element={<BusinessTypeSelection />} />
-            </Route>
+            </Route> */}
           </Route>
-          <Route
+          {/* <Route
             path="/marketplace/list-business/form"
             element={
               <RequireAuth>
                 <BusinessListingForm />
               </RequireAuth>
             }
-          />
+          /> */}
         </Routes>
       </AuthWrapper>
     </BrowserRouter>
@@ -172,5 +172,5 @@ createRoot(document.getElementById("root")).render(
         </SocketProvider>
       </PersistGate>
     </Provider>
-  </GoogleOAuthProvider>
+  </GoogleOAuthProvider>,
 );
