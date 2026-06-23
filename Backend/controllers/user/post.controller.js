@@ -62,17 +62,20 @@ const uploadMediaFiles = async (files) => {
 
     let buffer = file.buffer;
 
+    let finalMimetype = file.mimetype;
+
     // Resize images only (not gifs)
     if (isImage && !isGif) {
       buffer = await sharp(file.buffer)
         .resize({ width: 1200, height: 1200, fit: "inside" })
         .jpeg({ quality: 80 })
         .toBuffer();
+      finalMimetype = "image/jpeg";
     }
 
     const resource_type = isVideo ? "video" : "image";
     const cloud = await cloudinary.uploader.upload(
-      `data:${file.mimetype};base64,${buffer.toString("base64")}`,
+      `data:${finalMimetype};base64,${buffer.toString("base64")}`,
       { resource_type },
     );
 

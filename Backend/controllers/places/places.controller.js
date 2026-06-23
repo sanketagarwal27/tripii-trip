@@ -160,7 +160,7 @@ export const getPhotos = asyncHandler(async (req, res) => {
   }
   const cachedPhotos = await Photo.findOne({ place: place });
   //Cache Hit
-  if (cachedPhotos) {
+  if (cachedPhotos && cachedPhotos.photos && cachedPhotos.photos.length > 0) {
     console.log(`✅ Cache hit: Photos for ${place}`);
     const response = cachedPhotos.photos;
     return res
@@ -202,7 +202,7 @@ export const getOverview = asyncHandler(async (req, res) => {
   const cachedPlace = await Overview.findOne({ place: place });
   const weatherData = await getWeatherData(place);
   //Cache Hit
-  if (cachedPlace) {
+  if (cachedPlace && cachedPlace.aiData && cachedPlace.aiData.hiddenGem !== "City Center") {
     console.log(`✅ Cache hit: Overview for ${place}`);
     cachedPlace.lastSearched = Date.now();
     await cachedPlace.save();

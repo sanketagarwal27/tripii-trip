@@ -7,7 +7,8 @@ import EditProfileModal from "./components/EditProfile";
 import { useParams } from "react-router-dom";
 import PostFeed from "./components/PostFeed";
 import UserContributions from "./components/UserContributions";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { updateUserStats } from "@/redux/authSlice";
 
 const ProfilePage = () => {
   const [userData, setUserData] = useState(null);
@@ -17,6 +18,7 @@ const ProfilePage = () => {
 
   const { id } = useParams();
   const { userProfile } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
 
   const isOwnProfile = userProfile?._id === id;
 
@@ -50,6 +52,7 @@ const ProfilePage = () => {
     try {
       const updatedUser = await updateUserProfile(formDataObject);
       setUserData(updatedUser.data);
+      dispatch(updateUserStats(updatedUser.data)); // Update Redux state so Navbar refreshes instantly
     } catch (error) {
       console.error("Failed to update profile", error);
     }

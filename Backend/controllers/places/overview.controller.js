@@ -79,11 +79,19 @@ export async function getAiOverview(location, interests = "general tourism") {
         "overallRating": Overall Rating out of 5 to fixed 1 decimal
       }
     `;
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-lite",
-      contents: prompt,
-    });
-    console.log(response);
+    let response;
+    try {
+      response = await ai.models.generateContent({
+        model: "gemini-2.5-flash-lite",
+        contents: prompt,
+      });
+    } catch (err) {
+      console.warn("gemini-2.5-flash-lite failed for overview, falling back to gemini-2.5-flash");
+      response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+      });
+    }
     let text = response?.candidates?.[0]?.content?.parts?.[0]?.text;
     text = text
       .replace(/```json/g, "")

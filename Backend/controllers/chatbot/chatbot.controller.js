@@ -222,24 +222,47 @@ export const getChatbotResponse = asyncHandler(async (req, res) => {
     mode === "PLAN"
       ? PLAN_SYSTEM_PROMPT
       : mode === "CHAT"
-      ? CHAT_SYSTEM_PROMPT
-      : OVERVIEW_SYSTEM_PROMPT;
+        ? CHAT_SYSTEM_PROMPT
+        : OVERVIEW_SYSTEM_PROMPT;
 
-  const contents = [
-    { role: "user", parts: [{ text: systemPrompt }] },
-    ...history,
-    { role: "user", parts: [{ text: prompt }] },
-  ];
+  const contents = [...history, { role: "user", parts: [{ text: prompt }] }];
 
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents,
-    generationConfig: {
-      temperature: 0.7,
-      topP: 0.9,
-      topK: 40,
-    },
-  });
+  let response;
+  try {
+    response = await ai.models.generateContent({
+      model: "gemini-2.5-flash-lite",
+      contents,
+      config: {
+        systemInstruction: systemPrompt,
+        temperature: 0.7,
+        topP: 0.9,
+        topK: 40,
+      },
+    });
+  } catch (error) {
+    console.warn(
+      "⚠️ gemini-2.5-flash-lite failed (likely high demand), falling back to gemini-2.5-flash. Error:",
+      error.message,
+    );
+    try {
+      response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents,
+        config: {
+          systemInstruction: systemPrompt,
+          temperature: 0.7,
+          topP: 0.9,
+          topK: 40,
+        },
+      });
+    } catch (fallbackError) {
+      console.error("❌ Fallback model also failed:", fallbackError.message);
+      throw new ApiError(
+        503,
+        "AI models are currently under high demand. Please try again later.",
+      );
+    }
+  }
 
   let reply = "";
   const candidate = response?.candidates?.[0];
@@ -305,8 +328,8 @@ export const getChatbotResponse = asyncHandler(async (req, res) => {
         sender: "model",
         text: finalReply,
       },
-      "Sunday responded"
-    )
+      "Sunday responded",
+    ),
   );
 });
 
@@ -324,7 +347,7 @@ export const updateAIMessage = asyncHandler(async (req, res) => {
       sender: "model",
     },
     { text },
-    { new: true }
+    { new: true },
   );
 
   console.log("Updated AI message:", updated);
