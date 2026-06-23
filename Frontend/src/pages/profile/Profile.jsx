@@ -8,7 +8,7 @@ import { useParams } from "react-router-dom";
 import PostFeed from "./components/PostFeed";
 import UserContributions from "./components/UserContributions";
 import { useSelector, useDispatch } from "react-redux";
-import { updateUserStats } from "@/redux/authSlice";
+import { updateUserStats } from "@/redux/authslice.js";
 
 const ProfilePage = () => {
   const [userData, setUserData] = useState(null);
@@ -64,7 +64,7 @@ const ProfilePage = () => {
       return {
         ...prevData,
         posts: prevData.posts.map((p) =>
-          p._id === updatedPost._id ? updatedPost : p
+          p._id === updatedPost._id ? updatedPost : p,
         ),
       };
     });
