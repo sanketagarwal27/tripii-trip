@@ -27,10 +27,10 @@ import PostLikesOverlay from "./PostLikesOverlay";
 const PostCard = ({ post }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { userProfile } = useSelector((s) => s.auth);
+  const { user } = useSelector((s) => s.auth);
 
   const hasLiked = post.likes?.some(
-    (l) => l.user === userProfile?._id || l.user?._id === userProfile?._id,
+    (l) => l.user === user?._id || l.user?._id === user?._id,
   );
 
   const [isLiked, setIsLiked] = useState(hasLiked);
@@ -54,14 +54,14 @@ const PostCard = ({ post }) => {
   useEffect(() => {
     setIsLiked(
       post.likes?.some(
-        (l) => l.user === userProfile?._id || l.user?._id === userProfile?._id,
+        (l) => l.user === user?._id || l.user?._id === user?._id,
       ),
     );
     setLikeCount(post.likes?.length || 0);
-  }, [post.likes, userProfile?._id]);
+  }, [post.likes, user?._id]);
 
   const handleLike = async () => {
-    if (!userProfile) return toast.error("Login required");
+    if (!user) return toast.error("Login required");
 
     const prevLiked = isLiked;
     const prevCount = likeCount;
@@ -91,7 +91,7 @@ const PostCard = ({ post }) => {
      FETCH LIKES DATA (called once, shared)
   -------------------------------------------- */
   const fetchLikes = async (pageNum) => {
-    if (!userProfile || post.likes.length === 0) return;
+    if (!user || post.likes.length === 0) return;
 
     setLikesLoading(true);
     try {
@@ -118,7 +118,7 @@ const PostCard = ({ post }) => {
   // Initial fetch on mount
   useEffect(() => {
     fetchLikes(1);
-  }, [post._id, post.likes?.length, userProfile?._id]);
+  }, [post._id, post.likes?.length, user?._id]);
 
   const loadMoreLikes = () => {
     const nextPage = likesPage + 1;
@@ -194,7 +194,7 @@ const PostCard = ({ post }) => {
           </p>
         </Link>
 
-        {post.author._id === userProfile?._id && (
+        {post.author._id === user?._id && (
           <button className="postcard-delete-btn" onClick={handleDelete}>
             <Trash2 size={18} />
           </button>
