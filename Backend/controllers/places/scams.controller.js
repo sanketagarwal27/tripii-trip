@@ -16,10 +16,24 @@ export async function getAiScams(location, interests = "general tourism") {
         "travelAdvices": "Some good travel advices for safety."
       }
     `;
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-lite",
-      contents: prompt,
-    });
+    let response;
+    try {
+      response = await ai.models.generateContent({
+        model: "gemini-2.5-flash-lite",
+        contents: prompt,
+      });
+    } catch (error) {
+      console.warn("⚠️ gemini-2.5-flash-lite failed for scams, falling back to gemini-2.5-flash. Error:", error.message);
+      try {
+        response = await ai.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: prompt,
+        });
+      } catch (fallbackError) {
+        console.error("❌ Fallback model also failed for scams:", fallbackError.message);
+        throw fallbackError;
+      }
+    }
     console.log(response);
     let text = response?.candidates?.[0]?.content?.parts?.[0]?.text;
     text = text

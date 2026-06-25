@@ -86,11 +86,16 @@ export async function getAiOverview(location, interests = "general tourism") {
         contents: prompt,
       });
     } catch (err) {
-      console.warn("gemini-2.5-flash-lite failed for overview, falling back to gemini-2.5-flash");
-      response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-      });
+      console.warn("⚠️ gemini-2.5-flash-lite failed for overview, falling back to gemini-2.5-flash. Error:", err.message);
+      try {
+        response = await ai.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: prompt,
+        });
+      } catch (fallbackErr) {
+        console.error("❌ Fallback model also failed for overview:", fallbackErr.message);
+        throw fallbackErr;
+      }
     }
     let text = response?.candidates?.[0]?.content?.parts?.[0]?.text;
     text = text

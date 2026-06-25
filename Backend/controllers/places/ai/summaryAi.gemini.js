@@ -45,10 +45,24 @@ GOOGLE_SIGNALS:
 ${JSON.stringify(googleSignals || {})}
 `;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-lite",
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-    });
+    let response;
+    try {
+      response = await ai.models.generateContent({
+        model: "gemini-2.5-flash-lite",
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      });
+    } catch (error) {
+      console.warn("⚠️ gemini-2.5-flash-lite failed for summaryAi, falling back to gemini-2.5-flash. Error:", error.message);
+      try {
+        response = await ai.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+        });
+      } catch (fallbackError) {
+        console.error("❌ Fallback model also failed for summaryAi:", fallbackError.message);
+        throw fallbackError;
+      }
+    }
 
     const text =
       response?.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") ||
